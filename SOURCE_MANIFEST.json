@@ -1,0 +1,39 @@
+{
+  "project": "HSC Anime Edition",
+  "source_baseline_commit": "68024c17ef041fb486535c75384a42c3f59af1d0",
+  "source_baseline_version": "4.3.0.0",
+  "edition_version": "4.3.0.1",
+  "verified_upstream_zip_sha256": "1034b1e1d809d382b55ca27eb22173d6039cc7b2b4427dcbd5f22b0cceec0101",
+  "modified_upstream_paths": [
+    "HomeScreenCompanion/Configuration/configPage.html",
+    "HomeScreenCompanion/Configuration/configPage.js",
+    "HomeScreenCompanion/HomeScreenCompanion.csproj",
+    "HomeScreenCompanion/HomeScreenCompanionService.cs",
+    "HomeScreenCompanion/ListFetcher.cs",
+    "HomeScreenCompanion/Plugin.cs",
+    "HomeScreenCompanion/PluginConfiguration.cs",
+    "HomeScreenCompanion/ServerEntryPoint.cs"
+  ],
+  "new_paths": [
+    "ANIME_EDITION.md",
+    "HomeScreenCompanion/AnimeAniListClient.cs",
+    "HomeScreenCompanion/AnimeCollectionTask.cs",
+    "HomeScreenCompanion/AnimeMappingIndex.cs",
+    "HomeScreenCompanion/AnimeRelations.cs",
+    "OMP_LOCAL_HANDOFF.md",
+    "verification/AnimeEdition.SmokeTests.csproj",
+    "verification/Program.cs",
+    "verification/check_static.py"
+  ],
+  "deleted_upstream_paths": [],
+  "verification": {
+    "upstream_zip_integrity": "verified",
+    "frontend_javascript_node_check": "passed",
+    "html_ui_controls_static_check": "passed",
+    "project_xml_parse": "passed",
+    "cs_core_smoke_tests": "not_run_no_dotnet_sdk",
+    "plugin_dotnet_build": "not_run_missing_dotnet_and_target_emby_assemblies",
+    "emby_runtime": "not_run",
+    "production_deployment": "not_performed"
+  }
+}

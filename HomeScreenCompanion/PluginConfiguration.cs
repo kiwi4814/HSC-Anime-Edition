@@ -1,4 +1,4 @@
-﻿using MediaBrowser.Model.Plugins;
+using MediaBrowser.Model.Plugins;
 using System;
 using System.Collections.Generic;
 
@@ -27,6 +27,16 @@ namespace HomeScreenCompanion
             "\"type\" (\"movie\" or \"show\"). " +
             "Return exactly the items requested. Do not add any commentary. " +
             "Example: [{\"title\":\"Inception\",\"year\":2010,\"imdb_id\":\"tt1375666\",\"type\":\"movie\"}]";
+        // Anime Edition is opt-in and starts with a separate Dry Run safeguard.
+        public bool AnimeEnabled { get; set; } = false;
+        public bool AnimeDryRun { get; set; } = true;
+        public bool AnimeIncludeSpinOffs { get; set; } = true;
+        public bool AnimeAiReviewOtherEdges { get; set; } = false;
+        public string AnimeAiProvider { get; set; } = "OpenAI";
+        public string AnimeCollectionPrefix { get; set; } = "动漫 · ";
+        public int AnimeMappingRefreshDays { get; set; } = 7;
+        public int AnimeMaxRequestsPerRun { get; set; } = 100;
+
         public bool ExtendedConsoleOutput { get; set; } = false;
         public bool LogMissingItems { get; set; } = false;
         public bool DryRunMode { get; set; } = false;

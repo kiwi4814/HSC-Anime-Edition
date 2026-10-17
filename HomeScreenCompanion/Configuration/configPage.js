@@ -1,7 +1,7 @@
 define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function () {
     'use strict';
 
-    var pluginId = "7c10708f-43e4-4d69-923c-77d01802315b";
+    var pluginId = "b5bca829-e903-4af4-9fb2-451d72a487e6";
     var statusInterval = null;
     // Live log modal: latest status per task and the tab the user picked (null = automatic)
     var _lastStatus = { sync: null, hsc: null, tl: null };
@@ -2314,7 +2314,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                     if (btnSaveEl) { btnSaveEl.disabled = true; btnSaveEl.style.opacity = '0.5'; btnSaveEl.querySelector('span').textContent = 'Sync in progress...'; }
                     if (dotEl) { dotEl.className = 'status-dot running'; }
                     if (labelEl) labelEl.textContent = 'Running...';
-                    fetch(window.ApiClient.getUrl('HomeScreenCompanion/RunEntry'), {
+                    fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/RunEntry'), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-MediaBrowser-Token': window.ApiClient.accessToken() },
                         body: JSON.stringify({ EntryName: entryName })
@@ -2353,7 +2353,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
                 btnTest.disabled = true;
                 var urlModal = openSourceTestModal('Source test', url);
-                window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanion/TestUrl", { Url: url, Limit: limitVal })).then(result => {
+                window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanionAnime/TestUrl", { Url: url, Limit: limitVal })).then(result => {
                     if (result.Success) urlModal.show(result);
                     else urlModal.fail(result.Message);
                 }).catch(() => urlModal.fail('Request failed. Check server logs.'))
@@ -2376,7 +2376,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 if (resultSpan) resultSpan.textContent = 'Testing...';
                 var aiModal = openSourceTestModal('AI source test', aiProvider + ' · ' + aiPrompt);
 
-                fetch(window.ApiClient.getUrl('HomeScreenCompanion/TestAiSource'), {
+                fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TestAiSource'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-MediaBrowser-Token': window.ApiClient.accessToken() },
                     body: JSON.stringify({
@@ -2525,7 +2525,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 var headers = { 'Content-Type': 'application/json' };
                 var token = window.ApiClient.accessToken();
                 if (token) headers['X-Emby-Token'] = token;
-                fetch(window.ApiClient.getUrl('HomeScreenCompanion/UploadCollectionImage'), {
+                fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/UploadCollectionImage'), {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({ FileName: file.name, Base64Data: base64, OldFilePath: row.querySelector('.hiddenPosterPath').value })
@@ -2563,7 +2563,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             var token = window.ApiClient.accessToken();
             if (token) headers['X-Emby-Token'] = token;
 
-            fetch(window.ApiClient.getUrl('HomeScreenCompanion/FetchCollectionImageFromUrl'), {
+            fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/FetchCollectionImageFromUrl'), {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify({ Url: url, OldFilePath: row.querySelector('.hiddenPosterPath').value })
@@ -2803,9 +2803,9 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
     function refreshStatus(view) {
         var myId = ++statusRequestId;
         Promise.all([
-            window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanion/Status")),
-            window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanion/Hsc/Status")).catch(function () { return null; }),
-            window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanion/TopList/Status")).catch(function () { return null; })
+            window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanionAnime/Status")),
+            window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanionAnime/Hsc/Status")).catch(function () { return null; }),
+            window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanionAnime/TopList/Status")).catch(function () { return null; })
         ]).then(function (results) {
             if (myId !== statusRequestId) return;
             var result = results[0], hscResult = results[1], tlResult = results[2];
@@ -2993,7 +2993,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         if (_hseLibraryCachePromise) return _hseLibraryCachePromise;
         var tok = window.ApiClient.accessToken ? window.ApiClient.accessToken() : '';
         _hseLibraryCachePromise = Promise.all([
-            fetch(window.ApiClient.getUrl('HomeScreenCompanion/TopList/List'), { headers: { 'X-MediaBrowser-Token': tok } })
+            fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TopList/List'), { headers: { 'X-MediaBrowser-Token': tok } })
                 .then(function(r) { return r.json(); }).catch(function() { return { FolderNames: [] }; }),
             fetch(window.ApiClient.getUrl('Library/VirtualFolders'), { headers: { 'X-MediaBrowser-Token': tok } })
                 .then(function(r) { return r.json(); }).catch(function() { return []; })
@@ -3204,8 +3204,8 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var syncToken = window.ApiClient && window.ApiClient.accessToken && window.ApiClient.accessToken();
         if (syncToken) syncHeaders['X-Emby-Token'] = syncToken;
         var syncUrl = window.ApiClient
-            ? window.ApiClient.getUrl('HomeScreenCompanion/Hsc/UserSections', { UserId: entry.UserId })
-            : '/HomeScreenCompanion/Hsc/UserSections?UserId=' + encodeURIComponent(entry.UserId);
+            ? window.ApiClient.getUrl('HomeScreenCompanionAnime/Hsc/UserSections', { UserId: entry.UserId })
+            : '/HomeScreenCompanionAnime/Hsc/UserSections?UserId=' + encodeURIComponent(entry.UserId);
 
         return fetch(syncUrl, { headers: syncHeaders })
             .then(function(r) { return r.json(); })
@@ -3596,6 +3596,14 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             DryRunMode: view.querySelector('#chkDryRunMode').checked,
             PreserveTagsOnEmptyResult: view.querySelector('#chkPreserveTagsOnEmptyResult').checked,
             TopListMirrorCollections: view.querySelector('#chkTopListMirrorCollections').checked,
+            AnimeEnabled: view.querySelector('#chkAnimeEnabled').checked,
+            AnimeDryRun: view.querySelector('#chkAnimeDryRun').checked,
+            AnimeIncludeSpinOffs: view.querySelector('#chkAnimeIncludeSpinOffs').checked,
+            AnimeAiReviewOtherEdges: view.querySelector('#chkAnimeAiOther').checked,
+            AnimeAiProvider: view.querySelector('#selAnimeAiProvider').value || 'OpenAI',
+            AnimeCollectionPrefix: view.querySelector('#txtAnimePrefix').value || '动漫 · ',
+            AnimeMappingRefreshDays: 7,
+            AnimeMaxRequestsPerRun: Math.min(300, Math.max(10, parseInt(view.querySelector('#txtAnimeApiBudget').value, 10) || 100)),
             Tags: flatTags,
             SavedFilters: savedFilters,
             HomeSyncEnabled: hscEnabled ? hscEnabled.checked : (lastHscConfig.HomeSyncEnabled || false),
@@ -3725,39 +3733,14 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
     }
 
     function checkForUpdates(view) {
-        window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanion/Version")).then(function (result) {
-            var currentVer = result.Version || '';
-            var footerVer = document.getElementById('footerVersionText');
-            if (footerVer && currentVer) {
-                var releaseUrl = 'https://github.com/soderlund91/HomeScreenCompanion/releases/tag/v' + currentVer;
-                footerVer.innerHTML = '<a href="' + releaseUrl + '" target="_blank" style="color:inherit;text-decoration:none;">v' + currentVer + '</a>';
-            }
-            if (!currentVer) return;
-
-            fetch('https://api.github.com/repos/soderlund91/HomeScreenCompanion/releases/latest')
-                .then(function (r) { return r.json(); })
-                .then(function (release) {
-                    var latestTag = (release.tag_name || '').replace(/^v/i, '');
-                    if (!latestTag) return;
-                    var a = latestTag.split('.').map(Number);
-                    var b = currentVer.split('.').map(Number);
-                    var isNewer = false;
-                    for (var i = 0; i < Math.max(a.length, b.length); i++) {
-                        if ((a[i] || 0) > (b[i] || 0)) { isNewer = true; break; }
-                        if ((a[i] || 0) < (b[i] || 0)) break;
-                    }
-                    if (isNewer) {
-                        var footerUpdate = document.getElementById('footerUpdateInfo');
-                        if (footerUpdate) {
-                            footerUpdate.innerHTML = '<a href="' + release.html_url + '"'
-                                + ' target="_blank" class="footer-update-link">Update available: v' + latestTag + '</a>';
-                            var footerUpdateSep = document.getElementById('footerUpdateSep');
-                            if (footerUpdateSep) footerUpdateSep.style.display = '';
-                        }
-                    }
-                })
-                .catch(function () {});
-        }).catch(function () {});
+        window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanionAnime/Version"))
+            .then(function (result) {
+                var footer = document.getElementById('footerVersionText');
+                if (footer) footer.textContent = 'Anime Edition v' + (result.Version || '?');
+                var upd = document.getElementById('footerUpdateInfo');
+                if (upd) upd.textContent = '';
+            }).catch(function () {});
+        // Fork builds are not automatically upgraded from upstream releases.
     }
 
     window._testUpdateBanner = function (mode) {
@@ -4069,8 +4052,8 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var pendingCollDeletes = {};      // collectionId -> { id, name, itemCount }
 
         Promise.all([
-            fetch(window.ApiClient.getUrl('HomeScreenCompanion/Manage/Tags'), { headers: { 'X-MediaBrowser-Token': token } }).then(function (r) { return r.json(); }),
-            fetch(window.ApiClient.getUrl('HomeScreenCompanion/Manage/Collections'), { headers: { 'X-MediaBrowser-Token': token } }).then(function (r) { return r.json(); }),
+            fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Manage/Tags'), { headers: { 'X-MediaBrowser-Token': token } }).then(function (r) { return r.json(); }),
+            fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Manage/Collections'), { headers: { 'X-MediaBrowser-Token': token } }).then(function (r) { return r.json(); }),
             window.ApiClient.getPluginConfiguration(pluginId).catch(function () { return { Tags: [] }; })
         ]).then(function (results) {
             var tagsData = results[0];
@@ -4567,7 +4550,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
                         // All tags in one batch request — avoids race conditions when items carry multiple managed tags
                         var tagBatchPromise = tagList.length === 0 ? Promise.resolve() :
-                            fetch(window.ApiClient.getUrl('HomeScreenCompanion/Manage/DeleteTags'), {
+                            fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Manage/DeleteTags'), {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'X-MediaBrowser-Token': tok },
                                 body: JSON.stringify({ TagNames: tagList.map(function (t) { return t.name; }) })
@@ -4577,7 +4560,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                         var collOps = [];
                         collList.forEach(function (c) {
                             collOps.push(function () {
-                                return fetch(window.ApiClient.getUrl('HomeScreenCompanion/Manage/DeleteCollection'), {
+                                return fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Manage/DeleteCollection'), {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json', 'X-MediaBrowser-Token': tok },
                                     body: JSON.stringify({ CollectionId: c.id })
@@ -4660,7 +4643,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         // POST Library/VirtualFolders causes Emby to set EnableAllFolders=true for all users.
         // The server stores the exact per-user state and restores it in step 4b.
         // The chain is returned so silent callers (backup restore) can await it.
-        return fetch(window.ApiClient.getUrl('HomeScreenCompanion/TopList/SnapshotPolicies'), {
+        return fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TopList/SnapshotPolicies'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-Emby-Token': tok },
             body: JSON.stringify({})
@@ -4858,7 +4841,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             // Step 5: Create home sections immediately
             saveBtn.innerHTML = 'Creating home sections <span class="tc-dot-loader"><span></span><span></span><span></span></span>';
             var tok5 = window.ApiClient.accessToken ? window.ApiClient.accessToken() : '';
-            return fetch(window.ApiClient.getUrl('HomeScreenCompanion/TopList/SyncHomeSections'), {
+            return fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TopList/SyncHomeSections'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Emby-Token': tok5 },
                 body: JSON.stringify({ TagName: tagName })
@@ -4897,7 +4880,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 if (!expected) return;
                 var deadline = Date.now() + 120000;
                 function poll() {
-                    return fetch(window.ApiClient.getUrl('HomeScreenCompanion/TopList/IndexStatus', { FolderPath: ctx2.prepareResult.FolderPath }), {
+                    return fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TopList/IndexStatus', { FolderPath: ctx2.prepareResult.FolderPath }), {
                         headers: { 'X-MediaBrowser-Token': tok6 }
                     })
                     .then(function (r) { return r.json(); })
@@ -4925,7 +4908,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             // "finishing touches will continue in the background" note on the success screen.
             // Step 7: Sync all top-list home sections so exclusion lists are up to date
             var tok7 = window.ApiClient.accessToken ? window.ApiClient.accessToken() : '';
-            return fetch(window.ApiClient.getUrl('HomeScreenCompanion/TopList/SyncAllSections'), {
+            return fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TopList/SyncAllSections'), {
                 method: 'POST',
                 headers: { 'X-MediaBrowser-Token': tok7 }
             }).catch(function () {}).then(function () { return prepareResult; });
@@ -5166,7 +5149,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 saveBtn.innerHTML = 'Preparing files <span class="tc-dot-loader"><span></span><span></span><span></span></span>';
 
                 // Step 1: Create folder + write .strm files
-                fetch(window.ApiClient.getUrl('HomeScreenCompanion/TopList/PrepareFolder'), {
+                fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TopList/PrepareFolder'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-Emby-Token': tok },
                     body: JSON.stringify({ TagName: tagName, MaxItems: maxItems, BadgeStyle: badgeStyle, ContentType: isShows ? 'Shows' : 'Movies' })
@@ -5224,7 +5207,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var tok = window.ApiClient.accessToken ? window.ApiClient.accessToken() : '';
 
         Promise.all([
-            fetch(window.ApiClient.getUrl(isShows ? 'HomeScreenCompanion/TopList/AllSeries' : 'HomeScreenCompanion/TopList/AllMovies'), {
+            fetch(window.ApiClient.getUrl(isShows ? 'HomeScreenCompanionAnime/TopList/AllSeries' : 'HomeScreenCompanionAnime/TopList/AllMovies'), {
                 headers: { 'X-MediaBrowser-Token': tok }
             }).then(function (r) { return r.json(); }),
             getHseUsers()
@@ -5470,7 +5453,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 createBtn.innerHTML = 'Preparing files <span class="tc-dot-loader"><span></span><span></span><span></span></span>';
 
                 var tok2 = window.ApiClient.accessToken ? window.ApiClient.accessToken() : '';
-                fetch(window.ApiClient.getUrl('HomeScreenCompanion/TopList/PrepareManualFolder'), {
+                fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TopList/PrepareManualFolder'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-Emby-Token': tok2 },
                     body: JSON.stringify({
@@ -5536,11 +5519,11 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
         if (isManual) {
             Promise.all([
-                fetch(window.ApiClient.getUrl(isShows ? 'HomeScreenCompanion/TopList/AllSeries' : 'HomeScreenCompanion/TopList/AllMovies'), {
+                fetch(window.ApiClient.getUrl(isShows ? 'HomeScreenCompanionAnime/TopList/AllSeries' : 'HomeScreenCompanionAnime/TopList/AllMovies'), {
                     headers: { 'X-MediaBrowser-Token': tok }
                 }).then(function (r) { return r.json(); }),
                 getHseUsers(),
-                fetch(window.ApiClient.getUrl('HomeScreenCompanion/TopList/ManualItems') + '?ListName=' + encodeURIComponent(tagName), {
+                fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TopList/ManualItems') + '?ListName=' + encodeURIComponent(tagName), {
                     headers: { 'X-MediaBrowser-Token': tok }
                 }).then(function (r) { return r.json(); })
             ]).then(function (res) {
@@ -5750,7 +5733,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                         if (selectedMovies.length === 0) { reject(new Error('Please add at least one ' + itemWord + '.')); return; }
 
                         var tok2 = window.ApiClient.accessToken ? window.ApiClient.accessToken() : '';
-                        fetch(window.ApiClient.getUrl('HomeScreenCompanion/TopList/PrepareManualFolder'), {
+                        fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TopList/PrepareManualFolder'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-Emby-Token': tok2 },
                             body: JSON.stringify({
@@ -5872,7 +5855,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                         var maxItems      = Math.max(0, parseInt(wrapper.querySelector('.tlm-max-items').value, 10) || 0);
                         var tok2 = window.ApiClient.accessToken ? window.ApiClient.accessToken() : '';
 
-                        fetch(window.ApiClient.getUrl('HomeScreenCompanion/TopList/PrepareFolder'), {
+                        fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TopList/PrepareFolder'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-Emby-Token': tok2 },
                             body: JSON.stringify({ TagName: tagName, MaxItems: maxItems, BadgeStyle: badgeStyle, ContentType: contentType })
@@ -6125,7 +6108,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             btn.innerHTML = 'Preparing <span class="tc-dot-loader"><span></span><span></span><span></span></span>';
             modal.dataset.busy = '1';
             var tok = window.ApiClient.accessToken ? window.ApiClient.accessToken() : '';
-            fetch(window.ApiClient.getUrl('HomeScreenCompanion/Backup/Export'), {
+            fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Backup/Export'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Emby-Token': tok },
                 body: JSON.stringify(flags)
@@ -6210,7 +6193,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             modal.dataset.busy = '1';
             var body = Object.assign({ BackupJson: rawText }, flags);
             var tok = window.ApiClient.accessToken ? window.ApiClient.accessToken() : '';
-            fetch(window.ApiClient.getUrl('HomeScreenCompanion/Backup/Import'), {
+            fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Backup/Import'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Emby-Token': tok },
                 body: JSON.stringify(body)
@@ -6321,10 +6304,10 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var token = window.ApiClient.accessToken();
 
         Promise.all([
-            fetch(window.ApiClient.getUrl('HomeScreenCompanion/Manage/Tags'), { headers: { 'X-MediaBrowser-Token': token } }).then(function (r) { return r.json(); }),
-            fetch(window.ApiClient.getUrl('HomeScreenCompanion/Manage/Collections'), { headers: { 'X-MediaBrowser-Token': token } }).then(function (r) { return r.json(); }),
+            fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Manage/Tags'), { headers: { 'X-MediaBrowser-Token': token } }).then(function (r) { return r.json(); }),
+            fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Manage/Collections'), { headers: { 'X-MediaBrowser-Token': token } }).then(function (r) { return r.json(); }),
             window.ApiClient.getPluginConfiguration(pluginId).catch(function () { return { Tags: [] }; }),
-            fetch(window.ApiClient.getUrl('HomeScreenCompanion/TopList/List'), { headers: { 'X-MediaBrowser-Token': token } }).then(function (r) { return r.json(); }).catch(function () { return { FolderNames: [] }; })
+            fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TopList/List'), { headers: { 'X-MediaBrowser-Token': token } }).then(function (r) { return r.json(); }).catch(function () { return { FolderNames: [] }; })
         ]).then(function (results) {
             var tagsData = results[0];
             var collectionsData = results[1];
@@ -6564,7 +6547,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                     deleteBtn.disabled = true;
                     deleteBtn.textContent = 'Deleting…';
                     var deleteToken = window.ApiClient.accessToken();
-                        fetch(window.ApiClient.getUrl('HomeScreenCompanion/TopList/Delete'), {
+                        fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TopList/Delete'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-MediaBrowser-Token': deleteToken },
                             body: JSON.stringify({ TagName: deleteName })
@@ -6719,7 +6702,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var token = window.ApiClient.accessToken();
         if (token) headers['X-Emby-Token'] = token;
 
-        fetch(window.ApiClient.getUrl('HomeScreenCompanion/Hsc/UserSections', { userId: userId }), { headers: headers })
+        fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Hsc/UserSections', { userId: userId }), { headers: headers })
             .then(function (r) { return r.json(); })
             .then(function (result) {
                 currentManageSections = result.Sections || [];
@@ -6865,7 +6848,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var token = window.ApiClient.accessToken();
         if (token) headers['X-Emby-Token'] = token;
 
-        fetch(window.ApiClient.getUrl('HomeScreenCompanion/Hsc/UserSections'), {
+        fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Hsc/UserSections'), {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({ UserId: selUser.value, Sections: currentManageSections })
@@ -7337,7 +7320,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                         return t.SectionId && !t.SectionId.startsWith('hsc__');
                     });
                     if (!hasTracked) return;
-                    var applyUrl = window.ApiClient.getUrl('HomeScreenCompanion/Hsc/ApplyTagHomeSections');
+                    var applyUrl = window.ApiClient.getUrl('HomeScreenCompanionAnime/Hsc/ApplyTagHomeSections');
                     var tok = window.ApiClient.accessToken ? window.ApiClient.accessToken() : '';
                     fetch(applyUrl, {
                         method: 'POST',
@@ -7451,6 +7434,13 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 view.querySelector('#chkDryRunMode').checked = config.DryRunMode || false;
                 view.querySelector('#chkPreserveTagsOnEmptyResult').checked = config.PreserveTagsOnEmptyResult || false;
                 view.querySelector('#chkTopListMirrorCollections').checked = config.TopListMirrorCollections || false;
+                view.querySelector('#chkAnimeEnabled').checked = config.AnimeEnabled || false;
+                view.querySelector('#chkAnimeDryRun').checked = config.AnimeDryRun !== false;
+                view.querySelector('#chkAnimeIncludeSpinOffs').checked = config.AnimeIncludeSpinOffs !== false;
+                view.querySelector('#chkAnimeAiOther').checked = config.AnimeAiReviewOtherEdges || false;
+                view.querySelector('#selAnimeAiProvider').value = config.AnimeAiProvider || 'OpenAI';
+                view.querySelector('#txtAnimePrefix').value = config.AnimeCollectionPrefix || '动漫 · ';
+                view.querySelector('#txtAnimeApiBudget').value = config.AnimeMaxRequestsPerRun || 100;
                 if (view.querySelector('#txtSearchTags')) {
                     view.querySelector('#txtSearchTags').value = '';
                     view.querySelector('#btnClearSearch').style.display = 'none';

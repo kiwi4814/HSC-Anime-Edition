@@ -1,4 +1,4 @@
-﻿using MediaBrowser.Common.Configuration;
+using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
@@ -12,9 +12,9 @@ namespace HomeScreenCompanion
 {
     public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IHasThumbImage
     {
-        public override string Name => "Home Screen Companion";
+        public override string Name => "Home Screen Companion Anime Edition";
 
-        public override Guid Id => new Guid("7c10708f-43e4-4d69-923c-77d01802315b");
+        public override Guid Id => new Guid("b5bca829-e903-4af4-9fb2-451d72a487e6");
 
         public override string Description => "Auto-tagging, collection management and home screen sync for Emby.";
 
@@ -55,16 +55,16 @@ namespace HomeScreenCompanion
             {
                 new PluginPageInfo
                 {
-                    Name = "HomeScreenCompanion",
+                    Name = "HomeScreenCompanionAnimeEdition",
                     EmbeddedResourcePath = htmlPath,
 
                     EnableInMainMenu = true,
-                    DisplayName = "Home Screen Companion",
+                    DisplayName = "HSC Anime Edition",
                     MenuIcon = "home"
                 },
                 new PluginPageInfo
                 {
-                    Name = "HomeScreenCompanionJS",
+                    Name = "HomeScreenCompanionAnimeEditionJS",
                     EmbeddedResourcePath = jsPath
                 }
             };

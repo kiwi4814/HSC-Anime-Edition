@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-17",
+  "sdk": "8.0.426",
+  "runtime_version": "8.0.32",
+  "emby_compile_target": "4.10.1.0",
+  "candidate": {
+    "file": "HomeScreenCompanionAnimeEdition.dll",
+    "size": 1594880,
+    "sha256": "fead4b920ed20c33b6d5715e84b09206da510815d1f4c57a409030335f6b07f3",
+    "assembly_version": "4.3.0.1"
+  },
+  "build_exit": 0,
+  "warnings": 104,
+  "smoke_assertions": 42,
+  "emby_runtime": "NOT_TESTED",
+  "input_sha256": "d3d75bab0f5aba76c755313f1d0088c2a501198a69b6257bd0e146814fdf9131",
+  "changed_source_files": [
+    "HomeScreenCompanion/AnimeAniListClient.cs",
+    "HomeScreenCompanion/AnimeCollectionMembership.cs",
+    "HomeScreenCompanion/AnimeCollectionTask.cs",
+    "HomeScreenCompanion/AnimeGraphExpansion.cs",
+    "HomeScreenCompanion/HomeScreenCompanion.csproj",
+    "verification/AnimeEdition.SmokeTests.csproj",
+    "verification/Program.cs",
+    "verification/check_static.py"
+  ]
+}

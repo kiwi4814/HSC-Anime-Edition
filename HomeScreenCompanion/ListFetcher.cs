@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,6 +11,13 @@ using MediaBrowser.Model.Serialization;
 
 namespace HomeScreenCompanion
 {
+    internal sealed class AnimeRelationVerdict
+    {
+        public bool same_ip { get; set; }
+        public double confidence { get; set; }
+        public string reason { get; set; } = "";
+    }
+
     public class ListFetcher
     {
         private readonly IHttpClient _httpClient;
@@ -479,6 +486,51 @@ namespace HomeScreenCompanion
             {
                 return new List<AiListItem>();
             }
+        }
+
+        /// <summary>
+        /// Uses the same AI credentials/providers as normal HSC lists. AI can only review
+        /// an existing AniList OTHER relation, never invent an AniList or Emby ID.
+        /// </summary>
+        public async Task<bool> CheckAnimeRelationAsync(PluginConfiguration config,
+            string firstTitle, string secondTitle, CancellationToken cancellationToken)
+        {
+            string systemPrompt =
+                "You are reviewing a weak (OTHER) relationship already present in AniList between two anime entries. " +
+                "Do they belong to the same named anime franchise/IP? Crossovers, shared staff, character cameos, " +
+                "and generic genre similarity do not count. Be conservative. " +
+                "Return ONLY JSON: {\"same_ip\":false,\"confidence\":0.0,\"reason\":\"...\"}. " +
+                "For uncertainty, return false. Confidence must be between 0 and 1.";
+            string userPrompt = _jsonSerializer.SerializeToString(new
+            {
+                first_title = (firstTitle ?? "").Substring(0, Math.Min(240, (firstTitle ?? "").Length)),
+                second_title = (secondTitle ?? "").Substring(0, Math.Min(240, (secondTitle ?? "").Length))
+            });
+            string provider = (config.AnimeAiProvider ?? "OpenAI").Trim();
+            string answer;
+            if (provider.Equals("Gemini", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(config.GeminiApiKey)) throw new InvalidOperationException("Gemini key missing.");
+                answer = await CallGemini(config.GeminiApiKey, config.GeminiModel, systemPrompt, userPrompt, cancellationToken);
+            }
+            else if (provider.Equals("Claude", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(config.ClaudeApiKey)) throw new InvalidOperationException("Claude key missing.");
+                answer = await CallClaude(config.ClaudeApiKey, config.ClaudeModel, systemPrompt, userPrompt, cancellationToken);
+            }
+            else if (provider.Equals("Ollama", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(config.OllamaModel)) throw new InvalidOperationException("Ollama model missing.");
+                answer = await CallOllama(config.OllamaBaseUrl, config.OllamaModel, systemPrompt, userPrompt, cancellationToken);
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(config.OpenAiApiKey)) throw new InvalidOperationException("OpenAI key missing.");
+                answer = await CallOpenAi(config.OpenAiApiKey, config.OpenAiModel, systemPrompt, userPrompt, cancellationToken);
+            }
+            var verdict = _jsonSerializer.DeserializeFromString<AnimeRelationVerdict>(CleanAiJsonOutput(answer));
+            return verdict != null && verdict.same_ip && verdict.confidence >= 0.95 &&
+                !string.IsNullOrWhiteSpace(verdict.reason);
         }
 
         private async Task<string> CallOpenAi(string apiKey, string model, string systemPrompt, string userMessage, CancellationToken cancellationToken)

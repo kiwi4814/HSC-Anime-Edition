@@ -23,7 +23,7 @@ using System.Threading.Tasks;
 
 namespace HomeScreenCompanion
 {
-    [Route("/HomeScreenCompanion/TestUrl", "GET")]
+    [Route("/HomeScreenCompanionAnime/TestUrl", "GET")]
     [Authenticated(Roles = "Admin")]
     public class TestUrlRequest : IReturn<TestUrlResponse>
     {
@@ -31,11 +31,11 @@ namespace HomeScreenCompanion
         public int Limit { get; set; } = 10;
     }
 
-    [Route("/HomeScreenCompanion/Status", "GET")]
+    [Route("/HomeScreenCompanionAnime/Status", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetStatusRequest : IReturn<StatusResponse> { }
 
-    [Route("/HomeScreenCompanion/Version", "GET")]
+    [Route("/HomeScreenCompanionAnime/Version", "GET")]
     [Authenticated(Roles = "Admin")]
     public class VersionRequest : IReturn<VersionResponse> { }
 
@@ -44,7 +44,7 @@ namespace HomeScreenCompanion
         public string Version { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/UploadCollectionImage", "POST")]
+    [Route("/HomeScreenCompanionAnime/UploadCollectionImage", "POST")]
     [Authenticated(Roles = "Admin")]
     public class UploadCollectionImageRequest : IReturn<UploadCollectionImageResponse>
     {
@@ -53,7 +53,7 @@ namespace HomeScreenCompanion
         public string OldFilePath { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/FetchCollectionImageFromUrl", "POST")]
+    [Route("/HomeScreenCompanionAnime/FetchCollectionImageFromUrl", "POST")]
     [Authenticated(Roles = "Admin")]
     public class FetchCollectionImageFromUrlRequest : IReturn<UploadCollectionImageResponse>
     {
@@ -98,7 +98,7 @@ namespace HomeScreenCompanion
         public string StartedUtc { get; set; } = string.Empty;
     }
 
-    [Route("/HomeScreenCompanion/RunEntry", "POST")]
+    [Route("/HomeScreenCompanionAnime/RunEntry", "POST")]
     [Authenticated(Roles = "Admin")]
     public class RunEntryRequest : IReturn<RunEntryResponse>
     {
@@ -111,45 +111,45 @@ namespace HomeScreenCompanion
         public string Message { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/Hsc/Status", "GET")]
+    [Route("/HomeScreenCompanionAnime/Hsc/Status", "GET")]
     [Authenticated(Roles = "Admin")]
     public class HscGetStatusRequest : IReturn<HscSyncStatusResponse> { }
 
-    [Route("/HomeScreenCompanion/DebugSections", "GET")]
+    [Route("/HomeScreenCompanionAnime/DebugSections", "GET")]
     [Authenticated(Roles = "Admin")]
     public class DebugSectionsRequest : IReturn<string>
     {
         public string UserId { get; set; } = string.Empty;
     }
 
-    [Route("/HomeScreenCompanion/Manage/Tags", "GET")]
+    [Route("/HomeScreenCompanionAnime/Manage/Tags", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetManagedTagsRequest : IReturn<GetManagedTagsResponse> { }
     public class ManagedTagInfo { public string Id { get; set; } = ""; public string Name { get; set; } = ""; public int ItemCount { get; set; } public int MovieCount { get; set; } public int SeriesCount { get; set; } public List<string> ItemTypes { get; set; } = new List<string>(); }
     public class GetManagedTagsResponse { public List<ManagedTagInfo> Tags { get; set; } = new List<ManagedTagInfo>(); }
 
-    [Route("/HomeScreenCompanion/Manage/Collections", "GET")]
+    [Route("/HomeScreenCompanionAnime/Manage/Collections", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetManagedCollectionsRequest : IReturn<GetManagedCollectionsResponse> { }
     public class ManagedCollectionInfo { public string Id { get; set; } = ""; public string Name { get; set; } = ""; public int ItemCount { get; set; } }
     public class GetManagedCollectionsResponse { public List<ManagedCollectionInfo> Collections { get; set; } = new List<ManagedCollectionInfo>(); }
 
-    [Route("/HomeScreenCompanion/Manage/DeleteTag", "POST")]
+    [Route("/HomeScreenCompanionAnime/Manage/DeleteTag", "POST")]
     [Authenticated(Roles = "Admin")]
     public class DeleteManagedTagRequest : IReturn<DeleteManagedTagResponse> { public string TagName { get; set; } = ""; }
     public class DeleteManagedTagResponse { public bool Success { get; set; } public string Message { get; set; } = ""; public int ItemsUpdated { get; set; } }
 
-    [Route("/HomeScreenCompanion/Manage/DeleteTags", "POST")]
+    [Route("/HomeScreenCompanionAnime/Manage/DeleteTags", "POST")]
     [Authenticated(Roles = "Admin")]
     public class DeleteManagedTagsBatchRequest : IReturn<DeleteManagedTagsResponse> { public List<string> TagNames { get; set; } = new List<string>(); }
     public class DeleteManagedTagsResponse { public bool Success { get; set; } public int ItemsUpdated { get; set; } }
 
-    [Route("/HomeScreenCompanion/Manage/DeleteCollection", "POST")]
+    [Route("/HomeScreenCompanionAnime/Manage/DeleteCollection", "POST")]
     [Authenticated(Roles = "Admin")]
     public class DeleteManagedCollectionRequest : IReturn<DeleteManagedCollectionResponse> { public string CollectionId { get; set; } = ""; }
     public class DeleteManagedCollectionResponse { public bool Success { get; set; } public string Message { get; set; } = ""; }
 
-    [Route("/HomeScreenCompanion/TopList/Status", "GET")]
+    [Route("/HomeScreenCompanionAnime/TopList/Status", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetTopListStatusRequest : IReturn<TopListStatusResponse> { }
     public class TopListStatusResponse
@@ -160,7 +160,7 @@ namespace HomeScreenCompanion
         public string StartedUtc { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/TopList/PrepareFolder", "POST")]
+    [Route("/HomeScreenCompanionAnime/TopList/PrepareFolder", "POST")]
     [Authenticated(Roles = "Admin")]
     public class PrepareTopListFolderRequest : IReturn<PrepareTopListFolderResponse>
     {
@@ -177,7 +177,7 @@ namespace HomeScreenCompanion
         public int FilesCreated { get; set; }
     }
 
-    [Route("/HomeScreenCompanion/TopList/List", "GET")]
+    [Route("/HomeScreenCompanionAnime/TopList/List", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetTopListsRequest : IReturn<GetTopListsResponse> { }
     public class GetTopListsResponse
@@ -186,7 +186,7 @@ namespace HomeScreenCompanion
         public Dictionary<string, int> MovieCounts { get; set; } = new Dictionary<string, int>();
     }
 
-    [Route("/HomeScreenCompanion/TopList/ManualItems", "GET")]
+    [Route("/HomeScreenCompanionAnime/TopList/ManualItems", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetManualTopListItemsRequest : IReturn<GetManualTopListItemsResponse>
     {
@@ -205,7 +205,7 @@ namespace HomeScreenCompanion
         public string Message { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/TopList/Delete", "POST")]
+    [Route("/HomeScreenCompanionAnime/TopList/Delete", "POST")]
     [Authenticated(Roles = "Admin")]
     public class DeleteTopListRequest : IReturn<DeleteTopListResponse>
     {
@@ -218,7 +218,7 @@ namespace HomeScreenCompanion
         public string Message { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/TopList/SyncHomeSections", "POST")]
+    [Route("/HomeScreenCompanionAnime/TopList/SyncHomeSections", "POST")]
     [Authenticated(Roles = "Admin")]
     public class PrepareTopListHomeSectionsRequest : IReturn<PrepareTopListHomeSectionsResponse>
     {
@@ -233,7 +233,7 @@ namespace HomeScreenCompanion
         public string Message { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/TopList/SyncAllSections", "POST")]
+    [Route("/HomeScreenCompanionAnime/TopList/SyncAllSections", "POST")]
     [Authenticated(Roles = "Admin")]
     public class SyncAllTopListSectionsRequest : IReturn<SyncAllTopListSectionsResponse> { }
     public class SyncAllTopListSectionsResponse
@@ -243,7 +243,7 @@ namespace HomeScreenCompanion
         public string Message { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/TopList/MergeVersions", "POST")]
+    [Route("/HomeScreenCompanionAnime/TopList/MergeVersions", "POST")]
     [Authenticated(Roles = "Admin")]
     public class MergeTopListVersionsRequest : IReturn<MergeTopListVersionsResponse>
     {
@@ -257,7 +257,7 @@ namespace HomeScreenCompanion
         public string Message { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/TopList/IndexStatus", "GET")]
+    [Route("/HomeScreenCompanionAnime/TopList/IndexStatus", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetTopListIndexStatusRequest : IReturn<TopListIndexStatusResponse>
     {
@@ -271,7 +271,7 @@ namespace HomeScreenCompanion
         public string Message { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/TopList/AllMovies", "GET")]
+    [Route("/HomeScreenCompanionAnime/TopList/AllMovies", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetAllMoviesRequest : IReturn<GetAllMoviesResponse> { }
     public class MovieItem
@@ -287,11 +287,11 @@ namespace HomeScreenCompanion
     }
 
     // Series for the manual show top-list picker (same shape as AllMovies).
-    [Route("/HomeScreenCompanion/TopList/AllSeries", "GET")]
+    [Route("/HomeScreenCompanionAnime/TopList/AllSeries", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetAllSeriesRequest : IReturn<GetAllMoviesResponse> { }
 
-    [Route("/HomeScreenCompanion/TopList/GrantLibraryAccess", "POST")]
+    [Route("/HomeScreenCompanionAnime/TopList/GrantLibraryAccess", "POST")]
     [Authenticated(Roles = "Admin")]
     public class GrantTopListLibraryAccessRequest : IReturn<GrantTopListLibraryAccessResponse>
     {
@@ -304,7 +304,7 @@ namespace HomeScreenCompanion
         public string Message { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/TopList/SnapshotPolicies", "POST")]
+    [Route("/HomeScreenCompanionAnime/TopList/SnapshotPolicies", "POST")]
     [Authenticated(Roles = "Admin")]
     public class SnapshotPoliciesRequest : IReturn<SnapshotPoliciesResponse> { }
     public class SnapshotPoliciesResponse
@@ -315,7 +315,7 @@ namespace HomeScreenCompanion
         public string Message { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/TopList/RestoreAndGrantAccess", "POST")]
+    [Route("/HomeScreenCompanionAnime/TopList/RestoreAndGrantAccess", "POST")]
     [Authenticated(Roles = "Admin")]
     public class RestoreAndGrantAccessRequest : IReturn<RestoreAndGrantAccessResponse>
     {
@@ -329,7 +329,7 @@ namespace HomeScreenCompanion
         public string Message { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/TopList/PrepareManualFolder", "POST")]
+    [Route("/HomeScreenCompanionAnime/TopList/PrepareManualFolder", "POST")]
     [Authenticated(Roles = "Admin")]
     public class PrepareManualTopListFolderRequest : IReturn<PrepareTopListFolderResponse>
     {
@@ -344,7 +344,7 @@ namespace HomeScreenCompanion
         public string ItemId { get; set; } = "";
     }
 
-    [Route("/HomeScreenCompanion/Backup/Export", "POST")]
+    [Route("/HomeScreenCompanionAnime/Backup/Export", "POST")]
     [Authenticated(Roles = "Admin")]
     public class ExportBackupRequest : IReturn<BackupFile>
     {
@@ -372,6 +372,13 @@ namespace HomeScreenCompanion
 
     public class BackupSettings
     {
+        public bool AnimeEnabled { get; set; }
+        public bool AnimeDryRun { get; set; } = true;
+        public bool AnimeIncludeSpinOffs { get; set; } = true;
+        public bool AnimeAiReviewOtherEdges { get; set; }
+        public string AnimeAiProvider { get; set; } = "OpenAI";
+        public string AnimeCollectionPrefix { get; set; } = "动漫 · ";
+        public int AnimeMaxRequestsPerRun { get; set; } = 100;
         public string OpenAiModel { get; set; } = "";
         public string GeminiModel { get; set; } = "";
         public string ClaudeModel { get; set; } = "";
@@ -424,7 +431,7 @@ namespace HomeScreenCompanion
         public int? Year { get; set; }
     }
 
-    [Route("/HomeScreenCompanion/Backup/Import", "POST")]
+    [Route("/HomeScreenCompanionAnime/Backup/Import", "POST")]
     [Authenticated(Roles = "Admin")]
     public class ImportBackupRequest : IReturn<ImportBackupResponse>
     {
@@ -2673,7 +2680,7 @@ public class HomeScreenCompanionService : IService
         // (tags, collections, playlists, top-list strm/nfo/jpg files, caches, rank files) is
         // rebuilt on the next run and deliberately left out.
 
-        private const int BackupFormatVersion = 2;
+        private const int BackupFormatVersion = 3;
 
         public object Post(ExportBackupRequest request)
         {
@@ -2700,6 +2707,13 @@ public class HomeScreenCompanionService : IService
                     ExtendedConsoleOutput     = config.ExtendedConsoleOutput,
                     LogMissingItems           = config.LogMissingItems,
                     DryRunMode                = config.DryRunMode,
+                    AnimeEnabled               = config.AnimeEnabled,
+                    AnimeDryRun                = config.AnimeDryRun,
+                    AnimeIncludeSpinOffs       = config.AnimeIncludeSpinOffs,
+                    AnimeAiReviewOtherEdges    = config.AnimeAiReviewOtherEdges,
+                    AnimeAiProvider            = config.AnimeAiProvider,
+                    AnimeCollectionPrefix      = config.AnimeCollectionPrefix,
+                    AnimeMaxRequestsPerRun     = config.AnimeMaxRequestsPerRun,
                     PreserveTagsOnEmptyResult = config.PreserveTagsOnEmptyResult,
                     TopListMirrorCollections  = config.TopListMirrorCollections
                 };
@@ -2811,6 +2825,16 @@ public class HomeScreenCompanionService : IService
                     config.ExtendedConsoleOutput     = s.ExtendedConsoleOutput;
                     config.LogMissingItems           = s.LogMissingItems;
                     config.DryRunMode                = s.DryRunMode;
+                    if (backup.BackupVersion >= 3)
+                    {
+                        config.AnimeEnabled           = s.AnimeEnabled;
+                        config.AnimeDryRun            = s.AnimeDryRun;
+                        config.AnimeIncludeSpinOffs   = s.AnimeIncludeSpinOffs;
+                        config.AnimeAiReviewOtherEdges = s.AnimeAiReviewOtherEdges;
+                        config.AnimeAiProvider        = s.AnimeAiProvider ?? "OpenAI";
+                        config.AnimeCollectionPrefix  = s.AnimeCollectionPrefix ?? "动漫 · ";
+                        config.AnimeMaxRequestsPerRun = s.AnimeMaxRequestsPerRun <= 0 ? 100 : s.AnimeMaxRequestsPerRun;
+                    }
                     config.PreserveTagsOnEmptyResult = s.PreserveTagsOnEmptyResult;
                     mirrorChanged = config.TopListMirrorCollections != s.TopListMirrorCollections;
                     config.TopListMirrorCollections  = s.TopListMirrorCollections;

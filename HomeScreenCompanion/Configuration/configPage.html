@@ -1,6 +1,6 @@
 <div id="HomeScreenCompanionConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
      data-require="emby-input,emby-button,emby-checkbox,emby-textarea"
-     data-controller="__plugin/HomeScreenCompanionJS">
+     data-controller="__plugin/HomeScreenCompanionAnimeEditionJS">
 
     <style>
         .tag-row {
@@ -1038,6 +1038,57 @@
             </div>
 
             <div id="tabSettings" class="page-tab-content" style="display:none;">
+
+                <!-- Anime Edition: independent scheduled task; never alters normal HSC groups -->
+                <div class="advanced-section settings-panel" style="margin-bottom:25px;">
+                    <div class="advanced-header settings-panel-toggle">
+                        <i class="md-icon" style="margin-right:10px;color:#52B54B;">movie_filter</i>
+                        <span style="font-size:1.05em;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#52B54B;">Anime IP Collections · Edition</span>
+                        <i class="md-icon settings-panel-chevron" style="margin-left:auto;transition:transform .2s;">expand_more</i>
+                    </div>
+                    <div class="advanced-body settings-panel-body" style="display:none;">
+                        <div class="fieldDescription" style="margin-bottom:14px;line-height:1.7;">
+                            Automatically group anime TV series, OVA and movies into franchises using AniBridge Mappings v3 and AniList.
+                            Uses Emby provider IDs only; does not touch STRM paths or video files. Run the separate
+                            <strong>Anime IP Collection Sync</strong> task from Emby Dashboard &rarr; Scheduled Tasks to preview.
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeEnabled" /><span>Enable Anime IP collections</span></label>
+                            <div class="fieldDescription">Off by default. New collections are prefixed and existing manual collections are not adopted.</div>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeDryRun" /><span>Anime Dry Run (recommended first)</span></label>
+                            <div class="fieldDescription">Checked by default. Global HSC Dry Run also prevents writes.</div>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeIncludeSpinOffs" /><span>Include confirmed AniList spin-offs</span></label>
+                            <div class="fieldDescription">Prequel, sequel, side story and parent relations are always included. Similar/cameo/adaptation links are excluded.</div>
+                        </div>
+                        <div class="inputContainer" style="margin-top:15px;">
+                            <input is="emby-input" type="text" id="txtAnimePrefix" label="Collection name prefix" placeholder="动漫 · " />
+                            <div class="fieldDescription">Use a unique prefix to avoid colliding with manually created Emby Collections.</div>
+                        </div>
+                        <div class="inputContainer" style="margin-top:12px;">
+                            <input is="emby-input" type="number" min="10" max="300" id="txtAnimeApiBudget" label="Maximum new AniList requests per sync" />
+                            <div class="fieldDescription">Initial scans may require repeated runs to warm the relation cache. AniList requests are throttled.</div>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:16px;">
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiOther" /><span>Optional AI review for ambiguous AniList OTHER links</span></label>
+                            <div class="fieldDescription">Off by default. Reviews at most 15 weak links in one run; uses the API keys and models configured above. AI cannot invent identity links.</div>
+                        </div>
+                        <div class="inputContainer" style="margin-top:12px;">
+                            <label class="inputLabel" for="selAnimeAiProvider">AI provider</label>
+                            <select is="emby-select" id="selAnimeAiProvider" class="emby-select-withcolor">
+                                <option value="OpenAI">OpenAI</option>
+                                <option value="Gemini">Gemini</option>
+                                <option value="Claude">Claude</option>
+                                <option value="Ollama">Ollama</option>
+                            </select>
+                        </div>
+                        <p class="fieldDescription" style="margin-top:16px;">The source mapping is cached for 7 days. No collections are updated if its download, JSON validation or relationship traversal fails. Existing collections are never automatically deleted.</p>
+                    </div>
+                </div>
+
 
                 <div class="advanced-section settings-panel" style="margin-bottom: 15px;">
                     <div class="advanced-header settings-panel-toggle">

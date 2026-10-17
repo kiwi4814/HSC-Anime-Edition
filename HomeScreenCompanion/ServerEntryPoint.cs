@@ -49,7 +49,8 @@ namespace HomeScreenCompanion
         public void Run()
         {
             if (Plugin.Instance == null) return;
-            RunAutoMigration();
+            // Fork must never migrate/delete a legacy AutoTag directory owned by another plugin.
+            // RunAutoMigration(); // upstream-only operation intentionally disabled
             TagCacheManager.Instance.Initialize(Plugin.Instance.DataFolderPath, _jsonSerializer);
             TopListCollectionMirror.Initialize(_libraryManager, _collectionManager, _logger);
             ShowTopList.Initialize(_itemRepository, _mediaSourceManager);

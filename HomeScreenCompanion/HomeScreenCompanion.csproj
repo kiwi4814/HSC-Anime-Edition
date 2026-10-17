@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
@@ -6,13 +6,17 @@
 		<ImplicitUsings>disable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
-		<AssemblyTitle>Home Screen Companion</AssemblyTitle>
-		<AssemblyName>HomeScreenCompanion</AssemblyName>
+		<AssemblyTitle>Home Screen Companion Anime Edition</AssemblyTitle>
+		<AssemblyName>HomeScreenCompanionAnimeEdition</AssemblyName>
 		<RootNamespace>HomeScreenCompanion</RootNamespace>
+		<!-- Keep local build paths out of the candidate DLL's debug metadata. -->
+		<PathMap>$(MSBuildProjectDirectory)=/_/src/HomeScreenCompanion</PathMap>
 		
-		<Version>4.3.0.0</Version>
+		<Version>4.3.0.1</Version>
 
-		<Product>Home Screen Companion</Product>
+		<Product>Home Screen Companion Anime Edition</Product>
+		<!-- Compatible Emby DLLs may be provided read-only from the target server. -->
+		<EmbyReferenceDir Condition="'$(EmbyReferenceDir)' == ''">$(AppData)\Emby-Server\system</EmbyReferenceDir>
 		
 	</PropertyGroup>
 
@@ -38,15 +42,15 @@
 
 	<ItemGroup>
 	  <Reference Include="MediaBrowser.Common">
-	    <HintPath>$(AppData)\Emby-Server\system\MediaBrowser.Common.dll</HintPath>
+	    <HintPath>$(EmbyReferenceDir)/MediaBrowser.Common.dll</HintPath>
 	    <Private>False</Private>
 	  </Reference>
 	  <Reference Include="MediaBrowser.Controller">
-	    <HintPath>$(AppData)\Emby-Server\system\MediaBrowser.Controller.dll</HintPath>
+	    <HintPath>$(EmbyReferenceDir)/MediaBrowser.Controller.dll</HintPath>
 	    <Private>False</Private>
 	  </Reference>
 	  <Reference Include="MediaBrowser.Model">
-	    <HintPath>$(AppData)\Emby-Server\system\MediaBrowser.Model.dll</HintPath>
+	    <HintPath>$(EmbyReferenceDir)/MediaBrowser.Model.dll</HintPath>
 	    <Private>False</Private>
 	  </Reference>
 	</ItemGroup>
@@ -55,8 +59,5 @@
 	  <Folder Include="Dependencies\" />
 	</ItemGroup>
 
-	<Target Name="InjectVersionIntoHtml" BeforeTargets="BeforeBuild">
-		<Exec Command="powershell -Command &quot;$f='$(ProjectDir)Configuration\configPage.html'; (Get-Content $f -Raw) -replace 'Home Screen Companion v[\d.]+', 'Home Screen Companion v$(Version)' | Set-Content $f -NoNewline&quot;" />
-	</Target>
 
 </Project>
