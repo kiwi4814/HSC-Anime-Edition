@@ -100,22 +100,22 @@ namespace HomeScreenCompanion
 
                     if (newSeasonsOnly && nextUp.ParentIndexNumber!.Value <= lastWatched.ParentIndexNumber!.Value) continue;
 
-                    string label = $"'{series.Name}' for {user.Name} (new {EpisodeCode(nextUp)})";
+                    string label = $"用户 {user.Name} 的“{series.Name}”（新集 {EpisodeCode(nextUp)}）";
                     if (config.DryRunMode)
                     {
-                        log.Skip($"[Dry run] Would bump {label}");
+                        log.Skip($"[模拟运行] 将置顶{label}");
                         continue;
                     }
 
                     lastData.LastPlayedDate = DateTimeOffset.UtcNow;
                     userDataManager.SaveUserData(user, lastWatched, lastData, UserDataSaveReason.Import, cancellationToken);
-                    log.Ok($"Bumped {label}");
+                    log.Ok($"已置顶{label}");
                     bumped++;
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex)
                 {
-                    log.Error($"'{series.Name}' for {user.Name}: {ex.Message}");
+                    log.Error($"用户 {user.Name} 的“{series.Name}”：{ex.Message}");
                 }
             }
 

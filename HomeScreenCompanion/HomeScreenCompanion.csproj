@@ -12,7 +12,7 @@
 		<!-- Keep local build paths out of the candidate DLL's debug metadata. -->
 		<PathMap>$(MSBuildProjectDirectory)=/_/src/HomeScreenCompanion</PathMap>
 		
-		<Version>4.3.0.2</Version>
+		<Version>4.3.0.3</Version>
 
 		<Product>Home Screen Companion Anime Edition</Product>
 		<!-- Compatible Emby DLLs may be provided read-only from the target server. -->

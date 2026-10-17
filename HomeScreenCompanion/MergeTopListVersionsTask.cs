@@ -63,9 +63,9 @@ namespace HomeScreenCompanion
         }
 
         public string Key => "MergeTopListVersionsTask";
-        public string Name => "Merge top-list versions with library";
-        public string Description => "Links each top-list .strm item to its corresponding library movie as an alternate version (like 1080p/4K) to prevent UI duplicates, and syncs their collection memberships when that option is on. Run this after a library scan has indexed newly added top-list entries.";
-        public string Category => "Home Screen Companion";
+        public string Name => "合并榜单与媒体库版本";
+        public string Description => "将榜单 .strm 项目关联为对应媒体库电影的其他版本（如 1080p/4K），避免界面重复显示；启用合集同步时，也会同步其合集归属。请在媒体库扫描并索引新增榜单项目后运行。";
+        public string Category => "首页助手";
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers() => Array.Empty<TaskTriggerInfo>();
 
@@ -74,22 +74,22 @@ namespace HomeScreenCompanion
             IsRunning = true;
             lock (ExecutionLog) { ExecutionLog.Clear(); }
             var startTime = DateTime.Now;
-            _log = new RunLog(ExecutionLog, _logger, "[Top-list merge]", Plugin.Instance?.Configuration?.ExtendedConsoleOutput ?? false);
+            _log = new RunLog(ExecutionLog, _logger, "[榜单合并]", Plugin.Instance?.Configuration?.ExtendedConsoleOutput ?? false);
             try
             {
-                _log.Info($"» Merging top-list versions with library  ·  {startTime:yyyy-MM-dd HH:mm}");
+                _log.Info($"» 合并榜单与媒体库版本  ·  {startTime:yyyy-MM-dd HH:mm}");
                 var merged = MergeAll(_libraryManager, _providerManager, _fileSystem, cancellationToken);
                 // Bring collection memberships of all copies in line with the setting (mirror or clear).
                 var collChanges = TopListCollectionMirror.SyncAll(cancellationToken).GetAwaiter().GetResult();
-                LastRunStatus = $"Done — {merged} item(s) linked.";
-                _log.Ok($"{RunLog.Plural(merged, "top-list item")} linked to library movies  ·  {RunLog.Elapsed(DateTime.Now - startTime)}");
+                LastRunStatus = $"Done — 已关联 {merged} 个项目。";
+                _log.Ok($"已将 {RunLog.Plural(merged, "个榜单项目")} 关联到媒体库电影  ·  {RunLog.Elapsed(DateTime.Now - startTime)}");
                 if (collChanges > 0)
-                    _log.Ok($"{RunLog.Plural(collChanges, "collection membership")} updated on top-list items");
+                    _log.Ok($"已更新榜单项目的 {RunLog.Plural(collChanges, "项合集归属")}");
             }
             catch (Exception ex)
             {
                 LastRunStatus = $"Error: {ex.Message}";
-                _log.Error($"Merge aborted: {ex.Message}");
+                _log.Error($"合并已中止：{ex.Message}");
             }
             finally
             {
@@ -123,7 +123,7 @@ namespace HomeScreenCompanion
                     origLookup[imdb] = m;
             }
 
-            _log.Debug($"  {origLookup.Count:N0} library movies with IMDb id");
+            _log.Debug($"  媒体库中有 {origLookup.Count:N0} 部电影带有 IMDb ID");
 
             // Find all indexed STRM items living under any top-list subfolder
             var strmItems = libraryManager.GetItemList(new InternalItemsQuery
@@ -135,7 +135,7 @@ namespace HomeScreenCompanion
                        && i.Path.StartsWith(topListsFolder, StringComparison.OrdinalIgnoreCase))
               .ToList();
 
-            _log.Debug($"  {strmItems.Count} indexed top-list items found");
+            _log.Debug($"  找到 {strmItems.Count} 个已索引的榜单项目");
 
             int merged = 0;
 
@@ -153,11 +153,11 @@ namespace HomeScreenCompanion
                     libraryManager.MergeItems(new[] { primary, li });
                     QueueStrmProbe(providerManager, fileSystem, li);
                     merged++;
-                    _log.Debug($"  '{li.Name}' linked to '{primary.Name}'");
+                    _log.Debug($"  已将“{li.Name}”关联到“{primary.Name}”");
                 }
                 catch (Exception ex)
                 {
-                    _log.Warn($"'{li.Name}' could not be linked to '{primary.Name}': {ex.Message}");
+                    _log.Warn($"无法将“{li.Name}”关联到“{primary.Name}”：{ex.Message}");
                 }
             }
 

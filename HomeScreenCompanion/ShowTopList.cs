@@ -171,7 +171,7 @@ namespace HomeScreenCompanion
                 .Where(x => x.Episodes.Count > 0)
                 .ToList();
             foreach (var skipped in rankedSeries.Where(s => withEpisodes.All(x => x.Series.InternalId != s.InternalId)))
-                log?.Invoke($"Top-list: '{skipped.Name}' has no episode files — left out");
+                log?.Invoke($"榜单：“{skipped.Name}”没有剧集文件，已排除");
 
             int digits = Math.Max(2, withEpisodes.Count.ToString().Length);
             var manifest = new List<ManifestEntry>();
@@ -215,7 +215,7 @@ namespace HomeScreenCompanion
             // Series that left the list.
             foreach (var dir in Directory.GetDirectories(folderPath))
                 if (!usedFolders.Contains(Path.GetFileName(dir)))
-                    try { Directory.Delete(dir, true); } catch (Exception ex) { log?.Invoke($"Top-list: could not remove '{dir}' — {ex.Message}"); }
+                    try { Directory.Delete(dir, true); } catch (Exception ex) { log?.Invoke($"榜单：无法删除“{dir}” — {ex.Message}"); }
 
             jsonSerializer.SerializeToFile(manifest, Path.Combine(folderPath, ManifestFileName));
             return manifest.Count;

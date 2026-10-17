@@ -17,6 +17,9 @@ namespace HomeScreenCompanion
         public string ClaudeModel { get; set; } = "claude-haiku-4-5-20251001";
         public string OllamaBaseUrl { get; set; } = "http://localhost:11434";
         public string OllamaModel { get; set; } = "";
+        public string CompatibleAiBaseUrl { get; set; } = "";
+        public string CompatibleAiModel { get; set; } = "";
+        public string CompatibleAiApiKey { get; set; } = "";
         public string AiSystemPrompt { get; set; } =
             "You are a movie and TV show recommendation assistant. " +
             "Respond ONLY with a valid JSON array. No explanation, no markdown, no code fences. " +
@@ -26,13 +29,18 @@ namespace HomeScreenCompanion
             "\"imdb_id\" (string starting with \"tt\" if known, otherwise null), " +
             "\"type\" (\"movie\" or \"show\"). " +
             "Return exactly the items requested. Do not add any commentary. " +
-            "Example: [{\"title\":\"Inception\",\"year\":2010,\"imdb_id\":\"tt1375666\",\"type\":\"movie\"}]";
+            "Use only verified identifiers; when uncertain leave the identifier null.";
         // Anime Edition is opt-in and starts with a separate Dry Run safeguard.
         public bool AnimeEnabled { get; set; } = false;
         public bool AnimeDryRun { get; set; } = true;
         public bool AnimeIncludeSpinOffs { get; set; } = true;
         public bool AnimeAiReviewOtherEdges { get; set; } = false;
-        public string AnimeAiProvider { get; set; } = "OpenAI";
+        public string AnimeAiProvider { get; set; } = "OpenAICompatible";
+        public bool AnimeAiNamingEnabled { get; set; } = false;
+        public bool AnimeAiCollectionReviewEnabled { get; set; } = false;
+        public int AnimeAiMaxCallsPerRun { get; set; } = 15;
+        public int AnimeAiMaxTokensPerCall { get; set; } = 800;
+        public int AnimeAiMaxTokensPerRun { get; set; } = 4000;
         public string AnimeCollectionPrefix { get; set; } = "动漫 · ";
         public string AnimeCollectionRulesJson { get; set; } = "";
         public string AnimeApprovedCollectionKeys { get; set; } = "";

@@ -996,44 +996,44 @@
         <div class="verticalSection">
             <div style="display:flex; align-items:center; margin-bottom: 10px; gap: 10px;">
 
-                <button type="button" is="emby-button" class="btn-help-trigger" id="btnOpenHelp" title="Open Setup Guide">
+                <button type="button" is="emby-button" class="btn-help-trigger" id="btnOpenHelp" title="打开设置指南">
                     <i class="md-icon">help</i>
-                    <span>Help</span>
+                    <span>帮助</span>
                 </button>
 
-                <button type="button" is="emby-button" class="btn-bug-trigger" id="btnOpenBugReport" title="Report a Bug">
+                <button type="button" is="emby-button" class="btn-bug-trigger" id="btnOpenBugReport" title="报告问题">
                     <i class="md-icon">bug_report</i>
-                    <span>Report bug</span>
+                    <span>报告问题</span>
                 </button>
 
-                <button type="button" is="emby-button" class="btn-log-trigger" id="btnOpenLogs" title="View Logs">
+                <button type="button" is="emby-button" class="btn-log-trigger" id="btnOpenLogs" title="查看日志">
                     <i class="md-icon">terminal</i>
-                    <span>Logs</span>
+                    <span>日志</span>
                 </button>
 
                 <div id="lastRunIndicator" style="display: flex; align-items: center; margin-left: 10px; padding-left: 15px; border-left: 1px solid var(--line-color);">
-                    <span style="font-size: 0.85em; opacity: 0.5; margin-right: 8px;">Last run:</span>
+                    <span style="font-size: 0.85em; opacity: 0.5; margin-right: 8px;">上次运行：</span>
                     <span class="status-dot" id="dotStatus"></span>
-                    <span id="lastRunStatusLabel" style="font-size: 0.85em; opacity: 0.8;">Idle</span>
+                    <span id="lastRunStatusLabel" style="font-size: 0.85em; opacity: 0.8;">空闲</span>
                 </div>
             </div>
 
 
             <div class="page-tab-nav" id="pageTabNav">
                 <button class="page-tab-btn active" data-page-tab="TagCollection">
-                    <i class="md-icon tab-icon">local_offer</i>Tag &amp; Collection
+                    <i class="md-icon tab-icon">local_offer</i>标签与合集
                 </button>
                 <button class="page-tab-btn" data-page-tab="TopLists">
-                    <i class="md-icon tab-icon">leaderboard</i>Top-Lists
+                    <i class="md-icon tab-icon">leaderboard</i>榜单
                 </button>
                 <button class="page-tab-btn" data-page-tab="HomeCompanion">
-                    <i class="md-icon tab-icon">home</i>Home Screen
+                    <i class="md-icon tab-icon">home</i>主屏幕
                 </button>
                 <button class="page-tab-btn" data-page-tab="Cleanup">
-                    <i class="md-icon tab-icon">auto_delete</i>Cleanup
+                    <i class="md-icon tab-icon">auto_delete</i>清理
                 </button>
                 <button class="page-tab-btn" data-page-tab="Settings">
-                    <i class="md-icon tab-icon">settings</i>Settings
+                    <i class="md-icon tab-icon">settings</i>设置
                 </button>
             </div>
 
@@ -1057,12 +1057,12 @@
                             <div class="fieldDescription">默认关闭。新合集使用指定前缀；绝不接管已有的手工合集。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeDryRun" /><span>动漫试运行（建议先开启）</span></label>
-                            <div class="fieldDescription">默认开启，只预览不写入。全局 HSC 试运行也会阻止写入；实际写入还必须通过下方批准名单。</div>
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeDryRun" /><span>动漫仅预览（建议先开启）</span></label>
+                            <div class="fieldDescription">默认开启，不写入合集。全局“仅预览”同样阻止写入；实际写入还须通过下方批准名单。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
                             <label><input is="emby-checkbox" type="checkbox" id="chkAnimeIncludeSpinOffs" /><span>包含 AniList 已确认的衍生作品</span></label>
-                            <div class="fieldDescription">自动遍历前传、续作、支线及母作品关系，排除相似、客串和改编关系。关闭衍生作品不代表严格主线安全；有分支歧义的自动分组必须人工复核并用明确成员规则确认后才能写入。</div>
+                            <div class="fieldDescription">遍历前传、续作、支线及母作品关系，排除相似、客串与改编关系。关闭此项仍可能存在主线分支歧义；须人工复核并用明确成员规则确认后才能写入。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:15px;">
                             <input is="emby-input" type="text" id="txtAnimePrefix" label="合集名称前缀" placeholder="动漫 · " />
@@ -1074,34 +1074,72 @@
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:16px;">
                             <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiOther" /><span>可选：用 AI 复核有歧义的 AniList OTHER 关系</span></label>
-                            <div class="fieldDescription">默认关闭，每次最多复核 15 条弱关系；使用上方配置的 API 密钥和模型。AI 不能凭空建立作品身份关联，也不能替代明确成员规则与人工批准。</div>
+                            <div class="fieldDescription">默认关闭，使用统一提供商、凭据和预算。AI 不确认缺失身份映射，也不能替代明确成员规则与人工批准。</div>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiNaming" /><span>AI 中文命名建议</span></label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiCollectionReview" /><span>AI 合集审查建议</span></label>
+                            <div class="fieldDescription">两项均默认关闭，仅保存分析建议，不自动改名或调整成员。关闭 AI 不影响确定性分组。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
                             <label class="inputLabel" for="selAnimeAiProvider">AI 提供商</label>
                             <select is="emby-select" id="selAnimeAiProvider" class="emby-select-withcolor">
+                                <option value="OpenAICompatible">OpenAI 兼容接口</option>
                                 <option value="OpenAI">OpenAI</option>
                                 <option value="Gemini">Gemini</option>
                                 <option value="Claude">Claude</option>
                                 <option value="Ollama">Ollama</option>
                             </select>
                         </div>
+                        <div class="inputContainer" style="margin-top:12px;">
+                            <input is="emby-input" type="url" id="txtCompatibleAiBaseUrl" label="兼容接口 BaseURL" placeholder="https://example.com/v1" />
+                        </div>
+                        <div class="inputContainer" style="margin-top:12px;">
+                            <input is="emby-input" type="text" id="txtCompatibleAiModel" label="兼容接口模型" />
+                        </div>
+                        <div class="inputContainer" style="margin-top:12px;">
+                            <input is="emby-input" type="password" id="txtCompatibleAiApiKey" label="兼容接口 API 密钥" autocomplete="new-password" />
+                            <label style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;">
+                                <input type="checkbox" class="chkShowApiKey" data-target="txtCompatibleAiApiKey" /> 显示
+                            </label>
+                        </div>
+                        <div id="compatibleAiHttpWarning" role="status" style="display:none;color:#e8a838;margin:12px 0;">HTTP 不加密，会明文传输请求和密钥。仅用于受信任的本机或局域网服务，不要用于公网。</div>
+                        <div class="inputContainer" style="margin-top:12px;">
+                            <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxCalls" label="每次运行最多 AI 调用数" />
+                        </div>
+                        <div class="inputContainer" style="margin-top:12px;">
+                            <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxTokensPerCall" label="单次 AI 调用令牌上限" />
+                        </div>
+                        <div class="inputContainer" style="margin-top:12px;">
+                            <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxTokensPerRun" label="每次运行 AI 令牌总上限" />
+                            <div class="fieldDescription">统一预算：默认 15 次、每次 800 令牌、每次运行共 4000 令牌。任一项为 0 即不调用 AI；令牌预算不等于费用保证。</div>
+                        </div>
+                        <button is="emby-button" type="button" id="btnTestAnimeAiConnection" class="raised btn-neutral">测试 AI 连接</button>
+                        <div id="animeAiConnectionResult" role="status" aria-live="polite" style="margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere;"></div>
+                        <div style="margin-top:16px;">
+                            <strong>AI 分析建议（只读）</strong>
+                            <button is="emby-button" type="button" id="btnRefreshAnimeAiAnalysis" class="raised btn-neutral">刷新建议</button>
+                            <div id="animeAiAnalysis" role="status" aria-live="polite" style="margin-top:10px;overflow-wrap:anywhere;">尚未加载分析建议。</div>
+                        </div>
                         <div class="inputContainer" style="margin-top:16px;">
                             <label class="inputLabel" for="txtAnimeCollectionRulesJson">明确成员规则（JSON 数组）</label>
-                            <textarea is="emby-textarea" id="txtAnimeCollectionRulesJson" rows="7" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='[{"Key":"anilist:356","IncludeIds":["anilist:356","tmdb_movie:123"],"ExcludeIds":["tvdb_show:456"]}]'></textarea>
-                            <div class="fieldDescription">留空表示无人工规则。Key 是稳定合集身份，不是显示名称；规则、批准与别名的 Key 均须使用 anilist:正整数（无前导零，最大 2147483647）。自动分组使用 anilist:&lt;Anchor&gt;。IncludeIds 是完整、精确的成员选择，不会追加自动成员；ExcludeIds 优先。同一媒体不能归属两条规则，冲突会阻止写入。被规则认领的成员不会保留在原自动分组。</div>
+                            <textarea is="emby-textarea" id="txtAnimeCollectionRulesJson" rows="7" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='[{"Key":"anilist:&lt;作品ID&gt;","IncludeIds":["anilist:&lt;作品ID&gt;","tmdb_movie:&lt;作品ID&gt;"],"ExcludeIds":["tvdb_show:&lt;另一作品ID&gt;"]}]'></textarea>
+                            <div class="fieldDescription">留空表示无规则。Key 是稳定身份，须为 anilist:正整数（无前导零，最大 2147483647），自动分组为 anilist:&lt;Anchor&gt;。IncludeIds 是完整成员列表，不追加自动成员；ExcludeIds 优先。规则认领的成员会移出原自动分组；同一媒体被多条规则认领时禁止写入。</div>
                             <div class="fieldDescription">示例仅演示格式，请替换为真实 ID。支持 anilist、tmdb_movie、tmdb_show、tvdb_movie、tvdb_show、imdb_movie、imdb_show；电影与剧集 ID 不可混用。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:16px;">
                             <label class="inputLabel" for="txtAnimeApprovedCollectionKeys">已人工批准的稳定 Key（每行一个）</label>
-                            <textarea is="emby-textarea" id="txtAnimeApprovedCollectionKeys" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder="anilist:356&#10;anilist:127230"></textarea>
-                            <div class="fieldDescription">先查看任务预览及待复核警告，再填入准确的 Key；首尾空白会忽略，区分大小写，不支持通配符。名单为空时，即使全局和动漫试运行均关闭，也不会实际写入。批准不能绕过分支歧义或规则错误。</div>
+                            <textarea is="emby-textarea" id="txtAnimeApprovedCollectionKeys" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder="anilist:&lt;作品ID&gt;&#10;anilist:&lt;另一作品ID&gt;"></textarea>
+                            <div class="fieldDescription">查看预览后填入准确 Key；区分大小写，不支持通配符。名单为空时不会写入。批准不能绕过分支歧义或规则错误。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:16px;">
                             <label class="inputLabel" for="txtAnimeCollectionAliasesJson">中文合集别名（JSON 对象）</label>
-                            <textarea is="emby-textarea" id="txtAnimeCollectionAliasesJson" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='{"anilist:127230":"电锯人","anilist:21202":"为美好的世界献上祝福！"}'></textarea>
-                            <div class="fieldDescription">用稳定 Key 指定显示名称，不改变合集身份。内置别名：anilist:127230 → 电锯人；anilist:21202 → 为美好的世界献上祝福！。留空使用默认值，填写同一 Key 可覆盖内置别名。</div>
+                            <textarea is="emby-textarea" id="txtAnimeCollectionAliasesJson" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='{"anilist:&lt;作品ID&gt;":"虚构作品甲","anilist:&lt;另一作品ID&gt;":"虚构作品乙"}'></textarea>
+                            <div class="fieldDescription">用稳定 Key 指定显示名称，不改变合集身份。默认无别名；示例为虚构作品与 ID，请替换后使用。</div>
                         </div>
-                        <p class="fieldDescription" style="margin-top:16px;">映射缓存保留 7 天。下载、JSON 校验或关系遍历失败时不更新任何合集；规则、别名或批准格式无效也会在写入前终止。不会自动删除已有合集。重复媒体仅按带类型的提供商 ID 提示，不会去重或修改媒体。</p>
+                        <p class="fieldDescription" style="margin-top:16px;">映射缓存保留 7 天。下载、校验或遍历失败，以及规则、别名、批准格式错误时均禁止写入。不自动删除合集；重复媒体仅按带类型的提供商 ID 提示，不去重或修改媒体。</p>
                     </div>
                 </div>
 
@@ -1109,12 +1147,12 @@
                 <div class="advanced-section settings-panel" style="margin-bottom: 15px;">
                     <div class="advanced-header settings-panel-toggle">
                         <i class="md-icon" style="margin-right: 10px; color: #52B54B;">link</i>
-                        <span style="font-size: 1.05em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #52B54B;">External list settings</span>
+                        <span style="font-size: 1.05em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #52B54B;">外部列表设置</span>
                         <i class="md-icon settings-panel-chevron" style="margin-left: auto; transition: transform 0.2s;">expand_more</i>
                     </div>
                     <div class="advanced-body settings-panel-body" style="display:none; padding-top: 4px;">
 
-                        <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-bottom: 8px;">Providers</div>
+                        <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-bottom: 8px;">提供商</div>
 
                         <!-- Trakt -->
                         <div class="advanced-section settings-panel" style="border: 1px solid rgba(128,128,128,0.2); border-radius: 4px; margin-bottom: 8px;">
@@ -1125,12 +1163,12 @@
                             </div>
                             <div class="settings-panel-body" style="display:none; padding: 0 14px 14px;">
                                 <div class="inputContainer">
-                                    <input is="emby-input" type="password" id="txtTraktClientId" label="Trakt Client ID" />
+                                    <input is="emby-input" type="password" id="txtTraktClientId" label="Trakt 客户端 ID" />
                                     <label style="display:inline-flex; align-items:center; gap:5px; font-size:0.85em; opacity:0.75; margin-top:4px; cursor:pointer;">
-                                        <input type="checkbox" class="chkShowApiKey" data-target="txtTraktClientId" style="margin:0;" /> Show
+                                        <input type="checkbox" class="chkShowApiKey" data-target="txtTraktClientId" style="margin:0;" /> 显示
                                     </label>
                                     <div class="fieldDescription">
-                                        Create app at <a href="https://trakt.tv/oauth/applications" target="_blank" class="help-link">Trakt.tv</a>.
+                                        在 <a href="https://trakt.tv/oauth/applications" target="_blank" class="help-link">Trakt.tv</a> 创建应用。
                                     </div>
                                 </div>
                             </div>
@@ -1145,12 +1183,12 @@
                             </div>
                             <div class="settings-panel-body" style="display:none; padding: 0 14px 14px;">
                                 <div class="inputContainer">
-                                    <input is="emby-input" type="password" id="txtMdblistApiKey" label="MDBList API Key" />
+                                    <input is="emby-input" type="password" id="txtMdblistApiKey" label="MDBList API 密钥" />
                                     <label style="display:inline-flex; align-items:center; gap:5px; font-size:0.85em; opacity:0.75; margin-top:4px; cursor:pointer;">
-                                        <input type="checkbox" class="chkShowApiKey" data-target="txtMdblistApiKey" style="margin:0;" /> Show
+                                        <input type="checkbox" class="chkShowApiKey" data-target="txtMdblistApiKey" style="margin:0;" /> 显示
                                     </label>
                                     <div class="fieldDescription">
-                                        Get key at <a href="https://mdblist.com/preferences/" target="_blank" class="help-link">MDBList Preferences</a>.
+                                        在 <a href="https://mdblist.com/preferences/" target="_blank" class="help-link">MDBList 偏好设置</a> 获取密钥。
                                     </div>
                                 </div>
                             </div>
@@ -1165,12 +1203,12 @@
                             </div>
                             <div class="settings-panel-body" style="display:none; padding: 0 14px 14px;">
                                 <div class="inputContainer">
-                                    <input is="emby-input" type="password" id="txtTmdbApiKey" label="TMDb API Read Access Token" />
+                                    <input is="emby-input" type="password" id="txtTmdbApiKey" label="TMDb API 读取访问令牌" />
                                     <label style="display:inline-flex; align-items:center; gap:5px; font-size:0.85em; opacity:0.75; margin-top:4px; cursor:pointer;">
-                                        <input type="checkbox" class="chkShowApiKey" data-target="txtTmdbApiKey" style="margin:0;" /> Show
+                                        <input type="checkbox" class="chkShowApiKey" data-target="txtTmdbApiKey" style="margin:0;" /> 显示
                                     </label>
                                     <div class="fieldDescription">
-                                        Required for TMDb lists. Get key at <a href="https://www.themoviedb.org/settings/api" target="_blank" class="help-link">TMDb Settings</a>.
+                                        使用 TMDb 列表时必填。在 <a href="https://www.themoviedb.org/settings/api" target="_blank" class="help-link">TMDb 设置</a> 获取密钥。
                                     </div>
                                 </div>
                             </div>
@@ -1182,12 +1220,12 @@
                 <div class="advanced-section settings-panel" style="margin-bottom: 25px;">
                     <div class="advanced-header settings-panel-toggle">
                         <i class="md-icon" style="margin-right: 10px; color: #52B54B;">auto_awesome</i>
-                        <span style="font-size: 1.05em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #52B54B;">AI Settings</span>
+                        <span style="font-size: 1.05em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #52B54B;">AI 设置</span>
                         <i class="md-icon settings-panel-chevron" style="margin-left: auto; transition: transform 0.2s;">expand_more</i>
                     </div>
                     <div class="advanced-body settings-panel-body" style="display:none; padding-top: 4px;">
 
-                        <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-bottom: 8px;">Providers</div>
+                        <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-bottom: 8px;">提供商</div>
 
                         <!-- Google Gemini -->
                         <div class="advanced-section settings-panel" style="border: 1px solid rgba(128,128,128,0.2); border-radius: 4px; margin-bottom: 8px;">
@@ -1198,18 +1236,18 @@
                             </div>
                             <div class="settings-panel-body" style="display:none; padding: 0 14px 14px;">
                                 <div class="inputContainer">
-                                    <input is="emby-input" type="password" id="txtGeminiApiKey" label="API Key" />
+                                    <input is="emby-input" type="password" id="txtGeminiApiKey" label="API 密钥" />
                                     <label style="display:inline-flex; align-items:center; gap:5px; font-size:0.85em; opacity:0.75; margin-top:4px; cursor:pointer;">
-                                        <input type="checkbox" class="chkShowApiKey" data-target="txtGeminiApiKey" style="margin:0;" /> Show
+                                        <input type="checkbox" class="chkShowApiKey" data-target="txtGeminiApiKey" style="margin:0;" /> 显示
                                     </label>
                                     <div class="fieldDescription">
-                                        Used for AI created lists via Google Gemini. Get your key at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="help-link">Google AI Studio</a>.
+                                        用于通过 Google Gemini 创建 AI 列表。在 <a href="https://aistudio.google.com/app/apikey" target="_blank" class="help-link">Google AI Studio</a> 获取密钥。
                                     </div>
                                 </div>
                                 <div class="inputContainer" style="margin-top: 12px;">
-                                    <input is="emby-input" type="text" id="txtGeminiModel" label="Model" placeholder="gemini-2.5-flash-lite" />
+                                    <input is="emby-input" type="text" id="txtGeminiModel" label="模型" placeholder="gemini-2.5-flash-lite" />
                                     <div class="fieldDescription">
-                                        Model to use, e.g. <code>gemini-2.5-flash-lite</code> or <code>gemini-1.5-pro</code>. See current models at <a href="https://ai.google.dev/gemini-api/docs/models" target="_blank" class="help-link">ai.google.dev/gemini-api/docs/models</a>.
+                                        要使用的模型，例如 <code>gemini-2.5-flash-lite</code> 或 <code>gemini-1.5-pro</code>。在 <a href="https://ai.google.dev/gemini-api/docs/models" target="_blank" class="help-link">ai.google.dev/gemini-api/docs/models</a> 查看当前模型。
                                     </div>
                                 </div>
                             </div>
@@ -1224,18 +1262,18 @@
                             </div>
                             <div class="settings-panel-body" style="display:none; padding: 0 14px 14px;">
                                 <div class="inputContainer">
-                                    <input is="emby-input" type="password" id="txtOpenAiApiKey" label="API Key" />
+                                    <input is="emby-input" type="password" id="txtOpenAiApiKey" label="API 密钥" />
                                     <label style="display:inline-flex; align-items:center; gap:5px; font-size:0.85em; opacity:0.75; margin-top:4px; cursor:pointer;">
-                                        <input type="checkbox" class="chkShowApiKey" data-target="txtOpenAiApiKey" style="margin:0;" /> Show
+                                        <input type="checkbox" class="chkShowApiKey" data-target="txtOpenAiApiKey" style="margin:0;" /> 显示
                                     </label>
                                     <div class="fieldDescription">
-                                        Used for AI created lists via ChatGPT. Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" class="help-link">platform.openai.com</a>.
+                                        用于通过 ChatGPT 创建 AI 列表。在 <a href="https://platform.openai.com/api-keys" target="_blank" class="help-link">platform.openai.com</a> 获取密钥。
                                     </div>
                                 </div>
                                 <div class="inputContainer" style="margin-top: 12px;">
-                                    <input is="emby-input" type="text" id="txtOpenAiModel" label="Model" placeholder="gpt-4o-mini" />
+                                    <input is="emby-input" type="text" id="txtOpenAiModel" label="模型" placeholder="gpt-4o-mini" />
                                     <div class="fieldDescription">
-                                        Model to use, e.g. <code>gpt-4o-mini</code> or <code>gpt-4o</code>. See current models at <a href="https://platform.openai.com/docs/models" target="_blank" class="help-link">platform.openai.com/docs/models</a>.
+                                        要使用的模型，例如 <code>gpt-4o-mini</code> 或 <code>gpt-4o</code>。在 <a href="https://platform.openai.com/docs/models" target="_blank" class="help-link">platform.openai.com/docs/models</a> 查看当前模型。
                                     </div>
                                 </div>
                             </div>
@@ -1250,18 +1288,18 @@
                             </div>
                             <div class="settings-panel-body" style="display:none; padding: 0 14px 14px;">
                                 <div class="inputContainer">
-                                    <input is="emby-input" type="password" id="txtClaudeApiKey" label="API Key" />
+                                    <input is="emby-input" type="password" id="txtClaudeApiKey" label="API 密钥" />
                                     <label style="display:inline-flex; align-items:center; gap:5px; font-size:0.85em; opacity:0.75; margin-top:4px; cursor:pointer;">
-                                        <input type="checkbox" class="chkShowApiKey" data-target="txtClaudeApiKey" style="margin:0;" /> Show
+                                        <input type="checkbox" class="chkShowApiKey" data-target="txtClaudeApiKey" style="margin:0;" /> 显示
                                     </label>
                                     <div class="fieldDescription">
-                                        Used for AI created lists via Anthropic Claude. Get your key at <a href="https://console.anthropic.com/settings/keys" target="_blank" class="help-link">console.anthropic.com</a>.
+                                        用于通过 Anthropic Claude 创建 AI 列表。在 <a href="https://console.anthropic.com/settings/keys" target="_blank" class="help-link">console.anthropic.com</a> 获取密钥。
                                     </div>
                                 </div>
                                 <div class="inputContainer" style="margin-top: 12px;">
-                                    <input is="emby-input" type="text" id="txtClaudeModel" label="Model" placeholder="claude-haiku-4-5-20251001" />
+                                    <input is="emby-input" type="text" id="txtClaudeModel" label="模型" placeholder="claude-haiku-4-5-20251001" />
                                     <div class="fieldDescription">
-                                        Model to use, e.g. <code>claude-haiku-4-5-20251001</code> or <code>claude-sonnet-4-6</code>. See current models at <a href="https://docs.anthropic.com/en/docs/about-claude/models" target="_blank" class="help-link">docs.anthropic.com/en/docs/about-claude/models</a>.
+                                        要使用的模型，例如 <code>claude-haiku-4-5-20251001</code> 或 <code>claude-sonnet-4-6</code>。在 <a href="https://docs.anthropic.com/en/docs/about-claude/models" target="_blank" class="help-link">docs.anthropic.com/en/docs/about-claude/models</a> 查看当前模型。
                                     </div>
                                 </div>
                             </div>
@@ -1271,44 +1309,44 @@
                         <div class="advanced-section settings-panel" style="border: 1px solid rgba(128,128,128,0.2); border-radius: 4px; margin-bottom: 8px;">
                             <div class="advanced-header settings-panel-toggle" style="padding: 10px 14px; cursor: pointer; user-select: none; display: flex; align-items: center;">
                                 <i class="md-icon" style="margin-right: 8px; font-size: 1.1em; opacity: 0.65;">computer</i>
-                                <span style="font-size: 0.9em; font-weight: 600; opacity: 0.85;">Ollama (Local)</span>
+                                <span style="font-size: 0.9em; font-weight: 600; opacity: 0.85;">Ollama（本地）</span>
                                 <i class="md-icon settings-panel-chevron" style="margin-left: auto; transition: transform 0.2s; font-size: 1.1em; opacity: 0.65;">expand_more</i>
                             </div>
                             <div class="settings-panel-body" style="display:none; padding: 0 14px 14px;">
                                 <div class="inputContainer">
-                                    <input is="emby-input" type="text" id="txtOllamaBaseUrl" label="URL (including port)" placeholder="http://localhost:11434" />
+                                    <input is="emby-input" type="text" id="txtOllamaBaseUrl" label="URL（包含端口）" placeholder="http://localhost:11434" />
                                     <div class="fieldDescription">
-                                        Full URL to your local Ollama instance — e.g. <code>http://localhost:11434</code> or <code>http://192.168.1.100:11434</code>. See <a href="https://ollama.com" target="_blank" class="help-link">ollama.com</a>.
+                                        本地 Ollama 实例的完整 URL，例如 <code>http://localhost:11434</code> 或 <code>http://192.168.1.100:11434</code>。参见 <a href="https://ollama.com" target="_blank" class="help-link">ollama.com</a>。
                                     </div>
                                 </div>
                                 <div class="inputContainer" style="margin-top: 12px;">
-                                    <input is="emby-input" type="text" id="txtOllamaModel" label="Model" placeholder="llama3.2" />
+                                    <input is="emby-input" type="text" id="txtOllamaModel" label="模型" placeholder="llama3.2" />
                                     <div class="fieldDescription">
-                                        The model to use, e.g. <code>llama3.2</code>, <code>mistral</code>, <code>gemma3</code>. Must be pulled first: <code>ollama pull llama3.2</code>.
+                                        要使用的模型，例如 <code>llama3.2</code>、<code>mistral</code>、<code>gemma3</code>。必须先拉取：<code>ollama pull llama3.2</code>。
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-top: 18px; margin-bottom: 8px;">Advanced AI Settings</div>
+                        <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-top: 18px; margin-bottom: 8px;">AI 高级设置</div>
 
                         <!-- Edit system prompt -->
                         <div class="advanced-section settings-panel" style="border: 1px solid rgba(128,128,128,0.2); border-radius: 4px; margin-bottom: 8px;">
                             <div class="advanced-header settings-panel-toggle" style="padding: 10px 14px; cursor: pointer; user-select: none; display: flex; align-items: center;">
                                 <i class="md-icon" style="margin-right: 8px; font-size: 1.1em; opacity: 0.65;">tune</i>
-                                <span style="font-size: 0.9em; font-weight: 600; opacity: 0.85;">Edit system prompt</span>
+                                <span style="font-size: 0.9em; font-weight: 600; opacity: 0.85;">编辑系统提示词</span>
                                 <i class="md-icon settings-panel-chevron" style="margin-left: auto; transition: transform 0.2s; font-size: 1.1em; opacity: 0.65;">expand_more</i>
                             </div>
                             <div class="settings-panel-body" style="display:none; padding: 0 14px 14px;">
                                 <div style="font-size: 0.9em; opacity: 0.75; margin-bottom: 14px; line-height: 1.6;">
-                                    <p style="margin: 0 0 8px;">The <strong>system prompt</strong> is a hidden instruction sent to the AI before every request. It tells the model what role to play and — critically — that it must respond with a specific JSON format that the plugin can parse.</p>
-                                    <p style="margin: 0 0 8px;">This is different from what you write in a <strong>source's prompt</strong> (e.g. "Best sci-fi movies from the 90s"). That text is your actual question. The system prompt is the ruleset the AI must follow when answering it.</p>
-                                    <p style="margin: 0; color: #e8a838;">Only edit this if you know what you're doing. If the JSON format instruction is removed or changed, the plugin will not be able to read the AI's response and the list will appear empty.</p>
+                                    <p style="margin: 0 0 8px;"><strong>系统提示词</strong>是在每次请求前发送给 AI 的隐藏指令。它告诉模型应扮演什么角色，最关键的是，要求它以插件可解析的特定 JSON 格式回复。</p>
+                                    <p style="margin: 0 0 8px;">这与您在<strong>来源提示词</strong>中填写的内容（例如“90 年代最佳科幻电影”）不同。那是您实际提出的问题，而系统提示词是 AI 回答时必须遵守的规则。</p>
+                                    <p style="margin: 0; color: #e8a838;">请仅在了解其作用时修改。如果删除或更改 JSON 格式要求，插件将无法读取 AI 的回复，列表也会显示为空。</p>
                                 </div>
                                 <textarea is="emby-textarea" id="txtAiSystemPrompt" rows="7" style="width:100%; resize:vertical; box-sizing:border-box; font-family: monospace; font-size: 1em;"></textarea>
                                 <div style="margin-top: 8px;">
                                     <button is="emby-button" id="btnResetAiSystemPrompt" type="button" class="raised btn-neutral" style="display:none; font-size: 0.85em;">
-                                        <i class="md-icon" style="margin-right: 5px;">restart_alt</i>Reset to default
+                                        <i class="md-icon" style="margin-right: 5px;">restart_alt</i>恢复默认值
                                     </button>
                                 </div>
                             </div>
@@ -1320,68 +1358,68 @@
                 <div class="advanced-section settings-panel" style="margin-bottom: 25px;">
                     <div class="advanced-header settings-panel-toggle">
                         <i class="md-icon" style="margin-right: 10px; color: #52B54B;">settings</i>
-                        <span style="font-size: 1.05em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #52B54B;">Advanced Settings</span>
+                        <span style="font-size: 1.05em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #52B54B;">高级设置</span>
                         <i class="md-icon settings-panel-chevron" style="margin-left: auto; transition: transform 0.2s;">expand_more</i>
                     </div>
                     <div class="advanced-body settings-panel-body" style="display:none;">
-                        <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-top: 4px; margin-bottom: 8px;">Logging &amp; Troubleshooting</div>
+                        <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-top: 4px; margin-bottom: 8px;">日志与故障排查</div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label>
                                 <input is="emby-checkbox" type="checkbox" id="chkExtendedConsoleOutput" />
-                                <span>Extended log</span>
+                                <span>详细日志</span>
                             </label>
-                            <div class="fieldDescription">Adds source details, per-item changes, timings and error details to the log. Useful when something goes wrong or when reporting a bug.</div>
+                            <div class="fieldDescription">在日志中添加来源详情、逐项变更、耗时和错误详情。便于排查问题或报告错误。</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top: 15px;">
                             <label>
                                 <input is="emby-checkbox" type="checkbox" id="chkDryRunMode" />
-                                <span>Dry Run Mode</span>
+                                <span>仅预览</span>
                             </label>
-                            <div class="fieldDescription">Simulate process without modifying database.</div>
+                            <div class="fieldDescription">模拟处理过程，不修改数据库。</div>
                         </div>
 
-                        <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-top: 24px; margin-bottom: 8px;">Tags &amp; Collections</div>
+                        <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-top: 24px; margin-bottom: 8px;">标签与合集</div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label>
                                 <input is="emby-checkbox" type="checkbox" id="chkPreserveTagsOnEmptyResult" />
-                                <span>Preserve tags and collections on empty result</span>
+                                <span>结果为空时保留标签和合集</span>
                             </label>
-                            <div class="fieldDescription">If an External or AI source returns zero items, keep existing tags and collection members instead of removing them.</div>
+                            <div class="fieldDescription">如果外部或 AI 来源返回零个项目，保留现有标签和合集成员，而不移除它们。</div>
                         </div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top: 15px;">
                             <label>
                                 <input is="emby-checkbox" type="checkbox" id="chkLogMissingItems" />
-                                <span>Log missing movies and shows</span>
+                                <span>记录缺失的电影和剧集</span>
                             </label>
-                            <div class="fieldDescription">Lists, per group, the titles from your External and AI lists that are not in your library — handy for finding what to add next.</div>
+                            <div class="fieldDescription">按组列出外部和 AI 列表中未收录于媒体库的影片，便于决定接下来添加什么。</div>
                         </div>
 
-                        <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-top: 24px; margin-bottom: 8px;">Top-lists</div>
+                        <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-top: 24px; margin-bottom: 8px;">榜单</div>
 
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label>
                                 <input is="emby-checkbox" type="checkbox" id="chkTopListMirrorCollections" />
-                                <span>Show collections on top-list items</span>
+                                <span>在榜单项目中显示所属合集</span>
                             </label>
-                            <div class="fieldDescription">Adds each top-list movie to the same collections as the original, so "Included in &lt;collection&gt;" also shows when a movie is opened from a top-list. Note: depending on the sort order, a collection may then show the top-list version with its rank-badge poster.</div>
+                            <div class="fieldDescription">将每部榜单电影添加到原版所在的合集，以便从榜单打开电影时也能显示“收录于 &lt;collection&gt;”。注意：根据排序方式，合集可能会显示带排名徽章海报的榜单版本。</div>
                         </div>
                     </div>
                 </div>
 
                 <hr style="border-color: var(--line-color); margin: 25px 0;" />
 
-                <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1.05em; color: #52B54B; text-transform: uppercase; letter-spacing: 1px;">Backup & Restore</h3>
-                <p class="textMuted" style="font-size:0.9em; margin-bottom:15px;">Export selected parts of your configuration (settings, API keys, tag &amp; collection groups, saved filters, top lists, home screen sync) to a JSON file, or restore them from a backup. Generated data such as tags, collections, playlists, top-list files and images is not included &ndash; the plugin recreates it on the next sync run.</p>
+                <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1.05em; color: #52B54B; text-transform: uppercase; letter-spacing: 1px;">备份与恢复</h3>
+                <p class="textMuted" style="font-size:0.9em; margin-bottom:15px;">将所选配置（设置、API 密钥、标签与合集组、已保存的筛选器、榜单、主屏幕同步）导出为 JSON 文件，或从备份恢复。不包含标签、合集、播放列表、榜单文件及图片等生成的数据 &ndash; 插件会在下次同步时重新创建这些数据。</p>
                 <div style="display:flex; gap:10px;">
                     <button is="emby-button" type="button" id="btnBackupConfig" class="raised btn-neutral">
-                        <i class="md-icon" style="margin-right:5px;">download</i>Download Backup
+                        <i class="md-icon" style="margin-right:5px;">download</i>下载备份
                     </button>
                     <button is="emby-button" type="button" id="btnRestoreConfigTrigger" class="raised btn-neutral">
-                        <i class="md-icon" style="margin-right:5px;">upload</i>Restore Backup
+                        <i class="md-icon" style="margin-right:5px;">upload</i>恢复备份
                     </button>
                     <input type="file" id="fileRestoreConfig" accept=".json" style="display:none;" />
                 </div>
@@ -1392,9 +1430,9 @@
                 <form class="HomeScreenCompanionForm" id="homeScreenCompanionForm" style="max-width:900px;">
 
                 <div class="sectionTitleContainer flex align-items-center" style="margin-bottom: 1em; margin-top: 2em;">
-                    <h2 class="sectionTitle" style="margin-bottom:0;">Sources</h2>
+                    <h2 class="sectionTitle" style="margin-bottom:0;">来源</h2>
                     <button is="emby-button" type="button" id="btnAddTag" class="raised button-submit mb025" style="margin-left: auto;">
-                        <span>+ Add New Source</span>
+                        <span>+ 添加新来源</span>
                     </button>
                 </div>
 
@@ -1415,9 +1453,9 @@
 
             <div id="tabHomeCompanion" class="page-tab-content" style="display:none;">
                 <div class="hsc-sub-tab-nav">
-                    <button class="hsc-sub-tab-btn active" data-hsc-tab="manage">Manage</button>
-                    <button class="hsc-sub-tab-btn" data-hsc-tab="copy">Copy &amp; Sync</button>
-                    <button class="hsc-sub-tab-btn" data-hsc-tab="tweaks">Home Screen Tweaks</button>
+                    <button class="hsc-sub-tab-btn active" data-hsc-tab="manage">管理</button>
+                    <button class="hsc-sub-tab-btn" data-hsc-tab="copy">复制与同步</button>
+                    <button class="hsc-sub-tab-btn" data-hsc-tab="tweaks">主屏幕调整</button>
                 </div>
                 <div id="hscSubTabManage" class="hsc-sub-tab-content verticalSection">
                     <div id="hscManageContainer"></div>
@@ -1432,23 +1470,23 @@
 
             <div class="floating-actions">
                 <button is="emby-button" type="submit" form="homeScreenCompanionForm" class="raised button-submit fab-btn btn-save">
-                    <i class="md-icon" style="margin-right:5px;">save</i><span>Save Settings</span>
+                    <i class="md-icon" style="margin-right:5px;">save</i><span>保存设置</span>
                 </button>
                 <div class="run-speed-dial" id="runSpeedDial">
                     <div class="run-speed-dial-menu" id="runSyncMenu">
                         <button type="button" class="run-dial-item" id="btnDialFullSync">
-                            <i class="md-icon">sync</i><span>Full sync</span>
+                            <i class="md-icon">sync</i><span>完整同步</span>
                         </button>
                         <button type="button" class="run-dial-item" id="btnDialHomeScreen">
-                            <i class="md-icon">home</i><span>Sync home screen</span>
+                            <i class="md-icon">home</i><span>同步主屏幕</span>
                         </button>
                         <button type="button" class="run-dial-item" id="btnDialTagsCollections">
-                            <i class="md-icon">local_offer</i><span>Sync tags and collections</span>
+                            <i class="md-icon">local_offer</i><span>同步标签和合集</span>
                         </button>
                     </div>
                     <button is="emby-button" type="button" id="btnRunSync" class="raised button-submit fab-btn btn-run">
                         <i class="md-icon" style="margin-right:5px;">play_arrow</i>
-                        <span>Run</span>
+                        <span>运行</span>
                         <i class="md-icon run-dial-chevron">expand_less</i>
                     </button>
                 </div>
@@ -1468,7 +1506,7 @@
             <span class="footer-sep">·</span>
             <a href="https://emby.media/community/topic/146080-plugin-home-screen-companion/" target="_blank" class="simple-link">
                 <i class="md-icon" style="font-size:1.3em;">forum</i>
-                <span>Emby Forum</span>
+                <span>Emby 论坛</span>
             </a>
         </div>
     </div>
@@ -1478,49 +1516,49 @@
             <div class="modal-header-bar" style="background:linear-gradient(135deg,#b71c1c 0%,#c62828 100%);">
                 <i class="md-icon modal-header-icon">bug_report</i>
                 <div>
-                    <h2 class="modal-header-title">Report a Bug</h2>
-                    <span style="opacity:0.9;font-size:0.9em;">Help us improve Home Screen Companion</span>
+                    <h2 class="modal-header-title">报告错误</h2>
+                    <span style="opacity:0.9;font-size:0.9em;">帮助我们改进 Home Screen Companion</span>
                 </div>
             </div>
             <div class="modal-body-scroll" style="padding:24px;">
 
                 <p style="margin:0 0 14px;font-size:0.95em;line-height:1.6;">
-                    A <strong>bug</strong> is when the plugin behaves in an unexpected or incorrect way — for example items not being tagged, a home screen section not updating, or an error appearing in the logs.
+                    <strong>错误</strong>是指插件出现不符合预期或不正确的行为，例如项目未添加标签、主屏幕栏目未更新，或日志中出现报错。
                 </p>
 
                 <div style="background:rgba(82,181,75,0.08);border:1px solid rgba(82,181,75,0.35);border-radius:6px;padding:14px 16px;margin-bottom:16px;">
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
                         <svg viewBox="0 0 16 16" width="1.3em" height="1.3em" style="vertical-align:middle;color:#52B54B;" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-                        <strong style="font-size:1em;">Preferred: GitHub Issues</strong>
+                        <strong style="font-size:1em;">首选：GitHub Issues</strong>
                     </div>
-                    <p style="margin:0 0 10px;font-size:0.9em;line-height:1.6;">If you have a GitHub account, please report there. It gives the best visibility and lets you track progress on your report.</p>
+                    <p style="margin:0 0 10px;font-size:0.9em;line-height:1.6;">如果您有 GitHub 账号，请在那里报告问题。这样更容易获得关注，也便于跟踪处理进度。</p>
                     <a href="https://github.com/soderlund91/HomeScreenCompanion/issues" target="_blank"
                        style="display:inline-flex;align-items:center;gap:7px;background:#52B54B;color:#fff;padding:7px 16px;border-radius:4px;text-decoration:none;font-size:0.88em;font-weight:500;">
-                        <i class="md-icon" style="font-size:1em;">open_in_new</i>Open GitHub Issues
+                        <i class="md-icon" style="font-size:1em;">open_in_new</i>打开 GitHub Issues
                     </a>
                 </div>
 
                 <div style="background:rgba(0,164,220,0.07);border:1px solid rgba(0,164,220,0.3);border-radius:6px;padding:14px 16px;margin-bottom:20px;">
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
                         <i class="md-icon" style="color:#00a4dc;font-size:1.3em;">forum</i>
-                        <strong style="font-size:1em;">Alternative: Emby Community Forum</strong>
+                        <strong style="font-size:1em;">其他方式：Emby 社区论坛</strong>
                     </div>
-                    <p style="margin:0 0 10px;font-size:0.9em;line-height:1.6;">No GitHub account? You can also post in the plugin's dedicated thread on the Emby forum.</p>
+                    <p style="margin:0 0 10px;font-size:0.9em;line-height:1.6;">没有 GitHub 账号？您也可以在 Emby 论坛的插件专属主题中发帖。</p>
                     <a href="https://emby.media/community/topic/146080-plugin-home-screen-companion/" target="_blank"
                        style="display:inline-flex;align-items:center;gap:7px;background:#00a4dc;color:#fff;padding:7px 16px;border-radius:4px;text-decoration:none;font-size:0.88em;font-weight:500;">
-                        <i class="md-icon" style="font-size:1em;">open_in_new</i>Open Emby Forum Thread
+                        <i class="md-icon" style="font-size:1em;">open_in_new</i>打开 Emby 论坛主题
                     </a>
                 </div>
 
                 <div style="background:rgba(128,128,128,0.06);border:1px solid var(--line-color);border-radius:6px;padding:12px 14px;font-size:0.85em;line-height:1.7;color:var(--theme-text-secondary);">
-                    <strong style="color:var(--theme-text);">Tips for a useful bug report:</strong><br>
-                    • What did you expect to happen, and what happened instead?<br>
-                    • Which source type and settings were you using?<br>
-                    • Copy the relevant lines from the <strong>Logs</strong> (enable <em>Extended log</em> in Settings first if needed).
+                    <strong style="color:var(--theme-text);">有效报告错误的建议：</strong><br>
+                    • 您预期会发生什么，实际发生了什么？<br>
+                    • 您使用了哪种来源类型和设置？<br>
+                    • 从<strong>日志</strong>中复制相关内容（如有需要，请先在设置中启用<em>详细日志</em>）。
                 </div>
 
                 <div style="text-align:right;margin-top:20px;">
-                    <button is="emby-button" type="button" id="btnCloseBugReport" class="raised" style="background:#444;color:#fff;padding:0 20px;">Close</button>
+                    <button is="emby-button" type="button" id="btnCloseBugReport" class="raised" style="background:#444;color:#fff;padding:0 20px;">关闭</button>
                 </div>
             </div>
         </div>
@@ -1531,25 +1569,25 @@
             <div class="modal-header-bar" style="background: #222;">
                 <i class="md-icon modal-header-icon" style="color: #00a4dc;">terminal</i>
                 <div>
-                    <h2 class="modal-header-title">Live Execution Log</h2>
-                    <span style="opacity:0.7; font-size:0.85em;">Showing the latest run of the selected task — updates every few seconds</span>
+                    <h2 class="modal-header-title">实时执行日志</h2>
+                    <span style="opacity:0.7; font-size:0.85em;">显示所选任务最近一次运行的日志，每隔几秒更新</span>
                 </div>
                 <div class="log-legend">
-                    <span style="color:#7ec97e;">✔ ok</span>
-                    <span style="color:#e6c15a;">⚠ warning</span>
-                    <span style="color:#ef6e6e;">✖ error</span>
-                    <span style="color:#9aa4b0;">– skipped</span>
+                    <span style="color:#7ec97e;">✔ 正常</span>
+                    <span style="color:#e6c15a;">⚠ 警告</span>
+                    <span style="color:#ef6e6e;">✖ 错误</span>
+                    <span style="color:#9aa4b0;">– 已跳过</span>
                 </div>
             </div>
             <div class="log-tabs" id="logTabs">
-                <button type="button" class="log-tab" data-log="sync"><span class="status-dot"></span>Sync<span class="log-tab-time"></span></button>
-                <button type="button" class="log-tab" data-log="hsc"><span class="status-dot"></span>Home Screen<span class="log-tab-time"></span></button>
-                <button type="button" class="log-tab" data-log="tl"><span class="status-dot"></span>Top-list<span class="log-tab-time"></span></button>
+                <button type="button" class="log-tab" data-log="sync"><span class="status-dot"></span>同步<span class="log-tab-time"></span></button>
+                <button type="button" class="log-tab" data-log="hsc"><span class="status-dot"></span>主屏幕<span class="log-tab-time"></span></button>
+                <button type="button" class="log-tab" data-log="tl"><span class="status-dot"></span>榜单<span class="log-tab-time"></span></button>
             </div>
             <div class="modal-body-scroll" style="background: #0a0a0a; color: #ececec; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.85em; padding: 20px; border-top: 1px solid #333;" id="logContent">
             </div>
             <div style="text-align:right; padding: 15px; background: #1a1a1a; border-top: 1px solid #333;">
-                <button is="emby-button" type="button" id="btnCloseLogs" class="raised" style="background: #444;">Close</button>
+                <button is="emby-button" type="button" id="btnCloseLogs" class="raised" style="background: #444;">关闭</button>
             </div>
         </div>
     </div>
@@ -1559,369 +1597,369 @@
             <div class="modal-header-bar">
                 <i class="md-icon modal-header-icon">school</i>
                 <div>
-                    <h2 class="modal-header-title">Home Screen Companion — Setup Guide</h2>
-                    <span style="opacity:0.9; font-size:0.9em;">All features at a glance</span>
+                    <h2 class="modal-header-title">Home Screen Companion — 设置指南</h2>
+                    <span style="opacity:0.9; font-size:0.9em;">功能一览</span>
                 </div>
             </div>
             <div class="modal-body-scroll">
 
                 <!-- PLUGIN INTRO -->
                 <div style="background:rgba(82,181,75,0.08);border:1px solid rgba(82,181,75,0.3);border-radius:6px;padding:12px 16px;margin-bottom:20px;font-size:0.92em;line-height:1.6;">
-                    <strong style="color:#52B54B;">What does this plugin do?</strong><br>
-                    Home Screen Companion keeps your Emby home screen up to date automatically. You connect it to movie lists (from sites like Trakt or MDBList, or your own filters), and the plugin marks those movies with a <em>tag</em> in your Emby library. Those tags can then power custom home screen rows — like "Trending Now" or "Top 10 Action Movies" — that update themselves on a schedule.
+                    <strong style="color:#52B54B;">此插件有什么作用？</strong><br>
+                    Home Screen Companion 可自动更新您的 Emby 主屏幕。连接电影列表（来自 Trakt、MDBList 等网站，或您自己的筛选器）后，插件会为 Emby 媒体库中的对应电影添加<em>标签</em>。这些标签可用于创建“当前热门”或“十大动作电影”等自定义主屏幕栏目，并按计划自动更新。
                 </div>
 
                 <!-- NAV MENU -->
                 <nav style="background:rgba(128,128,128,0.06);border:1px solid var(--line-color);border-radius:6px;padding:10px 16px;margin-bottom:20px;">
-                    <div style="font-size:0.75em;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--theme-text-secondary);margin-bottom:8px;">Contents</div>
+                    <div style="font-size:0.75em;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--theme-text-secondary);margin-bottom:8px;">目录</div>
                     <ol style="margin:0;padding:0 0 0 18px;column-count:2;column-gap:28px;">
-                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-1').scrollIntoView({behavior:'smooth'});return false;">Quick Start</a></li>
-                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-2').scrollIntoView({behavior:'smooth'});return false;">Source Types</a></li>
-                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-3').scrollIntoView({behavior:'smooth'});return false;">Source Settings</a></li>
-                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-4').scrollIntoView({behavior:'smooth'});return false;">Tags &amp; Collections</a></li>
-                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-5').scrollIntoView({behavior:'smooth'});return false;">Scheduling</a></li>
-                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-6').scrollIntoView({behavior:'smooth'});return false;">MediaInfo Filters</a></li>
-                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-7').scrollIntoView({behavior:'smooth'});return false;">Home Screen</a></li>
-                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-7b').scrollIntoView({behavior:'smooth'});return false;">Top-List</a></li>
-                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-8').scrollIntoView({behavior:'smooth'});return false;">Settings &amp; Utilities</a></li>
+                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-1').scrollIntoView({behavior:'smooth'});return false;">快速入门</a></li>
+                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-2').scrollIntoView({behavior:'smooth'});return false;">来源类型</a></li>
+                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-3').scrollIntoView({behavior:'smooth'});return false;">来源设置</a></li>
+                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-4').scrollIntoView({behavior:'smooth'});return false;">标签与合集</a></li>
+                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-5').scrollIntoView({behavior:'smooth'});return false;">计划任务</a></li>
+                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-6').scrollIntoView({behavior:'smooth'});return false;">MediaInfo 筛选器</a></li>
+                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-7').scrollIntoView({behavior:'smooth'});return false;">主屏幕</a></li>
+                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-7b').scrollIntoView({behavior:'smooth'});return false;">榜单</a></li>
+                        <li><a href="javascript:void(0)" class="help-nav-link" onclick="document.getElementById('help-sec-8').scrollIntoView({behavior:'smooth'});return false;">设置与工具</a></li>
                     </ol>
                 </nav>
 
                 <!-- 1. QUICK START -->
                 <div id="help-sec-1" class="help-section" style="margin-top:0;">
                     <i class="md-icon help-section-icon">rocket_launch</i>
-                    <span>Quick Start</span>
+                    <span>快速入门</span>
                 </div>
                 <div class="help-step">
                     <div class="step-num">1</div>
                     <div class="step-text">
-                        <strong>Enter API Keys</strong> — go to the <strong>Settings</strong> tab. An API key is a code that lets the plugin access a service on your behalf — think of it as a password for the plugin, not for you personally. Only add keys for the services you plan to use.
+                        <strong>输入 API 密钥</strong> — 前往<strong>设置</strong>选项卡。API 密钥是一段允许插件代表您访问服务的代码，可将其理解为插件的密码，而非您的个人密码。只需添加您打算使用的服务的密钥。
                         <div class="info-box" style="margin-top:8px;">
                             <div style="margin-bottom:10px;">
-                                <strong>Trakt:</strong> Go to <a href="https://trakt.tv/oauth/applications" target="_blank" class="help-link">trakt.tv/oauth/applications</a> and sign in.
-                                Click <em>New Application</em>, give it any name, and in the <em>Redirect URI</em> field type exactly: <code>http://localhost</code>
-                                (this is just a required placeholder — don't visit that address).
-                                Click Save, then copy the <em>Client ID</em> and paste it here.
+                                <strong>Trakt:</strong> 前往 <a href="https://trakt.tv/oauth/applications" target="_blank" class="help-link">trakt.tv/oauth/applications</a> 并登录。
+                                点击<em>新建应用</em>，任意命名，然后在<em>重定向 URI</em>字段中准确输入：<code>http://localhost</code>
+                                （这只是必填的占位地址，无需访问）。
+                                点击保存，然后复制<em>客户端 ID</em>并粘贴到此处。
                             </div>
                             <div style="border-top:1px dashed #444; padding-top:10px; margin-bottom:10px;">
-                                <strong>MDBList:</strong> Go to <a href="https://mdblist.com/preferences/" target="_blank" class="help-link">mdblist.com/preferences</a>,
-                                scroll down to the <em>API Access</em> section, and copy your API key.
+                                <strong>MDBList:</strong> 前往 <a href="https://mdblist.com/preferences/" target="_blank" class="help-link">mdblist.com/preferences</a>，
+                                向下滚动到 <em>API 访问</em>部分，复制您的 API 密钥。
                             </div>
                             <div style="border-top:1px dashed #444; padding-top:10px; margin-bottom:10px;">
-                                <strong>TMDb:</strong> Go to <a href="https://www.themoviedb.org/settings/api" target="_blank" class="help-link">themoviedb.org/settings/api</a>,
-                                scroll to <em>API Read Access Token</em>, and copy the long token — not the short API Key above it. Public TMDb lists work without a token.
+                                <strong>TMDb:</strong> 前往 <a href="https://www.themoviedb.org/settings/api" target="_blank" class="help-link">themoviedb.org/settings/api</a>，
+                                滚动到 <em>API 读取访问令牌</em>，复制较长的令牌，而非上方较短的 API 密钥。公开的 TMDb 列表无需令牌即可使用。
                             </div>
                             <div style="border-top:1px dashed #444; padding-top:10px;">
-                                <strong>OpenAI / Gemini:</strong> Only needed if you want to use the <em>AI created lists</em> source type.
-                                API key fields are hidden by default — tick the <em>Show</em> checkbox next to each field to see what you've entered.
+                                <strong>OpenAI / Gemini:</strong> 仅在使用 <em>AI 生成列表</em>来源类型时需要。
+                                API 密钥字段默认隐藏，勾选各字段旁的<em>显示</em>复选框即可查看已输入的内容。
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="help-step">
                     <div class="step-num">2</div>
-                    <div class="step-text"><strong>Add a Source</strong> — open the <strong>Tag &amp; Collection</strong> tab and click <strong>+ Add New Source</strong>. A source is simply the place the plugin fetches its movie list from.</div>
+                    <div class="step-text"><strong>添加来源</strong> — 打开<strong>标签与合集</strong>选项卡，点击 <strong>+ 添加新来源</strong>。来源就是插件获取电影列表的地方。</div>
                 </div>
                 <div class="help-step">
                     <div class="step-num">3</div>
                     <div class="step-text">
-                        <strong>Configure the source</strong> — each source has several tabs:
+                        <strong>配置来源</strong> — 每个来源都有多个选项卡：
                         <ul style="margin:6px 0 0 0;padding-left:18px;line-height:1.8;">
-                            <li><em>Source</em> — choose where to get the list (Trakt URL, MDBList URL, local collection, etc.)</li>
-                            <li><em>Tag</em> — set the tag name that will be applied to matching movies in Emby</li>
-                            <li><em>Collection</em> — optionally also group the movies into an Emby collection</li>
-                            <li><em>Schedule</em> — optionally limit when this source is active (e.g. only in December)</li>
+                            <li><em>来源</em> — 选择列表的获取位置（Trakt URL、MDBList URL、本地合集等）</li>
+                            <li><em>标签</em> — 设置要应用于 Emby 中匹配电影的标签名称</li>
+                            <li><em>合集</em> — 也可将电影归入 Emby 合集</li>
+                            <li><em>计划</em> — 可限制此来源的启用时间（例如仅在 12 月）</li>
                         </ul>
                     </div>
                 </div>
                 <div class="help-step" style="margin-bottom:0;">
                     <div class="step-num">4</div>
-                    <div class="step-text"><strong>Save &amp; Run</strong> — click <strong>Save Settings</strong> at the bottom of the page, then click the <strong>Run</strong> button at the bottom and choose <em>Full sync</em>. The plugin will now fetch the lists, match movies in your library, and apply the tags. Done!</div>
+                    <div class="step-text"><strong>保存并运行</strong> — 点击页面底部的<strong>保存设置</strong>，再点击底部的<strong>运行</strong>按钮并选择<em>完整同步</em>。插件将获取列表、匹配媒体库中的电影并应用标签。完成！</div>
                 </div>
 
                 <!-- 2. SOURCE TYPES -->
                 <div id="help-sec-2" class="help-section">
                     <i class="md-icon help-section-icon">input</i>
-                    <span>Source Types</span>
+                    <span>来源类型</span>
                 </div>
-                <div class="step-text" style="margin-bottom:12px;font-size:0.92em;">A <strong>source</strong> is where the plugin gets its list of movies or shows. Each source is linked to a <strong>tag</strong> — once the plugin has fetched the list, it marks matching titles in your Emby library with that tag. Choose the source type that suits how you want to build your list:</div>
+                <div class="step-text" style="margin-bottom:12px;font-size:0.92em;"><strong>来源</strong>是插件获取电影或剧集列表的地方。每个来源都关联一个<strong>标签</strong>；插件获取列表后，会为 Emby 媒体库中匹配的条目添加该标签。请按您构建列表的方式选择来源类型：</div>
                 <div class="src-cards">
                     <div class="src-card">
-                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">public</i> External</div>
-                        Paste a list URL from <strong>Trakt</strong>, <strong>MDBList</strong>, or <strong>TMDb</strong>. The plugin downloads the list and tags every matching title it finds in your library. You can add multiple URLs to the same source — they are combined into one list.
+                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">public</i> 外部</div>
+                        粘贴 <strong>Trakt</strong>、<strong>MDBList</strong> 或 <strong>TMDb</strong> 的列表 URL。插件会下载列表，并为媒体库中找到的所有匹配条目添加标签。同一来源可添加多个 URL，它们将合并为一个列表。
                         <div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(128,128,128,0.3);font-size:0.92em;">
-                            <strong>TMDb</strong> can be used in two ways:
+                            <strong>TMDb</strong> 有两种用法：
                             <ul style="margin:4px 0 0;padding-left:16px;line-height:1.8;">
-                                <li><em>Your own lists</em> — paste the URL to any public or private list you have created on themoviedb.org.</li>
-                                <li><em>API endpoints</em> — paste a direct TMDb API URL (e.g. popular movies, top-rated, now-playing, or a specific collection). Requires a <strong>TMDb API Read Access Token</strong> in the Settings tab.</li>
+                                <li><em>您自己的列表</em> — 粘贴您在 themoviedb.org 上创建的任意公开或私有列表的 URL。</li>
+                                <li><em>API 端点</em> — 粘贴直接访问 TMDb API 的 URL（例如热门电影、高分电影、正在热映或特定合集）。需在设置选项卡中填写 <strong>TMDb API 读取访问令牌</strong>。</li>
                             </ul>
                         </div>
                     </div>
                     <div class="src-card">
-                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">video_library</i> Local</div>
-                        Use an existing <strong>playlist</strong> or <strong>collection</strong> already in Emby as the source. Every item in that list gets the configured tag. You can also use this to show a collection as a home screen row — see <em>Home Section — Collections mode</em> below.
+                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">video_library</i> 本地</div>
+                        使用 Emby 中已有的<strong>播放列表</strong>或<strong>合集</strong>作为来源。列表中的每个条目都会添加配置的标签。您也可以用它将合集显示为主页上的一行，详见下方的<em>主页分区 — 合集模式</em>。
                     </div>
                     <div class="src-card">
                         <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">tune</i> MediaInfo</div>
-                        Build a list based on the properties of your own files — for example "all 4K HDR movies" or "Action films I haven't watched yet". Filter by video quality, audio format, genre, actors, ratings, and more.
+                        根据您自己的文件属性构建列表，例如“所有 4K HDR 电影”或“我还没看过的动作片”。可按视频画质、音频格式、类型、演员、评分等条件筛选。
                     </div>
                     <div class="src-card">
-                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">auto_awesome</i> AI created lists</div>
-                        Describe what you want in plain language — for example <em>"Best sci-fi films from the 90s"</em> — and let <strong>OpenAI</strong> or <strong>Google Gemini</strong> generate the list. You can also have the AI take into account what a specific user has watched recently, to personalise the suggestions. Requires an API key in Settings.
+                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">auto_awesome</i> AI 生成列表</div>
+                        用自然语言描述需求，例如<em>“90 年代最佳科幻电影”</em>，让 <strong>OpenAI</strong> 或 <strong>Google Gemini</strong> 生成列表。还可让 AI 参考特定用户近期观看的内容，提供个性化推荐。需在设置中填写 API 密钥。
                     </div>
                 </div>
 
                 <!-- 3. SOURCE SETTINGS -->
                 <div id="help-sec-3" class="help-section">
                     <i class="md-icon help-section-icon">tab</i>
-                    <span>Source Settings</span>
+                    <span>来源设置</span>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">toggle_on</i>
-                    <div><strong>Active toggle</strong> — The checkbox at the top of each source card turns it on or off without deleting it. When turned off, the source is skipped during sync and its tag and collection are automatically removed from all items. Handy for temporarily pausing a source (e.g. a seasonal list).</div>
+                    <div><strong>启用开关</strong> — 每个来源卡片顶部的复选框可启用或停用来源，而无需删除它。停用后，同步时会跳过该来源，并自动从所有条目中移除其标签和合集。适合临时暂停来源（例如季节性列表）。</div>
                 </div>
                 <div class="help-feature-row" style="margin-bottom:12px;">
                     <i class="md-icon help-feat-icon">badge</i>
-                    <div><strong>Display Name</strong> — A label for your own reference, shown in the source header. This is separate from the tag name — you can call it anything you like.</div>
+                    <div><strong>显示名称</strong> — 显示在来源标题中，供您辨识的名称。它与标签名称无关，可以任意命名。</div>
                 </div>
                 <div class="src-cards" style="grid-template-columns: repeat(3, 1fr);">
                     <div class="src-card">
-                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">input</i> Source tab</div>
-                        Choose the source type and add URLs or local sources. Set the <strong>Max items</strong> limit to cap how many items are fetched (0 = no limit).
+                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">input</i> 来源选项卡</div>
+                        选择来源类型并添加 URL 或本地来源。设置<strong>最大条目数</strong>以限制获取数量（0 = 不限）。
                     </div>
                     <div class="src-card">
-                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">label</i> Tag tab</div>
-                        Enable or disable tagging and set the <strong>Tag Name</strong> — the invisible label applied to each matched item in Emby.
+                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">label</i> 标签选项卡</div>
+                        启用或禁用标签，并设置<strong>标签名称</strong>，即应用于 Emby 中每个匹配条目的隐藏标签。
                     </div>
                     <div class="src-card">
-                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">collections_bookmark</i> Collection tab</div>
-                        Optionally group the matched items into an Emby collection with a custom name, description, and poster image. Enable <em>Only Collection</em> to skip tagging and only maintain the collection.
+                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">collections_bookmark</i> 合集选项卡</div>
+                        可将匹配条目归入 Emby 合集，并自定义名称、简介和海报。启用<em>仅合集</em>可跳过标签，仅维护合集。
                     </div>
                     <div class="src-card">
-                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">calendar_month</i> Schedule tab</div>
-                        Limit when this source is active — for example only between certain dates or on specific recurring days. Add a <em>Priority Override</em> to make this source take over from other sources that share the same tag when it is active.
+                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">calendar_month</i> 计划选项卡</div>
+                        限制此来源的启用时间，例如仅在特定日期范围内或按周期在指定日期启用。添加<em>优先覆盖</em>后，此来源启用时将接管使用相同标签的其他来源。
                     </div>
                     <div class="src-card">
-                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">block</i> Blacklist tab</div>
-                        Enter IMDB IDs (one per line) that should always be excluded from this source, no matter what the list says.
+                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">block</i> 黑名单选项卡</div>
+                        输入始终要从此来源排除的 IMDB ID（每行一个），无论列表内容如何。
                     </div>
                     <div class="src-card">
-                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">tv</i> Home Screen tab</div>
-                        Make this source automatically show up as a row on the home screen for specific users, updated every time sync runs. Choose <em>Media Type: Collections</em> to show a collection row instead of individual items.
+                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">tv</i> 主页选项卡</div>
+                        让此来源自动作为一行显示在指定用户的主页上，每次同步时更新。选择<em>媒体类型：合集</em>可显示合集行，而非单个条目。
                     </div>
                 </div>
 
                 <!-- 4. TAGS & COLLECTIONS -->
                 <div id="help-sec-4" class="help-section">
                     <i class="md-icon help-section-icon">local_offer</i>
-                    <span>Tags &amp; Collections</span>
+                    <span>标签与合集</span>
                 </div>
                 <div style="background:rgba(128,128,128,0.06);border:1px solid var(--line-color);border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:0.9em;line-height:1.6;">
-                    <strong>What is a tag?</strong> — A tag is an invisible label that Emby can attach to a movie or show. You won't see it while browsing normally, but the plugin uses it to know which items belong to which list. Tags are what makes home screen rows work — a row simply shows all items that carry a certain tag.
+                    <strong>什么是标签？</strong> — 标签是 Emby 可附加到电影或剧集上的隐藏标记。正常浏览时不会看到它，但插件通过它判断条目属于哪个列表。主页行依靠标签运作：一行会显示带有特定标签的所有条目。
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">label</i>
-                    <div><strong>Tag</strong> — The plugin applies a tag to every item on the list. When an item drops off the list (e.g. the Trakt list is updated), the tag is removed automatically on the next sync.</div>
+                    <div><strong>标签</strong> — 插件会为列表中的每个条目添加标签。当条目不再出现在列表中时（例如 Trakt 列表已更新），下次同步会自动移除该标签。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">collections_bookmark</i>
-                    <div><strong>Collection</strong> — In addition to (or instead of) tagging, the plugin can maintain an Emby collection. Items are added and removed automatically on every sync, just like tags.</div>
+                    <div><strong>合集</strong> — 除添加标签外（或替代标签），插件还可维护 Emby 合集。与标签一样，每次同步时都会自动添加和移除条目。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">check_box_outline_blank</i>
-                    <div><strong>Only Collection</strong> — Enable this to skip tagging entirely and only maintain the collection. Useful when you just want a tidy collection without adding any labels to individual movies.</div>
+                    <div><strong>仅合集</strong> — 启用后完全跳过标签，仅维护合集。适合只想整理合集、不想为单部电影添加标签的情况。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">image</i>
-                    <div><strong>Collection Poster</strong> — Upload a local image or paste an image URL to set a custom poster for the collection. The poster is stored on the server and re-applied on every sync so it is never overwritten by Emby.</div>
+                    <div><strong>合集海报</strong> — 上传本地图片或粘贴图片 URL，为合集设置自定义海报。海报保存在服务器上，每次同步时重新应用，确保不会被 Emby 覆盖。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">tv</i>
-                    <div><strong>Home Section per source</strong> — Each source can have its own home screen row for selected users. Set this up in the <em>Home Screen</em> tab inside each source card. This works independently from the Home Screen copy feature.</div>
+                    <div><strong>按来源设置主页分区</strong> — 每个来源都可为指定用户设置独立的主页行。在各来源卡片的<em>主页</em>选项卡中配置。此功能独立于主页复制功能。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">collections</i>
-                    <div><strong>Home Section — Collections mode</strong> — Want to show a whole collection as a row (rather than individual movies)? Use a <em>Local collection</em> source, set a tag name, and in the <em>Home Screen</em> tab choose <em>Media Type: Collections</em>. The plugin will tag the <strong>collection itself</strong> — not the movies inside it — so Emby shows it as a collection row. The individual movies inside the collection are never tagged in this mode.</div>
+                    <div><strong>主页分区 — 合集模式</strong> — 想将整个合集显示为一行（而非单部电影）？使用<em>本地合集</em>来源，设置标签名称，并在<em>主页</em>选项卡中选择<em>媒体类型：合集</em>。插件会为<strong>合集本身</strong>添加标签，而非其中的电影，让 Emby 将其显示为合集行。此模式不会为合集内的单部电影添加标签。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">block</i>
-                    <div><strong>Blacklist</strong> — IMDB IDs in the <em>Blacklist</em> tab are permanently excluded from this source, even if they appear in the fetched list.</div>
+                    <div><strong>黑名单</strong> — <em>黑名单</em>选项卡中的 IMDB ID 将始终从此来源排除，即使它们出现在获取的列表中。</div>
                 </div>
 
                 <!-- 5. SCHEDULING -->
                 <div id="help-sec-5" class="help-section">
                     <i class="md-icon help-section-icon">calendar_month</i>
-                    <span>Scheduling</span>
+                    <span>计划</span>
                 </div>
-                <div class="step-text" style="margin-bottom:10px;font-size:0.92em;">By default a source is always active. Use the Schedule tab to limit when a source runs — for example to show a Halloween horror list only in October, or a Christmas movie row only in December.</div>
+                <div class="step-text" style="margin-bottom:10px;font-size:0.92em;">来源默认始终启用。使用计划选项卡可限制来源的运行时间，例如仅在 10 月显示万圣节恐怖片列表，或仅在 12 月显示圣诞电影行。</div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">all_inclusive</i>
-                    <div><strong>No schedule</strong> — The source is always active (default).</div>
+                    <div><strong>无计划</strong> — 来源始终启用（默认）。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">date_range</i>
-                    <div><strong>Specific dates</strong> — The source is only active between a chosen start date and end date. Outside those dates the tag and collection are removed automatically.</div>
+                    <div><strong>指定日期</strong> — 来源仅在所选开始日期和结束日期之间启用。在此范围之外，标签和合集会自动移除。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">repeat</i>
-                    <div><strong>Recurring</strong> — Active on specific days every week, month, or year. You can stack multiple intervals on the same source — for example "every Friday" and "every Saturday".</div>
+                    <div><strong>周期性</strong> — 在每周、每月或每年的指定日期启用。同一来源可叠加多个时间段，例如“每周五”和“每周六”。</div>
                 </div>
                 <div class="help-feature-row" style="margin-bottom:0;">
                     <i class="md-icon help-feat-icon">workspace_premium</i>
-                    <div><strong>Priority Override</strong> — When this source is in-schedule, it takes over from any other sources that share the same tag. The other sources are temporarily suppressed. Example: a "Spotlight" source runs all year, but a "Spotlight Halloween" source with Priority Override takes over during October — the Halloween list replaces the regular one automatically.</div>
+                    <div><strong>优先覆盖</strong> — 当此来源处于计划启用时段内时，它会接管使用相同标签的其他来源，暂时停用其他来源。例如：“精选”来源全年运行，但启用优先覆盖的“万圣节精选”来源会在 10 月接管，自动以万圣节列表替换常规列表。</div>
                 </div>
 
                 <!-- 6. MEDIAINFO FILTERS -->
                 <div id="help-sec-6" class="help-section">
                     <i class="md-icon help-section-icon">analytics</i>
-                    <span>MediaInfo Filters</span>
+                    <span>MediaInfo 筛选器</span>
                 </div>
                 <div class="step-text" style="margin-bottom:8px;font-size:0.92em;">
-                    MediaInfo lets you build a list based on the properties of your own files — think of it as building a smart search. For example: <em>"all 4K Dolby Vision movies in the Action genre that I haven't watched yet."</em>
+                    MediaInfo 可根据您自己的文件属性构建列表，类似于创建智能搜索。例如：<em>“所有我还没看过的 4K Dolby Vision 动作电影。”</em>
                 </div>
                 <div class="step-text" style="margin-bottom:12px;font-size:0.92em;">
-                    <strong>How rules work:</strong>
+                    <strong>规则工作原理：</strong>
                     <ul style="margin:6px 0 0;padding-left:18px;line-height:1.9;">
-                        <li>Each <strong>rule</strong> checks one property against a value (e.g. Genre = Action).</li>
-                        <li>Rules in the same <strong>group</strong> can be combined with <strong>AND</strong> (must match all) or <strong>OR</strong> (match any one).</li>
-                        <li>Multiple <strong>groups</strong> can also be combined with AND / OR using the connector between them.</li>
-                        <li>The <strong>NOT</strong> button on a rule inverts it — e.g. <em>NOT Genre: Comedy</em> matches everything except comedies.</li>
-                        <li>For text fields (Genre, Actor, Title…), enter <strong>one value per line</strong>. Any matching line triggers the rule.</li>
-                        <li>Text fields offer <strong>Contains</strong> (partial match) or <strong>Exact</strong> (full match) mode.</li>
-                        <li>Number fields (Year, Rating, Runtime…) support <code>=</code> <code>&gt;</code> <code>&ge;</code> <code>&lt;</code> <code>&le;</code>.</li>
+                        <li>每条<strong>规则</strong>将一个属性与指定值进行比较（例如：类型 = 动作）。</li>
+                        <li>同一<strong>组</strong>内的规则可用<strong>与</strong>（必须全部匹配）或<strong>或</strong>（匹配任意一条）组合。</li>
+                        <li>多个<strong>组</strong>也可通过组间的连接符，以与 / 或组合。</li>
+                        <li>规则上的<strong>非</strong>按钮会反转规则，例如<em>非 类型：喜剧</em>会匹配喜剧以外的所有内容。</li>
+                        <li>文本字段（类型、演员、标题等）请<strong>每行输入一个值</strong>。匹配任意一行即可触发规则。</li>
+                        <li>文本字段提供<strong>包含</strong>（部分匹配）或<strong>精确</strong>（完全匹配）模式。</li>
+                        <li>数字字段（年份、评分、时长等）支持 <code>=</code> <code>&gt;</code> <code>&ge;</code> <code>&lt;</code> <code>&le;</code>。</li>
                     </ul>
                 </div>
                 <div class="mi-help-grid" style="grid-template-columns: repeat(3, 1fr);">
                     <div class="mi-help-col">
-                        <div class="mi-help-category">Video</div>
-                        Resolution (4K, 1080p, 720p, SD, 8K), Video codec (HEVC/H.265, AV1, H.264), HDR type (HDR10, Dolby Vision, HLG)
+                        <div class="mi-help-category">视频</div>
+                        分辨率（4K、1080p、720p、SD、8K）、视频编码（HEVC/H.265、AV1、H.264）、HDR 类型（HDR10、Dolby Vision、HLG）
                     </div>
                     <div class="mi-help-col">
-                        <div class="mi-help-category">Audio</div>
-                        Format (Atmos, DTS-HD MA, TrueHD, DTS, AC3, AAC), Channels (7.1, 5.1, Stereo, Mono), Audio language — one language code per line (e.g. <em>swe</em>, <em>eng</em>)
+                        <div class="mi-help-category">音频</div>
+                        格式（Atmos、DTS-HD MA、TrueHD、DTS、AC3、AAC）、声道（7.1、5.1、立体声、单声道）、音频语言 — 每行一个语言代码（例如 <em>swe</em>、<em>eng</em>）
                     </div>
                     <div class="mi-help-col">
-                        <div class="mi-help-category">Content</div>
-                        Genre, Actor/Cast, Director, Writer, Studio, Title, Episode Title, Plot overview, Tag (existing Emby tag), Content rating (PG-13, R…), IMDB ID, Collection, Playlist — one value per line; any match = rule matches
+                        <div class="mi-help-category">内容</div>
+                        类型、演员、导演、编剧、制作公司、标题、单集标题、剧情简介、标签（已有的 Emby 标签）、内容分级（PG-13、R 等）、IMDB ID、合集、播放列表 — 每行一个值；任意值匹配即视为规则匹配
                     </div>
                     <div class="mi-help-col">
-                        <div class="mi-help-category">Music</div>
-                        Artist, Album. Use <em>MediaType: Audio</em> to target songs or <em>MediaType: MusicVideo</em> for music videos. Also supports Bit Rate, Sample Rate, Bits Per Sample, Track Number, Disc Number with numeric operators.
+                        <div class="mi-help-category">音乐</div>
+                        艺术家、专辑。使用 <em>MediaType: Audio</em> 筛选歌曲，或使用 <em>MediaType: MusicVideo</em> 筛选音乐视频。还支持对比特率、采样率、采样位深、音轨编号、碟片编号使用数值运算符。
                     </div>
                     <div class="mi-help-col">
-                        <div class="mi-help-category">Metrics</div>
-                        Community Rating, Release Year, Runtime (minutes), Date Added (days ago), Date Modified (days ago), File Size (MB) — all support numeric operators
+                        <div class="mi-help-category">指标</div>
+                        社区评分、发行年份、时长（分钟）、添加日期（多少天前）、修改日期（多少天前）、文件大小（MB） — 均支持数值运算符
                     </div>
                     <div class="mi-help-col">
-                        <div class="mi-help-category">Activity</div>
-                        Watched / Unwatched, Last Played (days ago), Play Count, Watched By Count (how many users have finished it) — can be scoped to <em>any user</em>, <em>all users</em>, or a specific user
+                        <div class="mi-help-category">活动</div>
+                        已观看 / 未观看、上次播放（多少天前）、播放次数、看完人数（有多少用户已看完） — 可限定为<em>任意用户</em>、<em>所有用户</em>或特定用户
                     </div>
                 </div>
 
                 <!-- 7. HOME SCREEN -->
                 <div id="help-sec-7" class="help-section">
                     <i class="md-icon help-section-icon">home</i>
-                    <span>Home Screen</span>
+                    <span>主页</span>
                 </div>
-                <div class="step-text" style="margin-bottom:10px; font-size:0.92em;">The <strong>Home Screen</strong> tab has three independent sub-sections: <strong>Manage</strong> (source-based rows), <strong>Copy &amp; Sync</strong> (copy one user's layout to others) and <strong>Home Screen Tweaks</strong> (adjustments to Emby's built-in rows).</div>
+                <div class="step-text" style="margin-bottom:10px; font-size:0.92em;"><strong>主页</strong>选项卡有三个独立子分区：<strong>管理</strong>（基于来源的行）、<strong>复制与同步</strong>（将一个用户的布局复制给其他用户）和<strong>主页调整</strong>（调整 Emby 内置行）。</div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">view_list</i>
-                    <div><strong>Manage</strong> — Creates and keeps custom home screen rows up to date. Each row is tied to one of your sources and is automatically refreshed for the selected users every time sync runs. To set up a row for a source, open that source card and go to its <em>Home Screen</em> tab.</div>
+                    <div><strong>管理</strong> — 创建并持续更新自定义主页行。每行关联一个来源，每次同步时都会为所选用户自动刷新。要为来源设置主页行，请打开该来源卡片并前往其<em>主页</em>选项卡。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">copy_all</i>
-                    <div><strong>Copy &amp; Sync</strong> — Copies the complete home screen layout from one user to one or more other users. Handy when you want all profiles to look the same. This runs separately from the tag and collection sync.</div>
+                    <div><strong>复制与同步</strong> — 将一个用户的完整主页布局复制给一个或多个其他用户。适合希望所有用户布局一致的情况。此功能独立于标签和合集同步运行。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">tune</i>
-                    <div><strong>Home Screen Tweaks</strong> — <em>Continue Watching</em>: when a new episode arrives for a series you had watched to the end, the series moves to the front of Continue Watching / Next Up. Watched status is never changed. Runs automatically when new episodes are added, plus the scheduled task <em>Continue Watching Bump</em>.</div>
+                    <div><strong>主页调整</strong> — <em>继续观看</em>：已追完的剧集有新一集加入时，将该剧集移至“继续观看 / 接下来”的最前面。不会更改观看状态。添加新集时会自动运行，也可通过计划任务<em>继续观看置顶</em>运行。</div>
                 </div>
                 <div class="help-feature-row" style="margin-bottom:0;">
                     <i class="md-icon help-feat-icon">sync</i>
-                    <div><strong>Automatic &amp; Manual</strong> — Both features run as part of the scheduled task, or you can trigger them at any time using the <strong>Run</strong> button → <em>Sync home screen only</em>.</div>
+                    <div><strong>自动与手动</strong> — 两项功能都会作为计划任务的一部分运行，也可随时通过<strong>运行</strong>按钮 → <em>仅同步主页</em>触发。</div>
                 </div>
 
                 <!-- 7b. TOP-LIST -->
                 <div id="help-sec-7b" class="help-section" style="margin-top:20px;">
                     <i class="md-icon help-section-icon">format_list_numbered</i>
-                    <span>Top-List</span>
+                    <span>榜单</span>
                 </div>
                 <div class="step-text" style="margin-bottom:10px; font-size:0.92em;">
-                    A <strong>top-list</strong> is a ranked movie or TV show row on the home screen — like "My Top 10 Movies" — where each poster shows a numbered badge (1, 2, 3…) indicating its position. The plugin creates a separate Emby library containing shortcuts to the ranked titles (the actual files are not copied or moved), and shows that library as a dedicated home screen section. Found in the <strong>Top-Lists</strong> tab.
+                    <strong>榜单</strong>是主页上按名次排列的电影或剧集行，例如“我的十佳电影”。每张海报上都有数字徽标（1、2、3…），表示其排名。插件会创建独立的 Emby 媒体库，其中包含上榜条目的快捷方式（不会复制或移动实际文件），并将该媒体库显示为专属主页分区。可在<strong>榜单</strong>选项卡中找到。
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">create_new_folder</i>
-                    <div><strong>Create top-list from a tag</strong> — Choose <em>Movies</em> or <em>TV Shows</em>, pick a tag managed by the plugin and click <em>Create top-list</em>. The plugin builds the ranked library and sets up a home screen section for the users you choose. The order follows the original list order from the source (e.g. the order on a Trakt list). The list updates automatically whenever the plugin syncs that tag.</div>
+                    <div><strong>从标签创建榜单</strong> — 选择<em>电影</em>或<em>剧集</em>，选择由插件管理的标签，然后点击<em>创建榜单</em>。插件会构建排名媒体库，并为所选用户设置主页分区。排名遵循来源列表的原始顺序（例如 Trakt 列表中的顺序）。插件每次同步该标签时，榜单都会自动更新。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">edit_note</i>
-                    <div><strong>Manual top-list</strong> — Click <em>Create manual top-list</em> to hand-pick and order movies yourself, without needing an existing tag. Search your library, drag items into the order you want, and save.</div>
+                    <div><strong>手动榜单</strong> — 点击<em>创建手动榜单</em>，即可自行挑选电影并排序，无需已有标签。搜索媒体库，拖动条目调整顺序，然后保存。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">block</i>
-                    <div><strong>Automatic exclusions</strong> — Movies in a top-list are automatically hidden from all other tag-based home screen rows, so the same movie (with a number badge) never shows up in another row.</div>
+                    <div><strong>自动排除</strong> — 榜单中的电影会自动从其他所有基于标签的主页行中隐藏，避免同一部带排名徽标的电影出现在其他行中。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">tv</i>
-                    <div><strong>TV show top-lists</strong> — Each ranked show gets a copy in the list's own library: a numbered poster and shortcuts to every episode. Watched status and resume points are shared with the real show, the same show can be in several lists, and new episodes are added on every sync. The copies are kept out of search, Latest, Continue Watching and Next Up for every user (the list's library is added to each user's "Latest" exclusions, which Emby also applies to Continue Watching and Next Up), so an episode never shows twice.</div>
+                    <div><strong>剧集榜单</strong> — 每部上榜剧集都会在榜单专用媒体库中创建副本，包含带排名的海报和每一集的快捷方式。副本与原剧集共享观看状态和续播进度，同一剧集可出现在多个榜单中，每次同步都会添加新集。对所有用户，副本都会从搜索、最新、继续观看和接下来中排除（榜单媒体库会加入各用户的“最新”排除列表，Emby 也会将其应用于继续观看和接下来），避免单集重复显示。</div>
                 </div>
                 <div class="help-feature-row" style="margin-bottom:0;">
                     <i class="md-icon help-feat-icon">build</i>
-                    <div><strong>Top-list section sync</strong> — If a home screen row goes out of sync after adding a new Emby library, run the <em>Top-list section sync</em> task (via the <strong>Run</strong> button or Emby's scheduled tasks page) to rebuild all the exclusion settings.</div>
+                    <div><strong>榜单分区同步</strong> — 添加新的 Emby 媒体库后，如果主页行出现同步异常，请运行<em>榜单分区同步</em>任务（通过<strong>运行</strong>按钮或 Emby 的计划任务页面），重建所有排除设置。</div>
                 </div>
 
                 <!-- 8. SETTINGS & UTILITIES -->
                 <div id="help-sec-8" class="help-section">
                     <i class="md-icon help-section-icon">settings</i>
-                    <span>Settings &amp; Utilities</span>
+                    <span>设置与实用工具</span>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">key</i>
-                    <div><strong>Trakt Client ID</strong> — Required for External sources using Trakt lists. Create a new app at <a href="https://trakt.tv/oauth/applications" target="_blank" class="help-link">trakt.tv/oauth/applications</a> (Redirect URI = <code>http://localhost</code>), then copy the <em>Client ID</em>. Found under <em>External list settings</em> in the Settings tab.</div>
+                    <div><strong>Trakt 客户端 ID</strong> — 使用 Trakt 列表的外部来源必填。在 <a href="https://trakt.tv/oauth/applications" target="_blank" class="help-link">trakt.tv/oauth/applications</a> 创建新应用（重定向 URI = <code>http://localhost</code>），然后复制<em>客户端 ID</em>。配置项位于设置选项卡的<em>外部列表设置</em>下。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">vpn_key</i>
-                    <div><strong>MDBList API Key</strong> — Required for MDBList sources. Get it from <a href="https://mdblist.com/preferences/" target="_blank" class="help-link">mdblist.com/preferences</a> under <em>API Access</em>. Found under <em>External list settings</em> in the Settings tab.</div>
+                    <div><strong>MDBList API 密钥</strong> — MDBList 来源必填。在 <a href="https://mdblist.com/preferences/" target="_blank" class="help-link">mdblist.com/preferences</a> 的 <em>API 访问</em>下获取。配置项位于设置选项卡的<em>外部列表设置</em>下。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">movie</i>
-                    <div><strong>TMDb API Read Access Token</strong> — Required when using TMDb API endpoints as a source (e.g. popular movies, top-rated, now-playing). Also works for private TMDb lists. Get your token at <a href="https://www.themoviedb.org/settings/api" target="_blank" class="help-link">themoviedb.org/settings/api</a> — scroll to <em>API Read Access Token</em> and copy the long token (not the short API Key). Found under <em>External list settings</em> in the Settings tab. Note: for public TMDb lists you can paste the URL directly without a token.</div>
+                    <div><strong>TMDb API 读取访问令牌</strong> — 使用 TMDb API 端点作为来源时必填（例如热门电影、高分电影、正在热映）。也适用于私有 TMDb 列表。在 <a href="https://www.themoviedb.org/settings/api" target="_blank" class="help-link">themoviedb.org/settings/api</a> 获取令牌：滚动到 <em>API 读取访问令牌</em>，复制较长的令牌（而非较短的 API 密钥）。配置项位于设置选项卡的<em>外部列表设置</em>下。注意：公开的 TMDb 列表可直接粘贴 URL，无需令牌。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">auto_awesome</i>
-                    <div><strong>OpenAI API Key</strong> — Required for AI lists using ChatGPT. Get a key at <a href="https://platform.openai.com/api-keys" target="_blank" class="help-link">platform.openai.com/api-keys</a>. Found under <em>AI Settings</em> in the Settings tab.</div>
+                    <div><strong>OpenAI API 密钥</strong> — 使用 ChatGPT 的 AI 列表必填。在 <a href="https://platform.openai.com/api-keys" target="_blank" class="help-link">platform.openai.com/api-keys</a> 获取密钥。配置项位于设置选项卡的 <em>AI 设置</em>下。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">auto_awesome</i>
-                    <div><strong>Google Gemini API Key</strong> — Required for AI lists using Gemini. Get a key at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="help-link">Google AI Studio</a>. Found under <em>AI Settings</em> in the Settings tab.</div>
+                    <div><strong>Google Gemini API 密钥</strong> — 使用 Gemini 的 AI 列表需要此密钥。可在 <a href="https://aistudio.google.com/app/apikey" target="_blank" class="help-link">Google AI Studio</a> 获取。在“设置”选项卡的<em>AI 设置</em>中填写。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">visibility_off</i>
-                    <div><strong>API key visibility</strong> — All API key fields are hidden by default for security. Tick the <em>Show</em> checkbox next to a field to reveal the value. The checkbox resets to hidden every time you open the settings page.</div>
+                    <div><strong>API 密钥可见性</strong> — 为保障安全，所有 API 密钥字段默认隐藏。勾选字段旁的<em>显示</em>复选框即可查看密钥。每次打开设置页面时，都会重置为隐藏状态。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">play_circle</i>
-                    <div><strong>Run button</strong> — Manually trigger a sync at any time. Three options: <em>Full sync</em> (everything), <em>Sync home screen only</em> (just the home screen rows, no tag changes), and <em>Sync tags and collections only</em> (tags and collections, skips home screen).</div>
+                    <div><strong>运行按钮</strong> — 随时手动触发同步。提供三个选项：<em>完整同步</em>（所有内容）、<em>仅同步主屏幕</em>（仅更新主屏幕各行，不更改标签）和<em>仅同步标签和合集</em>（更新标签和合集，跳过主屏幕）。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">science</i>
-                    <div><strong>Preview Mode (Dry Run)</strong> — Runs a full sync simulation without making any real changes. The log will show exactly what would be tagged, removed, or collected — useful for checking your settings before committing. Enable in the Settings tab.</div>
+                    <div><strong>仅预览</strong> — 模拟完整同步，不作实际更改。日志显示拟添加或移除的标签与合集成员，便于写入前检查。可在“设置”选项卡中启用。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">bug_report</i>
-                    <div><strong>Detailed Logs (Extended Log Output)</strong> — Turns on extra detail in the log for every sync step. View logs with the <strong>Logs</strong> button at the top of the page. Useful if something isn't working as expected and you want to see exactly what the plugin is doing.</div>
+                    <div><strong>详细日志（扩展日志输出）</strong> — 为每个同步步骤记录更多详细信息。点击页面顶部的<strong>日志</strong>按钮即可查看。出现异常时，可用它了解插件的具体操作。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">shield</i>
-                    <div><strong>Preserve Tags on Empty Result</strong> — If a source returns zero items — for example because the website was temporarily unreachable — the plugin will keep the existing tags and collection members as they are instead of removing everything. This prevents an accidental wipe-out caused by a network hiccup. Enable in the Settings tab.</div>
+                    <div><strong>结果为空时保留标签</strong> — 如果来源返回零个项目（例如网站暂时无法访问），插件会保留现有标签和合集成员，而非全部移除。这样可防止网络波动导致意外清空。可在“设置”选项卡中启用。</div>
                 </div>
                 <div class="help-feature-row" style="margin-bottom:0;">
                     <i class="md-icon help-feat-icon">save</i>
-                    <div><strong>Backup &amp; Restore</strong> — Export your plugin configuration (settings, API keys, tag &amp; collection groups, saved filters, top lists and home screen sync) to a file, or restore any selection of those sections from a previous backup. Found at the bottom of the <strong>Settings</strong> tab. Recommended before making large changes.</div>
+                    <div><strong>备份与恢复</strong> — 将插件配置（设置、API 密钥、标签和合集组、已保存的筛选器、榜单及主屏幕同步）导出为文件，或从之前的备份中选择恢复任意部分。位于<strong>设置</strong>选项卡底部。建议在进行较大更改前先备份。</div>
                 </div>
 
                 <div style="text-align:right; margin-top:24px; padding-top:16px; border-top:1px solid #333;">
-                    <button is="emby-button" type="button" id="btnCloseHelp" class="raised button-submit" style="background:#52B54B; color:white; padding: 0 25px;">Close Guide</button>
+                    <button is="emby-button" type="button" id="btnCloseHelp" class="raised button-submit" style="background:#52B54B; color:white; padding: 0 25px;">关闭指南</button>
                 </div>
 
             </div>
@@ -1933,184 +1971,184 @@
             <div class="modal-header-bar" style="background:linear-gradient(135deg,#00a4dc 0%,#007ba8 100%);">
                 <i class="md-icon modal-header-icon">filter_list</i>
                 <div>
-                    <h2 class="modal-header-title">Local Media Information — Filter Guide</h2>
-                    <span style="opacity:0.9;font-size:0.9em;">How the smart filter rules work</span>
+                    <h2 class="modal-header-title">本地媒体信息 — 筛选指南</h2>
+                    <span style="opacity:0.9;font-size:0.9em;">智能筛选规则的工作方式</span>
                 </div>
             </div>
             <div class="modal-body-scroll" style="padding:24px;">
 
-                <div class="help-section"><i class="md-icon help-section-icon">rule</i>How Rules Work</div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">add_circle_outline</i><div>Each <b>rule</b> compares one property against a value. Add multiple rules to a group to combine conditions.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">do_not_disturb_on</i><div>The <b>NOT</b> button on each rule negates it — e.g. <i>NOT Genre: Action</i> matches items that are <b>not</b> action.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">device_hub</i><div><b>AND / OR within a group</b> — the radio buttons at the top of a group control how rules in that group are combined.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">layers</i><div><b>AND / OR between groups</b> — the connector badge between groups controls how groups relate to each other.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">text_fields</i><div><b>Contains / Exact</b> — text properties show a mode selector. <em>Contains</em> matches anywhere in the value (case-insensitive); <em>Exact</em> requires a full match. Enter one value per line — if any line matches, the rule matches (OR logic).</div></div>
+                <div class="help-section"><i class="md-icon help-section-icon">rule</i>规则的工作方式</div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">add_circle_outline</i><div>每条<b>规则</b>将一个属性与指定值进行比较。在组内添加多条规则即可组合条件。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">do_not_disturb_on</i><div>每条规则上的<b>非</b>按钮可将条件取反，例如<i>非 类型：动作</i>会匹配<b>非</b>动作类型的项目。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">device_hub</i><div><b>组内的与 / 或</b> — 组顶部的单选按钮控制该组内规则的组合方式。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">layers</i><div><b>组间的与 / 或</b> — 组之间的连接标记控制各组的关系。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">text_fields</i><div><b>包含 / 精确匹配</b> — 文本属性提供模式选择器。<em>包含</em>可匹配值中任意位置的文本（不区分大小写）；<em>精确匹配</em>要求完全一致。每行输入一个值，任意一行匹配即满足规则（或逻辑）。</div></div>
 
-                <div class="help-section"><i class="md-icon help-section-icon">videocam</i>Video</div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Resolution</span> — 4K, 1080p, 720p, SD, 8K</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Video Codec</span> — HEVC/H.265, AV1, H.264</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">HDR</span> — Any HDR, HDR10, or Dolby Vision</div></div>
+                <div class="help-section"><i class="md-icon help-section-icon">videocam</i>视频</div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">分辨率</span> — 4K, 1080p, 720p, SD, 8K</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">视频编码</span> — HEVC/H.265, AV1, H.264</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">HDR</span> — 任意 HDR、HDR10 或 Dolby Vision</div></div>
 
-                <div class="help-section"><i class="md-icon help-section-icon">volume_up</i>Audio</div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Audio Format</span> — Atmos, TrueHD, DTS-HD MA, DTS, AC3, AAC</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Audio Channels</span> — 7.1, 5.1, Stereo, Mono</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Audio Language</span> — matches if the file contains a track in the specified language. One language code per line (e.g. <i>swe</i>, <i>eng</i>). Any matching line = rule matches.</div></div>
+                <div class="help-section"><i class="md-icon help-section-icon">volume_up</i>音频</div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">音频格式</span> — Atmos, TrueHD, DTS-HD MA, DTS, AC3, AAC</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">音频声道</span> — 7.1、5.1、立体声、单声道</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">音频语言</span> — 文件包含指定语言的音轨时匹配。每行一个语言代码（例如 <i>swe</i>、<i>eng</i>）。任意一行匹配即满足规则。</div></div>
 
-                <div class="help-section"><i class="md-icon help-section-icon">local_movies</i>Content</div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Media Type</span> — Movie, Series, or Episode. When <b>Episode</b> is selected, all filters evaluate against individual episodes and tags are applied directly to each matching episode.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Tag</span> — matches items that already have a specific Emby tag applied. One per line: <i>4K</i> / <i>HDR</i> matches items tagged with either.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Title</span> — matches the movie or series name. When Media Type = Episode, matches the parent series name. One per line: <i>Batman</i> / <i>Dark Knight</i> matches either title.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Title (Episode)</span> — matches the episode's own title. Use together with Media Type = Episode. One value per line for multiple episode titles.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Overview</span> — searches the plot description/summary for keywords or phrases. One per line: <i>Christmas</i> / <i>heist</i> matches if <em>either</em> word appears in the overview.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Studio</span> — production studio name. One per line: <i>Netflix</i> / <i>HBO</i> matches items from either studio.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Genre</span> — e.g. Action, Drama, Comedy. One per line: <i>Action</i> / <i>Thriller</i> matches items in either genre.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Actor / Cast</span> — name of a cast member. Use <em>Exact</em> for full-name match or <em>Contains</em> for partial. One per line: <i>Tom Hanks</i> / <i>Idris Elba</i> matches items featuring either.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Director</span> / <span class="mi-help-prop">Writer</span> — crew members. Use Exact or Contains mode. One per line for multiple names.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Content Rating</span> — e.g. PG-13, TV-MA. Use <em>Exact</em> mode. One per line: <i>PG-13</i> / <i>R</i> matches either rating.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">IMDB ID</span> — one or more IDs, one per line, e.g. <i>tt0468569</i></div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Collection</span> — matches items that are members of the named Emby collection. One collection name per line (OR). Names containing colons are supported.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Playlist</span> — matches items that belong to the named Emby playlist. One playlist name per line (OR). Names containing colons are supported.</div></div>
+                <div class="help-section"><i class="md-icon help-section-icon">local_movies</i>内容</div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">媒体类型</span> — 电影、剧集或单集。选择<b>单集</b>时，所有筛选条件均针对各个单集进行判断，标签直接应用于每个匹配的单集。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">标签</span> — 匹配已带有指定 Emby 标签的项目。每行一个：<i>4K</i> / <i>HDR</i> 匹配带有其中任一标签的项目。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">标题</span> — 匹配电影或剧集名称。媒体类型为单集时，匹配所属剧集的名称。每行一个：<i>星河小镇奇遇</i> / <i>云海寻光记</i> 匹配其中任一标题。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">标题（单集）</span> — 匹配单集自身的标题。需配合媒体类型为单集使用。多个单集标题每行输入一个。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">简介</span> — 在剧情描述或摘要中搜索关键词或短语。每行一个：<i>圣诞节</i> / <i>劫案</i>，简介中出现<em>任一</em>词语即匹配。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">制作公司</span> — 制作公司名称。每行一个：<i>Netflix</i> / <i>HBO</i> 匹配其中任一公司制作的项目。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">类型</span> — 例如动作、剧情、喜剧。每行一个：<i>动作</i> / <i>惊悚</i> 匹配属于任一类型的项目。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">演员 / 演职人员</span> — 演员姓名。使用<em>精确匹配</em>匹配全名，或使用<em>包含</em>匹配部分姓名。每行一个：<i>汤姆·汉克斯</i> / <i>伊德里斯·艾尔巴</i> 匹配其中任一演员参演的项目。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">导演</span> / <span class="mi-help-prop">编剧</span> — 幕后人员。可使用精确匹配或包含模式。多个姓名每行输入一个。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">内容分级</span> — 例如 PG-13、TV-MA。使用<em>精确匹配</em>模式。每行一个：<i>PG-13</i> / <i>R</i> 匹配其中任一分级。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">IMDB ID</span> — 一个或多个 ID，每行一个，例如 <i>tt&lt;作品ID&gt;</i></div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">合集</span> — 匹配属于指定名称的 Emby 合集的项目。每行一个合集名称（或逻辑）。支持名称中包含冒号。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">播放列表</span> — 匹配属于指定名称的 Emby 播放列表的项目。每行一个播放列表名称（或逻辑）。支持名称中包含冒号。</div></div>
 
-                <div class="help-section"><i class="md-icon help-section-icon">music_note</i>Music</div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Artist</span> / <span class="mi-help-prop">Album</span> — use with <em>MediaType = Audio</em> for songs or <em>MediaType = MusicVideo</em> for music videos. Supports Contains/Exact mode. One per line for multiple values.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">BitRate</span> (kbps) / <span class="mi-help-prop">SampleRate</span> (Hz) / <span class="mi-help-prop">BitsPerSample</span> — numeric operators, e.g. <i>BitsPerSample &gt;= 24</i> for hi-res audio</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">TrackNumber</span> / <span class="mi-help-prop">DiscNumber</span> — numeric operators for track or disc position within an album</div></div>
+                <div class="help-section"><i class="md-icon help-section-icon">music_note</i>音乐</div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">艺术家</span> / <span class="mi-help-prop">专辑</span> — 歌曲需配合 <em>MediaType = Audio</em> 使用，音乐视频需配合 <em>MediaType = MusicVideo</em> 使用。支持包含/精确匹配模式。多个值每行输入一个。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">比特率</span> (kbps) / <span class="mi-help-prop">采样率</span> (Hz) / <span class="mi-help-prop">位深</span> — 使用数值运算符，例如 <i>BitsPerSample &gt;= 24</i> 可筛选高解析度音频</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">曲目编号</span> / <span class="mi-help-prop">碟片编号</span> — 使用数值运算符筛选曲目或碟片在专辑中的位置</div></div>
 
-                <div class="help-section"><i class="md-icon help-section-icon">bar_chart</i>Metrics</div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Community Rating</span> — Emby/IMDB score, use numeric operators (=, &gt;, &gt;=, &lt;, &lt;=)</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Year</span> — release year</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Runtime</span> — in minutes</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Date Added</span> / <span class="mi-help-prop">Date Modified</span> — number of days ago (e.g. <i>&lt;= 30</i> = last 30 days)</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">File Size</span> — in MB</div></div>
+                <div class="help-section"><i class="md-icon help-section-icon">bar_chart</i>指标</div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">社区评分</span> — Emby/IMDB 评分，使用数值运算符（=、&gt;、&gt;=、&lt;、&lt;=）</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">年份</span> — 发行年份</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">时长</span> — 单位为分钟</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">添加日期</span> / <span class="mi-help-prop">修改日期</span> — 距今的天数（例如 <i>&lt;= 30</i> = 最近 30 天）</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">文件大小</span> — 单位为 MB</div></div>
 
-                <div class="help-section"><i class="md-icon help-section-icon">history</i>Activity</div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Watched / Unwatched</span> — filter by play status. Choose the user scope below.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Last Played</span> — days since last watched (e.g. <i>&lt;= 7</i> = watched in last week)</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Play Count</span> — number of times watched</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">group</i><div><span class="mi-help-prop">Any User</span> — matches if <b>at least one</b> user in the library satisfies the condition. Example: <i>Watched = Any User</i> matches items that <em>someone</em> has seen.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">groups</i><div><span class="mi-help-prop">All Users</span> — matches only if <b>every</b> user in the library satisfies the condition. Example: <i>Watched = All Users</i> matches items that <em>everybody</em> has seen. <i>NOT Watched = All Users</i> matches items that nobody has seen.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">person</i><div><span class="mi-help-prop">Specific user</span> — scopes the condition to one named user only. Useful when different household members have different watch habits.</div></div>
-                <div class="help-feature-row" style="margin-bottom:0;"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">WatchedByCount</span> — number of distinct users who have finished the item. Supports numeric operators (e.g. <i>&gt;= 2</i> = at least two users have watched it). Useful for finding content that is popular or completely unseen across the household.</div></div>
+                <div class="help-section"><i class="md-icon help-section-icon">history</i>活动</div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">已观看 / 未观看</span> — 按播放状态筛选。在下方选择用户范围。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">上次播放</span> — 距上次观看的天数（例如 <i>&lt;= 7</i> = 最近一周内看过）</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">播放次数</span> — 观看次数</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">group</i><div><span class="mi-help-prop">任意用户</span> — 媒体库中<b>至少一位</b>用户满足条件即匹配。例如：<i>已观看 = 任意用户</i> 匹配<em>有人</em>看过的项目。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">groups</i><div><span class="mi-help-prop">所有用户</span> — 仅当媒体库中<b>每位</b>用户都满足条件时才匹配。例如：<i>已观看 = 所有用户</i> 匹配<em>所有人</em>都看过的项目。<i>非 已观看 = 所有用户</i> 匹配无人看过的项目。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">person</i><div><span class="mi-help-prop">指定用户</span> — 仅针对某位指定用户判断条件。适合家庭成员观看习惯不同的情况。</div></div>
+                <div class="help-feature-row" style="margin-bottom:0;"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">看完人数</span> — 已看完该项目的不同用户数量。支持数值运算符（例如 <i>&gt;= 2</i> = 至少两位用户看过）。可用于查找家庭中受欢迎或完全无人看过的内容。</div></div>
 
-                <div class="help-section"><i class="md-icon help-section-icon">lightbulb</i>Examples</div>
-                <div class="step-text" style="font-size:0.88em; margin-bottom:12px; opacity:0.75;"><b>Tip:</b> for text properties (Genre, Actor, Director, Studio, etc.) you can enter multiple values on separate lines in a single rule — any matching line satisfies the rule (OR logic).</div>
+                <div class="help-section"><i class="md-icon help-section-icon">lightbulb</i>示例</div>
+                <div class="step-text" style="font-size:0.88em; margin-bottom:12px; opacity:0.75;"><b>提示：</b>对于文本属性（类型、演员、导演、制作公司等），可在同一条规则中分行输入多个值，任意一行匹配即满足规则（或逻辑）。</div>
 
                 <div class="ex-table">
                     <div class="ex-row ex-header">
-                        <div class="ex-col-title">Name &amp; description</div>
-                        <div class="ex-col-rules">Filter rules</div>
+                        <div class="ex-col-title">名称与说明</div>
+                        <div class="ex-col-rules">筛选规则</div>
                     </div>
 
                     <div class="ex-row">
                         <div class="ex-col-title">
-                            <span class="ex-badge ex-easy">Simple</span>
-                            <b>New arrivals</b>
-                            <span class="ex-desc">Everything added in the last 30 days</span>
+                            <span class="ex-badge ex-easy">简单</span>
+                            <b>最近入库</b>
+                            <span class="ex-desc">最近 30 天添加的所有内容</span>
                         </div>
                         <div class="ex-col-rules">
                             <div class="ex-group">
-                                <span class="ex-op">Group 1 · AND</span>
-                                <code>Date Added &lt;= 30</code>
+                                <span class="ex-op">组 1 · 与</span>
+                                <code>添加日期 &lt;= 30</code>
                             </div>
                         </div>
                     </div>
 
                     <div class="ex-row">
                         <div class="ex-col-title">
-                            <span class="ex-badge ex-easy">Simple</span>
-                            <b>Top-rated movies</b>
-                            <span class="ex-desc">Movies rated 8.0 or higher</span>
+                            <span class="ex-badge ex-easy">简单</span>
+                            <b>高分电影</b>
+                            <span class="ex-desc">评分不低于 8.0 的电影</span>
                         </div>
                         <div class="ex-col-rules">
                             <div class="ex-group">
-                                <span class="ex-op">Group 1 · AND</span>
-                                <code>Media Type = Movie</code>
-                                <code>Community Rating &gt;= 8</code>
+                                <span class="ex-op">组 1 · 与</span>
+                                <code>媒体类型 = 电影</code>
+                                <code>社区评分 &gt;= 8</code>
                             </div>
                         </div>
                     </div>
 
                     <div class="ex-row">
                         <div class="ex-col-title">
-                            <span class="ex-badge ex-easy">Simple</span>
-                            <b>4K Atmos library</b>
-                            <span class="ex-desc">4K content with Atmos audio</span>
+                            <span class="ex-badge ex-easy">简单</span>
+                            <b>4K Atmos 媒体库</b>
+                            <span class="ex-desc">带有 Atmos 音频的 4K 内容</span>
                         </div>
                         <div class="ex-col-rules">
                             <div class="ex-group">
-                                <span class="ex-op">Group 1 · AND</span>
-                                <code>Resolution = 4K</code>
-                                <code>Audio Format = Atmos</code>
+                                <span class="ex-op">组 1 · 与</span>
+                                <code>分辨率 = 4K</code>
+                                <code>音频格式 = Atmos</code>
                             </div>
                         </div>
                     </div>
 
                     <div class="ex-row">
                         <div class="ex-col-title">
-                            <span class="ex-badge ex-easy">Simple</span>
-                            <b>Multiple genres — one rule</b>
-                            <span class="ex-desc">Action or Sci-Fi movies using a single rule with two lines (OR logic)</span>
+                            <span class="ex-badge ex-easy">简单</span>
+                            <b>多个类型 — 一条规则</b>
+                            <span class="ex-desc">在一条规则中输入两行，筛选动作或科幻电影（或逻辑）</span>
                         </div>
                         <div class="ex-col-rules">
                             <div class="ex-group">
-                                <span class="ex-op">Group 1 · AND</span>
-                                <code>Media Type = Movie</code>
-                                <code>Genre = Action <span style="opacity:0.5;">↵</span> Sci-Fi &nbsp;<span style="opacity:0.5; font-size:0.8em;">(two lines, one rule)</span></code>
+                                <span class="ex-op">组 1 · 与</span>
+                                <code>媒体类型 = 电影</code>
+                                <code>类型 = 动作 <span style="opacity:0.5;">↵</span> 科幻 &nbsp;<span style="opacity:0.5; font-size:0.8em;">（两行，一条规则）</span></code>
                             </div>
                         </div>
                     </div>
 
                     <div class="ex-row">
                         <div class="ex-col-title">
-                            <span class="ex-badge ex-easy">Simple</span>
-                            <b>From a collection</b>
-                            <span class="ex-desc">Items that belong to a specific Emby collection</span>
+                            <span class="ex-badge ex-easy">简单</span>
+                            <b>来自合集</b>
+                            <span class="ex-desc">属于指定 Emby 合集的项目</span>
                         </div>
                         <div class="ex-col-rules">
                             <div class="ex-group">
-                                <span class="ex-op">Group 1 · AND</span>
-                                <code>Collection = Marvel Cinematic Universe</code>
+                                <span class="ex-op">组 1 · 与</span>
+                                <code>合集 = 星河奇遇系列</code>
                             </div>
                         </div>
                     </div>
 
                     <div class="ex-row">
                         <div class="ex-col-title">
-                            <span class="ex-badge ex-medium">Medium</span>
-                            <b>By director — partial match</b>
-                            <span class="ex-desc">All films from two directors using Contains mode on one rule</span>
+                            <span class="ex-badge ex-medium">中等</span>
+                            <b>按导演 — 部分匹配</b>
+                            <span class="ex-desc">在一条规则中使用包含模式，筛选两位导演的所有电影</span>
                         </div>
                         <div class="ex-col-rules">
                             <div class="ex-group">
-                                <span class="ex-op">Group 1 · AND</span>
-                                <code>Director [contains] Nolan <span style="opacity:0.5;">↵</span> Villeneuve &nbsp;<span style="opacity:0.5; font-size:0.8em;">(two lines)</span></code>
+                                <span class="ex-op">组 1 · 与</span>
+                                <code>导演 [包含] 诺兰 <span style="opacity:0.5;">↵</span> 维伦纽瓦 &nbsp;<span style="opacity:0.5; font-size:0.8em;">（两行）</span></code>
                             </div>
                         </div>
                     </div>
 
                     <div class="ex-row">
                         <div class="ex-col-title">
-                            <span class="ex-badge ex-medium">Medium</span>
-                            <b>Unseen by everyone</b>
-                            <span class="ex-desc">No user in the library has watched it</span>
+                            <span class="ex-badge ex-medium">中等</span>
+                            <b>所有人都未看过</b>
+                            <span class="ex-desc">媒体库中没有用户看过</span>
                         </div>
                         <div class="ex-col-rules">
                             <div class="ex-group">
-                                <span class="ex-op">Group 1 · AND</span>
-                                <code>NOT Watched = All Users</code>
+                                <span class="ex-op">组 1 · 与</span>
+                                <code>非 已观看 = 所有用户</code>
                             </div>
                         </div>
                     </div>
 
                     <div class="ex-row">
                         <div class="ex-col-title">
-                            <span class="ex-badge ex-medium">Medium</span>
-                            <b>Popular across the household</b>
-                            <span class="ex-desc">Items that at least 2 users have finished watching</span>
+                            <span class="ex-badge ex-medium">中等</span>
+                            <b>全家热门</b>
+                            <span class="ex-desc">至少有 2 位用户看完的项目</span>
                         </div>
                         <div class="ex-col-rules">
                             <div class="ex-group">
-                                <span class="ex-op">Group 1 · AND</span>
+                                <span class="ex-op">组 1 · 与</span>
                                 <code>WatchedByCount &gt;= 2</code>
                             </div>
                         </div>
@@ -2118,29 +2156,29 @@
 
                     <div class="ex-row" style="border-bottom:none;">
                         <div class="ex-col-title">
-                            <span class="ex-badge ex-hard">Advanced</span>
-                            <b>Binge candidates</b>
-                            <span class="ex-desc">Rated series added this year that someone started but nobody finished</span>
+                            <span class="ex-badge ex-hard">高级</span>
+                            <b>追剧候选</b>
+                            <span class="ex-desc">今年添加、有评分且有人开始看但无人看完的剧集</span>
                         </div>
                         <div class="ex-col-rules">
                             <div class="ex-group">
-                                <span class="ex-op">Group 1 · AND</span>
-                                <code>Media Type = Series</code>
-                                <code>Community Rating &gt;= 7.5</code>
-                                <code>Date Added &lt;= 365</code>
+                                <span class="ex-op">组 1 · 与</span>
+                                <code>媒体类型 = 剧集</code>
+                                <code>社区评分 &gt;= 7.5</code>
+                                <code>添加日期 &lt;= 365</code>
                             </div>
-                            <div class="ex-group-connector">AND</div>
+                            <div class="ex-group-connector">与</div>
                             <div class="ex-group">
-                                <span class="ex-op">Group 2 · AND</span>
-                                <code>Watched = Any User</code>
-                                <code>NOT Watched = All Users</code>
+                                <span class="ex-op">组 2 · 与</span>
+                                <code>已观看 = 任意用户</code>
+                                <code>非 已观看 = 所有用户</code>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div style="text-align:right;margin-top:24px;padding-top:16px;border-top:1px solid var(--line-color,rgba(128,128,128,0.3));">
-                    <button is="emby-button" type="button" id="btnCloseMiHelp" class="raised button-submit" style="background:#00a4dc;color:white;padding:0 25px;">Got it</button>
+                    <button is="emby-button" type="button" id="btnCloseMiHelp" class="raised button-submit" style="background:#00a4dc;color:white;padding:0 25px;">知道了</button>
                 </div>
             </div>
         </div>
@@ -2151,31 +2189,31 @@
             <div class="modal-header-bar" style="background:linear-gradient(135deg,#00a4dc 0%,#007ba8 100%);">
                 <i class="md-icon modal-header-icon">label</i>
                 <div>
-                    <h2 class="modal-header-title">Tag &amp; Collection Target Level</h2>
-                    <span style="opacity:0.9;font-size:0.9em;">How Series, Season and Episode targeting works</span>
+                    <h2 class="modal-header-title">标签与合集的目标层级</h2>
+                    <span style="opacity:0.9;font-size:0.9em;">剧集、季和单集目标的工作方式</span>
                 </div>
             </div>
             <div class="modal-body-scroll" style="padding:24px;">
 
-                <div class="help-section"><i class="md-icon help-section-icon">info</i>How it works</div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">layers</i><div>Controls which Emby items receive the tag or are added to the collection. Multiple levels can be selected simultaneously. If none is selected, <b>Series</b> is used as the default.</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">device_hub</i><div>The Tag and Collection targets are <b>independent</b> of each other — you can tag at Series level while adding Seasons to a collection at the same time.</div></div>
+                <div class="help-section"><i class="md-icon help-section-icon">info</i>工作方式</div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">layers</i><div>控制为哪些 Emby 项目添加标签或将其加入合集。可同时选择多个层级。如果未选择任何层级，默认使用<b>剧集</b>。</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">device_hub</i><div>标签目标与合集目标<b>相互独立</b>，您可以在剧集层级添加标签，同时将各季加入合集。</div></div>
 
-                <div class="help-section"><i class="md-icon help-section-icon">tv</i>Source returns a series (e.g. Scrubs)</div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Series</span> — tags/adds Scrubs itself</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Season</span> — tags/adds all seasons of Scrubs</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Episode</span> — tags/adds all episodes of Scrubs</div></div>
+                <div class="help-section"><i class="md-icon help-section-icon">tv</i>来源返回整部剧集（例如《星河小镇奇遇》）</div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">剧集</span> — 为《星河小镇奇遇》本身添加标签或加入合集</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">季</span> — 为《星河小镇奇遇》的所有季添加标签或加入合集</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">单集</span> — 为《星河小镇奇遇》的所有单集添加标签或加入合集</div></div>
 
-                <div class="help-section"><i class="md-icon help-section-icon">movie</i>Source returns a specific episode (via MediaType:Episode)</div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Series</span> — tags/adds Scrubs (the parent series)</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Season</span> — tags/adds only the season that episode belongs to</div></div>
-                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">Episode</span> — tags/adds only that single episode</div></div>
+                <div class="help-section"><i class="md-icon help-section-icon">movie</i>来源返回特定单集（通过 MediaType:Episode）</div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">剧集</span> — 为《星河小镇奇遇》（所属剧集）添加标签或加入合集</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">季</span> — 仅为该单集所属的季添加标签或加入合集</div></div>
+                <div class="help-feature-row"><i class="md-icon help-feat-icon">check_circle</i><div><span class="mi-help-prop">单集</span> — 仅为该单集添加标签或加入合集</div></div>
 
-                <div class="help-section"><i class="md-icon help-section-icon">lightbulb</i>Tip</div>
-                <div class="help-feature-row" style="margin-bottom:0;"><i class="md-icon help-feat-icon">info</i><div>To target a specific episode or season, add <b>MediaType:Episode</b> in the Source filter. Without it, the source returns whole series and all levels expand from there.</div></div>
+                <div class="help-section"><i class="md-icon help-section-icon">lightbulb</i>提示</div>
+                <div class="help-feature-row" style="margin-bottom:0;"><i class="md-icon help-feat-icon">info</i><div>要针对特定单集或季，请在来源筛选器中添加 <b>MediaType:Episode</b>。否则来源会返回整部剧集，并据此扩展到所有层级。</div></div>
 
                 <div style="text-align:right;margin-top:24px;padding-top:16px;border-top:1px solid var(--line-color,rgba(128,128,128,0.3));">
-                    <button is="emby-button" type="button" id="btnCloseTagTargetHelp" class="raised button-submit" style="background:#00a4dc;color:white;padding:0 25px;">Got it</button>
+                    <button is="emby-button" type="button" id="btnCloseTagTargetHelp" class="raised button-submit" style="background:#00a4dc;color:white;padding:0 25px;">知道了</button>
                 </div>
             </div>
         </div>

@@ -11,19 +11,11 @@ using MediaBrowser.Model.Serialization;
 
 namespace HomeScreenCompanion
 {
-    internal sealed class AnimeRelationVerdict
-    {
-        public bool same_ip { get; set; }
-        public double confidence { get; set; }
-        public string reason { get; set; } = "";
-    }
 
     public class ListFetcher
     {
         private readonly IHttpClient _httpClient;
         private readonly IJsonSerializer _jsonSerializer;
-
-        private static readonly System.Net.Http.HttpClient _netHttpClient = new System.Net.Http.HttpClient();
 
 
         public ListFetcher(IHttpClient httpClient, IJsonSerializer jsonSerializer)
@@ -450,224 +442,32 @@ namespace HomeScreenCompanion
 
             try
             {
-                string rawJson;
-                if (string.Equals(provider, "Gemini", StringComparison.OrdinalIgnoreCase))
+                var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
+                // Preserve explicit per-list official provider selections.
+                var requestConfig = new PluginConfiguration
                 {
-                    if (string.IsNullOrWhiteSpace(geminiApiKey))
-                        throw new InvalidOperationException("Gemini API key is not configured.");
-                    rawJson = await CallGemini(geminiApiKey, geminiModel ?? "gemini-2.0-flash", systemPrompt, userMessage, cancellationToken);
-                }
-                else if (string.Equals(provider, "Claude", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (string.IsNullOrWhiteSpace(claudeApiKey))
-                        throw new InvalidOperationException("Claude API key is not configured.");
-                    rawJson = await CallClaude(claudeApiKey, claudeModel ?? "claude-haiku-4-5-20251001", systemPrompt, userMessage, cancellationToken);
-                }
-                else if (string.Equals(provider, "Ollama", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (string.IsNullOrWhiteSpace(ollamaBaseUrl))
-                        throw new InvalidOperationException("Ollama base URL is not configured.");
-                    if (string.IsNullOrWhiteSpace(ollamaModel))
-                        throw new InvalidOperationException("Ollama model is not configured.");
-                    rawJson = await CallOllama(ollamaBaseUrl, ollamaModel, systemPrompt, userMessage, cancellationToken);
-                }
-                else
-                {
-                    if (string.IsNullOrWhiteSpace(openAiApiKey))
-                        throw new InvalidOperationException("OpenAI API key is not configured.");
-                    rawJson = await CallOpenAi(openAiApiKey, openAiModel ?? "gpt-4o-mini", systemPrompt, userMessage, cancellationToken);
-                }
+                    CompatibleAiBaseUrl = config.CompatibleAiBaseUrl,
+                    CompatibleAiModel = config.CompatibleAiModel,
+                    CompatibleAiApiKey = config.CompatibleAiApiKey,
+                    OpenAiApiKey = openAiApiKey, OpenAiModel = openAiModel,
+                    GeminiApiKey = geminiApiKey, GeminiModel = geminiModel,
+                    ClaudeApiKey = claudeApiKey, ClaudeModel = claudeModel,
+                    OllamaBaseUrl = ollamaBaseUrl, OllamaModel = ollamaModel
+                };
+                string rawJson = await new AiRequestClient(_jsonSerializer).CompleteAsync(requestConfig,
+                    provider, systemPrompt, userMessage, Math.Max(1, config.AnimeAiMaxTokensPerCall), cancellationToken);
 
-                var cleaned = CleanAiJsonOutput(rawJson);
+                var cleaned = AiRequestClient.CleanAiJsonOutput(rawJson);
                 var items = _jsonSerializer.DeserializeFromString<List<AiListItem>>(cleaned);
                 return items ?? new List<AiListItem>();
             }
+            catch (OperationCanceledException) { throw; }
             catch
             {
                 return new List<AiListItem>();
             }
         }
 
-        /// <summary>
-        /// Uses the same AI credentials/providers as normal HSC lists. AI can only review
-        /// an existing AniList OTHER relation, never invent an AniList or Emby ID.
-        /// </summary>
-        public async Task<bool> CheckAnimeRelationAsync(PluginConfiguration config,
-            string firstTitle, string secondTitle, CancellationToken cancellationToken)
-        {
-            string systemPrompt =
-                "You are reviewing a weak (OTHER) relationship already present in AniList between two anime entries. " +
-                "Do they belong to the same named anime franchise/IP? Crossovers, shared staff, character cameos, " +
-                "and generic genre similarity do not count. Be conservative. " +
-                "Return ONLY JSON: {\"same_ip\":false,\"confidence\":0.0,\"reason\":\"...\"}. " +
-                "For uncertainty, return false. Confidence must be between 0 and 1.";
-            string userPrompt = _jsonSerializer.SerializeToString(new
-            {
-                first_title = (firstTitle ?? "").Substring(0, Math.Min(240, (firstTitle ?? "").Length)),
-                second_title = (secondTitle ?? "").Substring(0, Math.Min(240, (secondTitle ?? "").Length))
-            });
-            string provider = (config.AnimeAiProvider ?? "OpenAI").Trim();
-            string answer;
-            if (provider.Equals("Gemini", StringComparison.OrdinalIgnoreCase))
-            {
-                if (string.IsNullOrWhiteSpace(config.GeminiApiKey)) throw new InvalidOperationException("Gemini key missing.");
-                answer = await CallGemini(config.GeminiApiKey, config.GeminiModel, systemPrompt, userPrompt, cancellationToken);
-            }
-            else if (provider.Equals("Claude", StringComparison.OrdinalIgnoreCase))
-            {
-                if (string.IsNullOrWhiteSpace(config.ClaudeApiKey)) throw new InvalidOperationException("Claude key missing.");
-                answer = await CallClaude(config.ClaudeApiKey, config.ClaudeModel, systemPrompt, userPrompt, cancellationToken);
-            }
-            else if (provider.Equals("Ollama", StringComparison.OrdinalIgnoreCase))
-            {
-                if (string.IsNullOrWhiteSpace(config.OllamaModel)) throw new InvalidOperationException("Ollama model missing.");
-                answer = await CallOllama(config.OllamaBaseUrl, config.OllamaModel, systemPrompt, userPrompt, cancellationToken);
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(config.OpenAiApiKey)) throw new InvalidOperationException("OpenAI key missing.");
-                answer = await CallOpenAi(config.OpenAiApiKey, config.OpenAiModel, systemPrompt, userPrompt, cancellationToken);
-            }
-            var verdict = _jsonSerializer.DeserializeFromString<AnimeRelationVerdict>(CleanAiJsonOutput(answer));
-            return verdict != null && verdict.same_ip && verdict.confidence >= 0.95 &&
-                !string.IsNullOrWhiteSpace(verdict.reason);
-        }
 
-        private async Task<string> CallOpenAi(string apiKey, string model, string systemPrompt, string userMessage, CancellationToken cancellationToken)
-        {
-            var requestBody = $"{{" +
-                $"\"model\":{EscapeJsonString(model)}," +
-                $"\"messages\":[" +
-                $"{{\"role\":\"system\",\"content\":{EscapeJsonString(systemPrompt)}}}," +
-                $"{{\"role\":\"user\",\"content\":{EscapeJsonString(userMessage)}}}" +
-                $"]}}";
-
-            var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
-            request.Headers.Add("Authorization", $"Bearer {apiKey}");
-            request.Content = new System.Net.Http.StringContent(requestBody, Encoding.UTF8, "application/json");
-
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(30));
-
-            var response = await _netHttpClient.SendAsync(request, cts.Token);
-            var responseBody = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-                throw new InvalidOperationException($"OpenAI API error {(int)response.StatusCode}: {responseBody}");
-
-            var parsed = _jsonSerializer.DeserializeFromString<OpenAiResponse>(responseBody);
-            return parsed?.choices?.FirstOrDefault()?.message?.content ?? "";
-        }
-
-        private async Task<string> CallGemini(string apiKey, string model, string systemPrompt, string userMessage, CancellationToken cancellationToken)
-        {
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
-            var requestBody = $"{{" +
-                $"\"systemInstruction\":{{\"parts\":[{{\"text\":{EscapeJsonString(systemPrompt)}}}]}}," +
-                $"\"contents\":[{{\"role\":\"user\",\"parts\":[{{\"text\":{EscapeJsonString(userMessage)}}}]}}]" +
-                $"}}";
-
-            var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
-            request.Content = new System.Net.Http.StringContent(requestBody, Encoding.UTF8, "application/json");
-
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(30));
-
-            var response = await _netHttpClient.SendAsync(request, cts.Token);
-            var responseBody = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-                throw new InvalidOperationException($"Gemini API error {(int)response.StatusCode}: {responseBody}");
-
-            var parsed = _jsonSerializer.DeserializeFromString<GeminiResponse>(responseBody);
-            return parsed?.candidates?.FirstOrDefault()?.content?.parts?.FirstOrDefault()?.text ?? "";
-        }
-
-        private async Task<string> CallClaude(string apiKey, string model, string systemPrompt, string userMessage, CancellationToken cancellationToken)
-        {
-            var requestBody = $"{{" +
-                $"\"model\":{EscapeJsonString(model)}," +
-                $"\"max_tokens\":1024," +
-                $"\"system\":{EscapeJsonString(systemPrompt)}," +
-                $"\"messages\":[{{\"role\":\"user\",\"content\":{EscapeJsonString(userMessage)}}}]" +
-                $"}}";
-
-            var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, "https://api.anthropic.com/v1/messages");
-            request.Headers.Add("x-api-key", apiKey);
-            request.Headers.Add("anthropic-version", "2023-06-01");
-            request.Content = new System.Net.Http.StringContent(requestBody, Encoding.UTF8, "application/json");
-
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(30));
-
-            var response = await _netHttpClient.SendAsync(request, cts.Token);
-            var responseBody = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-                throw new InvalidOperationException($"Claude API error {(int)response.StatusCode}: {responseBody}");
-
-            var parsed = _jsonSerializer.DeserializeFromString<ClaudeResponse>(responseBody);
-            return parsed?.content?.FirstOrDefault(c => c.type == "text")?.text ?? "";
-        }
-
-        private async Task<string> CallOllama(string baseUrl, string model, string systemPrompt, string userMessage, CancellationToken cancellationToken)
-        {
-            var url = $"{baseUrl.TrimEnd('/')}/api/chat";
-            var requestBody = $"{{" +
-                $"\"model\":{EscapeJsonString(model)}," +
-                $"\"messages\":[" +
-                $"{{\"role\":\"system\",\"content\":{EscapeJsonString(systemPrompt)}}}," +
-                $"{{\"role\":\"user\",\"content\":{EscapeJsonString(userMessage)}}}" +
-                $"]," +
-                $"\"stream\":false" +
-                $"}}";
-
-            var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, url);
-            request.Content = new System.Net.Http.StringContent(requestBody, Encoding.UTF8, "application/json");
-
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(120));
-
-            var response = await _netHttpClient.SendAsync(request, cts.Token);
-            var responseBody = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-                throw new InvalidOperationException($"Ollama API error {(int)response.StatusCode}: {responseBody}");
-
-            var parsed = _jsonSerializer.DeserializeFromString<OllamaResponse>(responseBody);
-            return parsed?.message?.content ?? "";
-        }
-
-        private static string CleanAiJsonOutput(string raw)
-        {
-            var trimmed = raw.Trim();
-            if (trimmed.StartsWith("```"))
-            {
-                var firstNewline = trimmed.IndexOf('\n');
-                var lastFence = trimmed.LastIndexOf("```");
-                if (firstNewline > 0 && lastFence > firstNewline)
-                    trimmed = trimmed.Substring(firstNewline + 1, lastFence - firstNewline - 1).Trim();
-            }
-            return trimmed;
-        }
-
-        private static string EscapeJsonString(string value)
-        {
-            var sb = new StringBuilder("\"");
-            foreach (var c in value)
-            {
-                switch (c)
-                {
-                    case '"': sb.Append("\\\""); break;
-                    case '\\': sb.Append("\\\\"); break;
-                    case '\n': sb.Append("\\n"); break;
-                    case '\r': sb.Append("\\r"); break;
-                    case '\t': sb.Append("\\t"); break;
-                    default: sb.Append(c); break;
-                }
-            }
-            sb.Append('"');
-            return sb.ToString();
-        }
     }
 }

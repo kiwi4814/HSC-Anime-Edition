@@ -38,9 +38,9 @@ namespace HomeScreenCompanion
         }
 
         public string Key => "TopListSyncTask";
-        public string Name => "Top-list section sync";
-        public string Description => "Run after manually creating a new library. Ensures each top-list home section only shows items from its own library, and that regular home sections never include top-list libraries.";
-        public string Category => "Home Screen Companion";
+        public string Name => "同步榜单栏目";
+        public string Description => "手动创建媒体库后运行。确保每个首页榜单栏目仅显示其对应媒体库的项目，且常规首页栏目不包含榜单媒体库。";
+        public string Category => "首页助手";
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers() => Array.Empty<TaskTriggerInfo>();
 
@@ -55,7 +55,7 @@ namespace HomeScreenCompanion
             catch (Exception ex)
             {
                 LastRunStatus = $"Error: {ex.Message}";
-                _log.Error($"Top-list sync aborted: {ex.Message}");
+                _log.Error($"榜单同步已中止：{ex.Message}");
             }
             finally
             {
@@ -228,19 +228,19 @@ namespace HomeScreenCompanion
                 LastStartedUtc = DateTime.UtcNow;
                 _log = new RunLog(ExecutionLog, null, "", config?.ExtendedConsoleOutput ?? false);
                 _log.Rule();
-                _log.Info($"Top-list section sync  ·  {startTime:yyyy-MM-dd HH:mm}");
+                _log.Info($"同步榜单栏目  ·  {startTime:yyyy-MM-dd HH:mm}");
                 _log.Rule();
             }
             else
             {
                 _log = log!;
             }
-            if (config == null) { _log.Error("Plugin configuration could not be loaded"); return (0, "No config."); }
+            if (config == null) { _log.Error("无法加载插件配置"); return (0, "无配置。"); }
 
             var topLists = config.TopLists ?? new List<TopListHomeSection>();
-            if (topLists.Count == 0) { _log.Skip("No top-lists configured — nothing to do"); return (0, "No top-lists configured."); }
+            if (topLists.Count == 0) { _log.Skip("未配置榜单，无需处理"); return (0, "未配置榜单。"); }
 
-            if (standalone) { _log.Blank(); _log.Info($"» Top-list sections  ·  {RunLog.Plural(topLists.Count, "top-list")}"); }
+            if (standalone) { _log.Blank(); _log.Info($"» 榜单栏目  ·  {RunLog.Plural(topLists.Count, "个榜单")}"); }
             int totalUpdated = 0, totalErrors = 0;
 
             // Collect all configured top-list library IDs so each top-list always excludes
@@ -252,9 +252,9 @@ namespace HomeScreenCompanion
 
             foreach (var tl in topLists)
             {
-                string tlName = tl.TagName ?? "(unnamed)";
-                _log.Section($"Top-list '{tlName}'");
-                if (string.IsNullOrEmpty(tl.HomeSectionLibraryId) || tl.HomeSectionLibraryId == "auto") { _log.Skip($"Top-list '{tlName}': skipped — no library has been created for it yet"); continue; }
+                string tlName = tl.TagName ?? "（未命名）";
+                _log.Section($"榜单“{tlName}”");
+                if (string.IsNullOrEmpty(tl.HomeSectionLibraryId) || tl.HomeSectionLibraryId == "auto") { _log.Skip($"榜单“{tlName}”：尚未创建媒体库，已跳过"); continue; }
                 int tlUpdated = 0, tlRemoved = 0;
 
                 var ownIds = OwnLibraryIds(tl.HomeSectionLibraryId, libraryManager);
@@ -281,9 +281,9 @@ namespace HomeScreenCompanion
                             userManager.DeleteHomeSections(uid, new[] { t.SectionId }, cancellationToken);
                             tl.HomeSectionTracked.Remove(t);
                             tlRemoved++;
-                            _log.Debug($"  {UserLabel(userManager, t.UserId)}: section removed (user no longer selected)");
+                            _log.Debug($"  {UserLabel(userManager, t.UserId)}：已移除栏目（用户已取消选择）");
                         }
-                        catch (Exception ex) { totalErrors++; _log.Warn($"Top-list '{tlName}': could not remove section for {UserLabel(userManager, t.UserId)} — {ex.Message}"); }
+                        catch (Exception ex) { totalErrors++; _log.Warn($"榜单“{tlName}”：无法为 {UserLabel(userManager, t.UserId)} 移除栏目 — {ex.Message}"); }
                     }
                 }
 
@@ -347,16 +347,16 @@ namespace HomeScreenCompanion
                             jsonSerializer, settingsDict, tl.HomeSectionLibraryId, owned);
                         typeof(ContentSection).GetProperty("Id")?.SetValue(updated, owned.Id);
                         userManager.UpdateHomeSection(uid, updated, cancellationToken);
-                        _log.Debug($"  {UserLabel(userManager, tracking.UserId)}: section updated");
+                        _log.Debug($"  {UserLabel(userManager, tracking.UserId)}：已更新栏目");
                         totalUpdated++;
                         tlUpdated++;
                     }
-                    catch (Exception ex) { totalErrors++; _log.Warn($"Top-list '{tlName}': section could not be updated for {UserLabel(userManager, tracking.UserId)} — {ex.Message}"); }
+                    catch (Exception ex) { totalErrors++; _log.Warn($"榜单“{tlName}”：无法为 {UserLabel(userManager, tracking.UserId)} 更新栏目 — {ex.Message}"); }
                 }
                 if (tlUpdated > 0 || tlRemoved > 0)
-                    _log.Ok($"Top-list '{tlName}': {RunLog.Plural(tlUpdated, "section")} updated{(tlRemoved > 0 ? $", {tlRemoved} removed" : "")}");
+                    _log.Ok($"榜单“{tlName}”：已更新 {RunLog.Plural(tlUpdated, "个栏目")}{(tlRemoved > 0 ? $"，已移除 {tlRemoved} 个" : "")}");
                 else
-                    _log.Skip($"Top-list '{tlName}': no home sections to update");
+                    _log.Skip($"榜单“{tlName}”：没有需要更新的首页栏目");
             }
 
             // Ensure ALL top-list libraries are excluded from every TAG items-type section.
@@ -456,8 +456,8 @@ namespace HomeScreenCompanion
             }
 
             Plugin.Instance?.SaveConfiguration();
-            var summary = $"Updated {totalUpdated} section(s) across {topLists.Count} top-list(s).";
-            _log.Info($"    {RunLog.Plural(totalUpdated, "section")} updated across {RunLog.Plural(topLists.Count, "top-list")}{(totalErrors > 0 ? $", {RunLog.Plural(totalErrors, "error")}" : "")}  ·  {RunLog.Elapsed(DateTime.Now - startTime)}");
+            var summary = $"已更新 {topLists.Count} 个榜单中的 {totalUpdated} 个栏目。";
+            _log.Info($"    已更新 {RunLog.Plural(topLists.Count, "个榜单")} 中的 {RunLog.Plural(totalUpdated, "个栏目")}{(totalErrors > 0 ? $"，{RunLog.Plural(totalErrors, "项错误")}" : "")}  ·  {RunLog.Elapsed(DateTime.Now - startTime)}");
             return (totalUpdated, summary);
         }
 
@@ -478,7 +478,7 @@ namespace HomeScreenCompanion
                 var libGuid = ResolveLibraryGuid(rawLibId, libraryManager);
                 if (string.IsNullOrEmpty(libGuid))
                 {
-                    logger.Warn($"[Access] Could not resolve GUID for library '{rawLibId}' — skipping.");
+                    logger.Warn($"[访问权限] 无法解析媒体库“{rawLibId}”的 GUID，已跳过。");
                     continue;
                 }
 
@@ -516,9 +516,9 @@ namespace HomeScreenCompanion
                             .ToArray();
                         policy.EnabledFolders = cleanedFolders.Concat(new[] { libGuid }).ToArray();
                         UpdatePolicy(mgr, user, uid, policy);
-                        logger.Info($"[Access] Granted library '{tl.TagName}' to '{user.Name}'.");
+                        logger.Info($"[访问权限] 已向“{user.Name}”授予媒体库“{tl.TagName}”的访问权限。");
                     }
-                    catch (Exception ex) { logger.Error($"[Access] Grant error for '{user.Name}': {ex.GetBaseException().Message}"); }
+                    catch (Exception ex) { logger.Error($"[访问权限] 为“{user.Name}”授予权限失败：{ex.GetBaseException().Message}"); }
                 }
 
                 // Revoke: remove access from users NOT assigned to this top-list
@@ -550,9 +550,9 @@ namespace HomeScreenCompanion
                             .ToArray();
 
                         UpdatePolicy(mgr, user, uid, policy);
-                        logger.Info($"[Access] Revoked library '{tl.TagName}' from '{user.Name}'.");
+                        logger.Info($"[访问权限] 已撤销“{user.Name}”对媒体库“{tl.TagName}”的访问权限。");
                     }
-                    catch (Exception ex) { logger.Error($"[Access] Revoke error for '{user.Name}': {ex.GetBaseException().Message}"); }
+                    catch (Exception ex) { logger.Error($"[访问权限] 撤销“{user.Name}”的权限失败：{ex.GetBaseException().Message}"); }
                 }
             }
         }
@@ -575,7 +575,7 @@ namespace HomeScreenCompanion
                         : current.Where(x => !string.Equals((x ?? "").Replace("-", ""), norm, StringComparison.OrdinalIgnoreCase)).ToArray();
                     userManager.UpdateConfiguration(user, cfg);
                 }
-                catch (Exception ex) { logger.Error($"[Access] Latest exclusion for '{user.Name}' failed: {ex.GetBaseException().Message}"); }
+                catch (Exception ex) { logger.Error($"[访问权限] 设置“{user.Name}”的最新项目排除项失败：{ex.GetBaseException().Message}"); }
             }
         }
 

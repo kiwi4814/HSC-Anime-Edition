@@ -23,6 +23,23 @@ using System.Threading.Tasks;
 
 namespace HomeScreenCompanion
 {
+    [Route("/HomeScreenCompanionAnime/Ai/TestConnection", "POST")]
+    [Authenticated(Roles = "Admin")]
+    public class TestAnimeAiConnectionRequest : IReturn<AnimeAiConnectionResponse>
+    {
+        public PluginConfiguration? Configuration { get; set; }
+    }
+    public class AnimeAiConnectionResponse
+    {
+        public bool Success { get; set; }
+        public string Category { get; set; } = "";
+        public string Message { get; set; } = "";
+        public string Warning { get; set; } = "";
+    }
+    [Route("/HomeScreenCompanionAnime/Ai/Analysis", "GET")]
+    [Authenticated(Roles = "Admin")]
+    public class GetAnimeAiAnalysisRequest : IReturn<AnimeAiAnalysis> { }
+
     [Route("/HomeScreenCompanionAnime/TestUrl", "GET")]
     [Authenticated(Roles = "Admin")]
     public class TestUrlRequest : IReturn<TestUrlResponse>
@@ -377,6 +394,13 @@ namespace HomeScreenCompanion
         public bool AnimeIncludeSpinOffs { get; set; } = true;
         public bool AnimeAiReviewOtherEdges { get; set; }
         public string AnimeAiProvider { get; set; } = "OpenAI";
+        public string? CompatibleAiBaseUrl { get; set; }
+        public string? CompatibleAiModel { get; set; }
+        public bool? AnimeAiNamingEnabled { get; set; }
+        public bool? AnimeAiCollectionReviewEnabled { get; set; }
+        public int? AnimeAiMaxCallsPerRun { get; set; }
+        public int? AnimeAiMaxTokensPerCall { get; set; }
+        public int? AnimeAiMaxTokensPerRun { get; set; }
         public string AnimeCollectionPrefix { get; set; } = "动漫 · ";
         public int AnimeMaxRequestsPerRun { get; set; } = 100;
         public string OpenAiModel { get; set; } = "";
@@ -400,6 +424,7 @@ namespace HomeScreenCompanion
         public string OpenAiApiKey { get; set; } = "";
         public string GeminiApiKey { get; set; } = "";
         public string ClaudeApiKey { get; set; } = "";
+        public string CompatibleAiApiKey { get; set; } = "";
     }
 
     public class BackupHomeSync
@@ -505,6 +530,30 @@ public class HomeScreenCompanionService : IService
             _logger = logManager.GetLogger("HomeScreenCompanion_Access");
         }
 
+        public async Task<object> Post(TestAnimeAiConnectionRequest request)
+        {
+            var saved = Plugin.Instance?.Configuration;
+            var config = request.Configuration ?? saved;
+            if (config == null) return new AnimeAiConnectionResponse { Category = "configuration", Message = "插件尚未初始化。" };
+            if (saved != null && request.Configuration != null) AiSecretPolicy.PreserveMissing(config, saved);
+            var response = new AnimeAiConnectionResponse { Warning = AiRequestClient.HttpWarning(config, config.AnimeAiProvider ?? "") };
+            try
+            {
+                await new AiRequestClient(_jsonSerializer).CompleteAsync(config, config.AnimeAiProvider,
+                    "Reply briefly with OK.", "Connection test.", 16, CancellationToken.None);
+                response.Success = true; response.Category = "ok"; response.Message = "AI 接口连接成功。";
+            }
+            catch (AiRequestException ex) { response.Category = ex.Category; response.Message = ex.Message; }
+            catch { response.Category = "network"; response.Message = "无法连接 AI 接口。"; }
+            return response;
+        }
+
+        public object Get(GetAnimeAiAnalysisRequest request)
+        {
+            var path = Plugin.Instance?.DataFolderPath;
+            return path == null ? new AnimeAiAnalysis() : new AnimeAiAnalysisService(_jsonSerializer).Read(Path.Combine(path, "anime"));
+        }
+
         public object Get(VersionRequest request)
         {
             return new VersionResponse { Version = Plugin.Instance?.Version.ToString() ?? "0.0.0" };
@@ -554,7 +603,7 @@ public class HomeScreenCompanionService : IService
             try
             {
                 var dataPath = Plugin.Instance?.DataFolderPath;
-                if (dataPath == null) return new UploadCollectionImageResponse { Success = false, Message = "Plugin not initialized" };
+                if (dataPath == null) return new UploadCollectionImageResponse { Success = false, Message = "插件尚未初始化。" };
 
                 var imagesDir = Path.Combine(dataPath, "collection_images");
                 Directory.CreateDirectory(imagesDir);
@@ -582,10 +631,10 @@ public class HomeScreenCompanionService : IService
             try
             {
                 if (string.IsNullOrWhiteSpace(request.Url) || !request.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-                    return new UploadCollectionImageResponse { Success = false, Message = "Invalid URL." };
+                    return new UploadCollectionImageResponse { Success = false, Message = "接口地址无效。" };
 
                 var dataPath = Plugin.Instance?.DataFolderPath;
-                if (dataPath == null) return new UploadCollectionImageResponse { Success = false, Message = "Plugin not initialized." };
+                if (dataPath == null) return new UploadCollectionImageResponse { Success = false, Message = "插件尚未初始化。" };
 
                 var imagesDir = Path.Combine(dataPath, "collection_images");
                 Directory.CreateDirectory(imagesDir);
@@ -617,7 +666,7 @@ public class HomeScreenCompanionService : IService
             try
             {
                 if (string.IsNullOrWhiteSpace(request.UserId))
-                    return "{\"error\":\"UserId is required\"}";
+                    return "{\"error\":\"请提供用户编号。\"}";
                 var internalId = _userManager.GetInternalId(request.UserId);
                 var result = _userManager.GetHomeSections(internalId, CancellationToken.None);
                 return _jsonSerializer.SerializeToString(result);
@@ -631,7 +680,7 @@ public class HomeScreenCompanionService : IService
         public async Task<object> Get(TestUrlRequest request)
         {
             var config = Plugin.Instance?.Configuration;
-            if (config == null) return new TestUrlResponse { Success = false, Message = "Config not found" };
+            if (config == null) return new TestUrlResponse { Success = false, Message = "未找到插件配置。" };
 
             var fetcher = new ListFetcher(_httpClient, _jsonSerializer);
             try
@@ -640,7 +689,7 @@ public class HomeScreenCompanionService : IService
 
                 if (items == null || items.Count == 0)
                 {
-                    return new TestUrlResponse { Success = false, Message = "No items found. Check URL and API Keys." };
+                    return new TestUrlResponse { Success = false, Message = "未找到条目，请检查地址与 API 密钥。" };
                 }
 
                 var library = BuildTestLibraryIndex();
@@ -653,12 +702,12 @@ public class HomeScreenCompanionService : IService
                     Count = items.Count,
                     InLibraryCount = inLibrary,
                     Items = results,
-                    Message = $"Successfully found {items.Count} items ({inLibrary} in library)."
+                    Message = $"已找到 {items.Count} 个条目，其中 {inLibrary} 个已入库。"
                 };
             }
             catch (Exception ex)
             {
-                return new TestUrlResponse { Success = false, Message = $"Error: {ex.Message}" };
+                return new TestUrlResponse { Success = false, Message = "列表读取失败，请检查地址、凭据与网络设置。" };
             }
         }
 
@@ -724,10 +773,10 @@ public class HomeScreenCompanionService : IService
         public async Task<object> Post(RunEntryRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.EntryName))
-                return new RunEntryResponse { Success = false, Message = "No entry name provided" };
+                return new RunEntryResponse { Success = false, Message = "请提供条目名称。" };
             var task = HomeScreenCompanionTask.Instance;
             if (task == null)
-                return new RunEntryResponse { Success = false, Message = "Task not initialized" };
+                return new RunEntryResponse { Success = false, Message = "任务尚未初始化。" };
             var (success, message) = await task.RunSingleEntryAsync(request.EntryName, CancellationToken.None);
             return new RunEntryResponse { Success = success, Message = message };
         }
@@ -736,10 +785,10 @@ public class HomeScreenCompanionService : IService
         {
             var config = Plugin.Instance?.Configuration;
             if (config == null)
-                return new TestAiSourceResponse { Success = false, Message = "Plugin config not found." };
+                return new TestAiSourceResponse { Success = false, Message = "未找到插件配置。" };
 
             if (string.IsNullOrWhiteSpace(request.Prompt))
-                return new TestAiSourceResponse { Success = false, Message = "Prompt is required." };
+                return new TestAiSourceResponse { Success = false, Message = "请输入提示词。" };
 
             string recentlyWatchedContext = "";
             if (request.IncludeRecentlyWatched && !string.IsNullOrWhiteSpace(request.RecentlyWatchedUserId))
@@ -805,7 +854,7 @@ public class HomeScreenCompanionService : IService
                     CancellationToken.None);
 
                 if (aiItems == null || aiItems.Count == 0)
-                    return new TestAiSourceResponse { Success = false, Message = "No items returned. Check your API key and prompt." };
+                    return new TestAiSourceResponse { Success = false, Message = "AI 未返回条目，请检查密钥与提示词。" };
 
                 var preview = aiItems.Take(5)
                     .Select(i => string.IsNullOrEmpty(i.imdb_id) ? i.title : $"{i.title} — {i.imdb_id}")
@@ -822,13 +871,13 @@ public class HomeScreenCompanionService : IService
                     Count = aiItems.Count,
                     InLibraryCount = inLibrary,
                     Items = results,
-                    Message = $"AI returned {aiItems.Count} items ({inLibrary} in library).",
+                    Message = $"AI 返回了 {aiItems.Count} 个条目，其中 {inLibrary} 个已入库。",
                     Preview = preview
                 };
             }
             catch (Exception ex)
             {
-                return new TestAiSourceResponse { Success = false, Message = $"Error: {ex.Message}" };
+                return new TestAiSourceResponse { Success = false, Message = "AI 列表读取失败，请检查模型、凭据与网络设置。" };
             }
         }
 
@@ -885,7 +934,7 @@ public class HomeScreenCompanionService : IService
         public object Get(HscDebugMethodsRequest request)
         {
             var lines = new System.Text.StringBuilder();
-            lines.AppendLine($"Runtime type: {_userManager.GetType().FullName}");
+            lines.AppendLine($"运行时类型：{_userManager.GetType().FullName}");
             lines.AppendLine();
 
             var seen = new HashSet<Type>();
@@ -915,7 +964,7 @@ public class HomeScreenCompanionService : IService
             try
             {
                 if (string.IsNullOrWhiteSpace(request.UserId))
-                    return new HscSaveUserSectionsResponse { Success = false, Message = "No user specified." };
+                    return new HscSaveUserSectionsResponse { Success = false, Message = "请选择用户。" };
 
                 var internalId = _userManager.GetInternalId(request.UserId);
                 var requestedSections = request.Sections ?? Array.Empty<ContentSection>();
@@ -939,7 +988,7 @@ public class HomeScreenCompanionService : IService
                     .Select(s => s.Id)
                     .ToArray();
 
-                string moveDebug = "MoveHomeSections: ok";
+                string moveDebug = "首页区块排序完成";
                 try
                 {
                     dynamic mgr = _userManager;
@@ -955,9 +1004,9 @@ public class HomeScreenCompanionService : IService
                         for (int i = 0; i < orderedIds.Length; i++)
                             mgr.MoveHomeSections(internalId, new[] { orderedIds[i] }, i);
                     }
-                    catch (Exception ex) { moveDebug = $"MoveHomeSections fallback error: {ex.Message}"; }
+                    catch (Exception ex) { moveDebug = $"首页区块排序回退失败：{ex.Message}"; }
                 }
-                catch (Exception ex) { moveDebug = $"MoveHomeSections error: {ex.Message}"; }
+                catch (Exception ex) { moveDebug = $"首页区块排序失败：{ex.Message}"; }
 
                 // 3. Ta bort tracking för raderade sektioner så att task re-skapar dem vid behov
                 if (toDelete.Length > 0)
@@ -993,23 +1042,23 @@ public class HomeScreenCompanionService : IService
             {
                 var config = Plugin.Instance?.Configuration;
                 if (config == null)
-                    return new HscApplyTagHomeSectionsResponse { Success = false, Message = "Plugin configuration not available." };
+                    return new HscApplyTagHomeSectionsResponse { Success = false, Message = "插件配置不可用。" };
 
                 var tc = config.Tags?.FirstOrDefault(t =>
                     string.Equals(t.Name, request.TagName, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(t.Tag,  request.TagName, StringComparison.OrdinalIgnoreCase));
 
                 if (tc == null)
-                    return new HscApplyTagHomeSectionsResponse { Success = false, Message = $"Tag '{request.TagName}' not found." };
+                    return new HscApplyTagHomeSectionsResponse { Success = false, Message = $"未找到标签“{request.TagName}”。" };
 
                 if (!tc.EnableHomeSection)
-                    return new HscApplyTagHomeSectionsResponse { Success = true, Message = "Home section not enabled for this tag." };
+                    return new HscApplyTagHomeSectionsResponse { Success = true, Message = "此标签尚未启用首页区块。" };
 
                 var realTracked = (tc.HomeSectionTracked ?? new System.Collections.Generic.List<HomeSectionTracking>())
                     .Where(t => !string.IsNullOrEmpty(t.SectionId) && !t.SectionId.StartsWith("hsc__"))
                     .ToList();
                 if (realTracked.Count == 0)
-                    return new HscApplyTagHomeSectionsResponse { Success = true, Message = "No existing tracked sections — nothing to apply." };
+                    return new HscApplyTagHomeSectionsResponse { Success = true, Message = "没有已跟踪的区块，无需应用。" };
 
                 // Deserialize settings
                 var settingsDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -1047,7 +1096,7 @@ public class HomeScreenCompanionService : IService
                         resolvedLibraryId = tc.HomeSectionLibraryId;
                     }
                     if (string.IsNullOrEmpty(resolvedLibraryId))
-                        return new HscApplyTagHomeSectionsResponse { Success = false, Message = "Collection not found — cannot apply." };
+                        return new HscApplyTagHomeSectionsResponse { Success = false, Message = "未找到合集，无法应用。" };
                 }
 
                 // Look up tag ID for query (items type)
@@ -1092,7 +1141,7 @@ public class HomeScreenCompanionService : IService
                     catch { /* skip this user on error */ }
                 }
 
-                return new HscApplyTagHomeSectionsResponse { Success = true, UsersUpdated = updated, Message = $"Applied to {updated} user(s)." };
+                return new HscApplyTagHomeSectionsResponse { Success = true, UsersUpdated = updated, Message = $"已应用到 {updated} 位用户。" };
             }
             catch (Exception ex)
             {
@@ -1258,7 +1307,7 @@ public class HomeScreenCompanionService : IService
         public object Post(DeleteManagedTagRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.TagName))
-                return new DeleteManagedTagResponse { Success = false, Message = "TagName is required." };
+                return new DeleteManagedTagResponse { Success = false, Message = "请提供标签名称。" };
 
             var tagName = request.TagName.Trim();
 
@@ -1348,13 +1397,13 @@ public class HomeScreenCompanionService : IService
         public object Post(DeleteManagedCollectionRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.CollectionId))
-                return new DeleteManagedCollectionResponse { Success = false, Message = "CollectionId is required." };
+                return new DeleteManagedCollectionResponse { Success = false, Message = "请提供合集编号。" };
             if (!Guid.TryParse(request.CollectionId, out var guid))
-                return new DeleteManagedCollectionResponse { Success = false, Message = "Invalid CollectionId." };
+                return new DeleteManagedCollectionResponse { Success = false, Message = "合集编号无效。" };
 
             var item = _libraryManager.GetItemById(guid);
             if (item == null)
-                return new DeleteManagedCollectionResponse { Success = false, Message = "Collection not found." };
+                return new DeleteManagedCollectionResponse { Success = false, Message = "未找到合集。" };
 
             try
             {
@@ -1372,7 +1421,7 @@ public class HomeScreenCompanionService : IService
             try
             {
                 if (string.IsNullOrWhiteSpace(request.TagName))
-                    return new MergeTopListVersionsResponse { Success = false, Message = "TagName is required." };
+                    return new MergeTopListVersionsResponse { Success = false, Message = "请提供标签名称。" };
 
                 var dataPath = Plugin.Instance.DataFolderPath;
                 var sanitized = SanitizeFolderName(request.TagName);
@@ -1399,7 +1448,7 @@ public class HomeScreenCompanionService : IService
                 var topListsFolder = Path.Combine(Plugin.Instance.DataFolderPath, "toplists") + Path.DirectorySeparatorChar;
                 var folderPrefix = Path.GetFullPath(request.FolderPath ?? "").TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
                 if (!folderPrefix.StartsWith(topListsFolder, StringComparison.OrdinalIgnoreCase))
-                    return new TopListIndexStatusResponse { Success = false, Message = "FolderPath is not a top-list folder." };
+                    return new TopListIndexStatusResponse { Success = false, Message = "指定路径不是榜单目录。" };
 
                 // Polled every 2 s — let the database narrow to the folder instead of loading every
                 // movie. The Where() stays as a safety net and keeps the result exact.
@@ -1614,7 +1663,7 @@ public class HomeScreenCompanionService : IService
         {
             var libraryId = (request.LibraryId ?? "").Trim();
             if (string.IsNullOrEmpty(libraryId))
-                return new GrantTopListLibraryAccessResponse { Success = false, Message = "LibraryId required." };
+                return new GrantTopListLibraryAccessResponse { Success = false, Message = "请提供媒体库编号。" };
 
             var bf = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic
                    | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy;
@@ -1660,7 +1709,7 @@ public class HomeScreenCompanionService : IService
                         }
                         if (policy == null)
                             policy = user.GetType().GetProperty("Policy")?.GetValue(user);
-                        if (policy == null) { errors.Add($"no policy for {user.Name}"); continue; }
+                        if (policy == null) { errors.Add($"用户“{user.Name}”没有访问策略"); continue; }
 
                         var enableAllProp = policy.GetType().GetProperty("EnableAllFolders");
                         if (enableAllProp?.GetValue(policy) is true) continue;
@@ -1672,7 +1721,7 @@ public class HomeScreenCompanionService : IService
 
                         foldersProp?.SetValue(policy, folders.Concat(new[] { libraryId }).ToArray());
 
-                        if (updateMethod == null) { errors.Add("UpdateUserPolicy not found"); break; }
+                        if (updateMethod == null) { errors.Add("当前服务端不支持更新用户访问策略"); break; }
 
                         var upParams = updateMethod.GetParameters();
                         var upArg0   = BuildUserArg(upParams[0].ParameterType, user);
@@ -1688,8 +1737,8 @@ public class HomeScreenCompanionService : IService
                 return new GrantTopListLibraryAccessResponse { Success = false, Message = ex.Message };
             }
 
-            var msg = $"Updated {updated} user(s)";
-            if (errors.Count > 0) msg += $" — errors: {string.Join("; ", errors.Take(5))}";
+            var msg = $"已更新 {updated} 位用户";
+            if (errors.Count > 0) msg += $"；错误：{string.Join("；", errors.Take(5))}";
             return new GrantTopListLibraryAccessResponse { Success = true, UsersUpdated = updated, Message = msg };
         }
 
@@ -1755,10 +1804,10 @@ public class HomeScreenCompanionService : IService
         public object Post(RestoreAndGrantAccessRequest request)
         {
             if (string.IsNullOrEmpty(request.SnapshotId) || string.IsNullOrEmpty(request.LibraryId))
-                return new RestoreAndGrantAccessResponse { Success = false, Message = "SnapshotId and LibraryId required." };
+                return new RestoreAndGrantAccessResponse { Success = false, Message = "请提供快照与媒体库编号。" };
 
             if (!_policySnapshots.TryRemove(request.SnapshotId, out var snapshots) || snapshots == null)
-                return new RestoreAndGrantAccessResponse { Success = false, Message = "Snapshot not found or already used." };
+                return new RestoreAndGrantAccessResponse { Success = false, Message = "未找到快照，或快照已使用。" };
 
             var libraryId = request.LibraryId.Trim();
             var bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy;
@@ -1771,7 +1820,7 @@ public class HomeScreenCompanionService : IService
                 ?? typeof(IUserManager).GetMethods().FirstOrDefault(m => m.Name == "UpdateUserPolicy");
 
             if (updateMethod == null)
-                return new RestoreAndGrantAccessResponse { Success = false, Message = "UpdateUserPolicy not found." };
+                return new RestoreAndGrantAccessResponse { Success = false, Message = "当前服务端不支持更新用户访问策略。" };
 
             var users = _userManager.GetUserList(new UserQuery { IsDisabled = false });
             var userDict = users.ToDictionary(u => u.Id.ToString(), u => u, StringComparer.OrdinalIgnoreCase);
@@ -1816,8 +1865,8 @@ public class HomeScreenCompanionService : IService
                 catch (Exception ex) { errors.Add($"{user.Name}: {ex.GetBaseException().Message}"); }
             }
 
-            var msg = $"Restored access for {updated} user(s)";
-            if (errors.Count > 0) msg += $" — errors: {string.Join("; ", errors.Take(5))}";
+            var msg = $"已恢复 {updated} 位用户的访问权限";
+            if (errors.Count > 0) msg += $"；错误：{string.Join("；", errors.Take(5))}";
             return new RestoreAndGrantAccessResponse { Success = true, UsersUpdated = updated, Message = msg };
         }
 
@@ -1915,7 +1964,7 @@ public class HomeScreenCompanionService : IService
             try
             {
                 if (string.IsNullOrWhiteSpace(request.ListName))
-                    return new PrepareTopListFolderResponse { Success = false, Message = "ListName is required." };
+                    return new PrepareTopListFolderResponse { Success = false, Message = "请提供榜单名称。" };
 
                 var dataPath   = Plugin.Instance.DataFolderPath;
                 var sanitized  = SanitizeFolderName(request.ListName);
@@ -2079,11 +2128,11 @@ public class HomeScreenCompanionService : IService
 
             if (poster != null)
                 try { CreateRankedPoster(poster, rank, outputBase + ".jpg", badgeStyle); }
-                catch (Exception ex) { log?.Invoke($"Top-list: poster badge failed for '{item.Name}' — {ex.Message}"); }
+                catch (Exception ex) { log?.Invoke($"榜单：“{item.Name}”的海报排名角标生成失败：{ex.Message}"); }
 
             if (thumb != null)
                 try { CreateRankedPoster(thumb, rank, outputBase + "-thumb.jpg", badgeStyle); }
-                catch (Exception ex) { log?.Invoke($"Top-list: thumb badge failed for '{item.Name}' — {ex.Message}"); }
+                catch (Exception ex) { log?.Invoke($"榜单：“{item.Name}”的缩略图排名角标生成失败：{ex.Message}"); }
         }
 
         private void WriteRankedImages(BaseItem item, int rank, string outputBase, string badgeStyle, string tempDir)
@@ -2112,7 +2161,7 @@ public class HomeScreenCompanionService : IService
 
             try
             {
-                log?.Invoke($"Top-list: could not get {(first.Poster == null ? "poster" : "thumb/backdrop")} for '{item.Name}' — refreshing images and retrying");
+                log?.Invoke($"榜单：未找到“{item.Name}”的{(first.Poster == null ? "海报" : "缩略图或背景图")}，正在刷新图片后重试");
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
                 providerManager.RefreshFullItem(item, new MetadataRefreshOptions(fileSystem)
                 {
@@ -2127,12 +2176,12 @@ public class HomeScreenCompanionService : IService
                 var second = TryFetchImages(refreshed, httpClient, tempDir);
                 var result = (second.Poster ?? first.Poster, second.Thumb ?? first.Thumb);
                 if (result.Item1 == null || result.Item2 == null)
-                    log?.Invoke($"Top-list: still no {(result.Item1 == null ? "poster" : "thumb/backdrop")} for '{item.Name}' after refresh — check the library's image providers");
+                    log?.Invoke($"榜单：刷新后仍未找到“{item.Name}”的{(result.Item1 == null ? "海报" : "缩略图或背景图")}，请检查媒体库图片提供方");
                 return result;
             }
             catch (Exception ex)
             {
-                log?.Invoke($"Top-list: image refresh for '{item.Name}' failed — {ex.Message}");
+                log?.Invoke($"榜单：“{item.Name}”的图片刷新失败：{ex.Message}");
                 return first;
             }
         }
@@ -2209,10 +2258,10 @@ public class HomeScreenCompanionService : IService
 
             using var original = SKBitmap.Decode(sourcePath);
             if (original == null)
-                throw new InvalidOperationException($"SkiaSharp could not decode '{sourcePath}' (unsupported format or corrupt file)");
+                throw new InvalidOperationException("无法解码图片，格式不受支持或文件已损坏。");
 
             using var surface = SKSurface.Create(new SKImageInfo(original.Width, original.Height))
-                ?? throw new InvalidOperationException($"SkiaSharp could not create a {original.Width}x{original.Height} surface");
+                ?? throw new InvalidOperationException($"无法创建 {original.Width}×{original.Height} 的图片画布。");
             var canvas = surface.Canvas;
             canvas.DrawBitmap(original, 0, 0);
 
@@ -2319,7 +2368,7 @@ public class HomeScreenCompanionService : IService
                 var sanitized  = SanitizeFolderName(request.ListName);
                 var folderPath = Path.Combine(Plugin.Instance.DataFolderPath, "toplists", sanitized);
                 if (!Directory.Exists(folderPath))
-                    return new GetManualTopListItemsResponse { Success = false, Message = "Folder not found." };
+                    return new GetManualTopListItemsResponse { Success = false, Message = "未找到目录。" };
 
                 var config   = Plugin.Instance.Configuration;
                 var tlConfig = (config.TopLists ?? new System.Collections.Generic.List<TopListHomeSection>())
@@ -2421,13 +2470,13 @@ public class HomeScreenCompanionService : IService
             {
                 var config = Plugin.Instance?.Configuration;
                 if (config == null)
-                    return new PrepareTopListHomeSectionsResponse { Success = false, Message = "Plugin configuration not available." };
+                    return new PrepareTopListHomeSectionsResponse { Success = false, Message = "插件配置不可用。" };
 
                 var tl = config.TopLists?.FirstOrDefault(t =>
                     string.Equals(t.TagName, request.TagName, StringComparison.OrdinalIgnoreCase));
 
                 if (tl == null)
-                    return new PrepareTopListHomeSectionsResponse { Success = false, Message = $"TopList '{request.TagName}' not found in config." };
+                    return new PrepareTopListHomeSectionsResponse { Success = false, Message = $"配置中未找到榜单“{request.TagName}”。" };
 
                 var settingsDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 try
@@ -2441,7 +2490,7 @@ public class HomeScreenCompanionService : IService
                     settingsDict["SectionType"] = "items";
 
                 if (string.IsNullOrEmpty(tl.HomeSectionLibraryId) || tl.HomeSectionLibraryId == "auto")
-                    return new PrepareTopListHomeSectionsResponse { Success = false, Message = "HomeSectionLibraryId is not set — library may not be ready yet." };
+                    return new PrepareTopListHomeSectionsResponse { Success = false, Message = "首页区块媒体库尚未设置，媒体库可能尚未就绪。" };
 
                 var resolvedLibraryId = tl.HomeSectionLibraryId;
 
@@ -2654,7 +2703,7 @@ public class HomeScreenCompanionService : IService
 
                 Plugin.Instance.SaveConfiguration();
                 _taskManager.QueueScheduledTask<TopListSyncTask>();
-                return new PrepareTopListHomeSectionsResponse { Success = true, UsersCreated = created, UsersUpdated = updated, Message = $"Synced: {created} created, {updated} updated." };
+                return new PrepareTopListHomeSectionsResponse { Success = true, UsersCreated = created, UsersUpdated = updated, Message = $"同步完成：新建 {created} 个，更新 {updated} 个。" };
             }
             catch (Exception ex)
             {
@@ -2712,6 +2761,13 @@ public class HomeScreenCompanionService : IService
                     AnimeIncludeSpinOffs       = config.AnimeIncludeSpinOffs,
                     AnimeAiReviewOtherEdges    = config.AnimeAiReviewOtherEdges,
                     AnimeAiProvider            = config.AnimeAiProvider,
+                    CompatibleAiBaseUrl       = config.CompatibleAiBaseUrl,
+                    CompatibleAiModel         = config.CompatibleAiModel,
+                    AnimeAiNamingEnabled      = config.AnimeAiNamingEnabled,
+                    AnimeAiCollectionReviewEnabled = config.AnimeAiCollectionReviewEnabled,
+                    AnimeAiMaxCallsPerRun      = config.AnimeAiMaxCallsPerRun,
+                    AnimeAiMaxTokensPerCall    = config.AnimeAiMaxTokensPerCall,
+                    AnimeAiMaxTokensPerRun     = config.AnimeAiMaxTokensPerRun,
                     AnimeCollectionPrefix      = config.AnimeCollectionPrefix,
                     AnimeMaxRequestsPerRun     = config.AnimeMaxRequestsPerRun,
                     PreserveTagsOnEmptyResult = config.PreserveTagsOnEmptyResult,
@@ -2724,12 +2780,13 @@ public class HomeScreenCompanionService : IService
             {
                 file.ApiKeys = new BackupApiKeys
                 {
-                    TraktClientId = config.TraktClientId ?? "",
-                    MdblistApiKey = config.MdblistApiKey ?? "",
-                    TmdbApiKey    = config.TmdbApiKey ?? "",
-                    OpenAiApiKey  = config.OpenAiApiKey ?? "",
-                    GeminiApiKey  = config.GeminiApiKey ?? "",
-                    ClaudeApiKey  = config.ClaudeApiKey ?? ""
+                    TraktClientId = AiSecretPolicy.ExportKey(config.TraktClientId),
+                    MdblistApiKey = AiSecretPolicy.ExportKey(config.MdblistApiKey),
+                    TmdbApiKey    = AiSecretPolicy.ExportKey(config.TmdbApiKey),
+                    OpenAiApiKey  = AiSecretPolicy.ExportKey(config.OpenAiApiKey),
+                    GeminiApiKey  = AiSecretPolicy.ExportKey(config.GeminiApiKey),
+                    ClaudeApiKey  = AiSecretPolicy.ExportKey(config.ClaudeApiKey),
+                    CompatibleAiApiKey = AiSecretPolicy.ExportKey(config.CompatibleAiApiKey)
                 };
                 file.Sections.Add("ApiKeys");
             }
@@ -2798,16 +2855,16 @@ public class HomeScreenCompanionService : IService
             try
             {
                 if (string.IsNullOrWhiteSpace(request.BackupJson))
-                    return Fail(response, "No backup data received.");
+                    return Fail(response, "未收到备份数据。");
 
                 var plugin = Plugin.Instance;
                 if (plugin == null)
-                    return Fail(response, "Plugin not initialized.");
+                    return Fail(response, "插件尚未初始化。");
                 var config = plugin.Configuration;
 
                 var backup = ParseBackup(request.BackupJson);
                 if (backup == null)
-                    return Fail(response, "The file could not be parsed as a Home Screen Companion backup.");
+                    return Fail(response, "无法将此文件解析为插件备份。");
 
                 bool Has(string section) => backup.Sections.Contains(section, StringComparer.OrdinalIgnoreCase);
                 var knownUsers = LoadKnownUserIds();
@@ -2834,23 +2891,31 @@ public class HomeScreenCompanionService : IService
                         config.AnimeAiProvider        = s.AnimeAiProvider ?? "OpenAI";
                         config.AnimeCollectionPrefix  = s.AnimeCollectionPrefix ?? "动漫 · ";
                         config.AnimeMaxRequestsPerRun = s.AnimeMaxRequestsPerRun <= 0 ? 100 : s.AnimeMaxRequestsPerRun;
+                        if (s.CompatibleAiBaseUrl != null) config.CompatibleAiBaseUrl = s.CompatibleAiBaseUrl;
+                        if (s.CompatibleAiModel != null) config.CompatibleAiModel = s.CompatibleAiModel;
+                        if (s.AnimeAiNamingEnabled.HasValue) config.AnimeAiNamingEnabled = s.AnimeAiNamingEnabled.Value;
+                        if (s.AnimeAiCollectionReviewEnabled.HasValue) config.AnimeAiCollectionReviewEnabled = s.AnimeAiCollectionReviewEnabled.Value;
+                        if (s.AnimeAiMaxCallsPerRun.HasValue) config.AnimeAiMaxCallsPerRun = Math.Max(0, s.AnimeAiMaxCallsPerRun.Value);
+                        if (s.AnimeAiMaxTokensPerCall.HasValue) config.AnimeAiMaxTokensPerCall = Math.Max(0, s.AnimeAiMaxTokensPerCall.Value);
+                        if (s.AnimeAiMaxTokensPerRun.HasValue) config.AnimeAiMaxTokensPerRun = Math.Max(0, s.AnimeAiMaxTokensPerRun.Value);
                     }
                     config.PreserveTagsOnEmptyResult = s.PreserveTagsOnEmptyResult;
                     mirrorChanged = config.TopListMirrorCollections != s.TopListMirrorCollections;
                     config.TopListMirrorCollections  = s.TopListMirrorCollections;
-                    response.Applied.Add("Settings");
+                    response.Applied.Add("设置");
                 }
 
                 if (request.ApiKeys && Has("ApiKeys") && backup.ApiKeys != null)
                 {
                     var k = backup.ApiKeys;
-                    config.TraktClientId = k.TraktClientId ?? "";
-                    config.MdblistApiKey = k.MdblistApiKey ?? "";
-                    config.TmdbApiKey    = k.TmdbApiKey ?? "";
-                    config.OpenAiApiKey  = k.OpenAiApiKey ?? "";
-                    config.GeminiApiKey  = k.GeminiApiKey ?? "";
-                    config.ClaudeApiKey  = k.ClaudeApiKey ?? "";
-                    response.Applied.Add("API keys");
+                    config.TraktClientId = AiSecretPolicy.PreserveImported(k.TraktClientId, config.TraktClientId);
+                    config.MdblistApiKey = AiSecretPolicy.PreserveImported(k.MdblistApiKey, config.MdblistApiKey);
+                    config.TmdbApiKey    = AiSecretPolicy.PreserveImported(k.TmdbApiKey, config.TmdbApiKey);
+                    config.OpenAiApiKey  = AiSecretPolicy.PreserveImported(k.OpenAiApiKey, config.OpenAiApiKey);
+                    config.GeminiApiKey  = AiSecretPolicy.PreserveImported(k.GeminiApiKey, config.GeminiApiKey);
+                    config.ClaudeApiKey  = AiSecretPolicy.PreserveImported(k.ClaudeApiKey, config.ClaudeApiKey);
+                    config.CompatibleAiApiKey = AiSecretPolicy.PreserveImported(k.CompatibleAiApiKey, config.CompatibleAiApiKey);
+                    response.Applied.Add("凭据（不随备份导出，空值不覆盖现有值）");
                 }
 
                 if (request.Tags && Has("Tags") && backup.Tags != null)
@@ -2859,27 +2924,27 @@ public class HomeScreenCompanionService : IService
                     foreach (var t in config.Tags)
                     {
                         var label = string.IsNullOrEmpty(t.Name) ? t.Tag : t.Name;
-                        PruneUnknownUsers(t.HomeSectionUserIds, knownUsers, response.Warnings, $"Group '{label}' home section");
-                        PruneUnknownUsers(t.PlaylistUserIds, knownUsers, response.Warnings, $"Group '{label}' playlist");
+                        PruneUnknownUsers(t.HomeSectionUserIds, knownUsers, response.Warnings, $"分组“{label}”的首页区块");
+                        PruneUnknownUsers(t.PlaylistUserIds, knownUsers, response.Warnings, $"分组“{label}”的播放列表");
                         t.HomeSectionTracked.RemoveAll(x => !IsKnownUser(knownUsers, x.UserId));
                         t.PlaylistMappings.RemoveAll(x => !IsKnownUser(knownUsers, x.UserId));
                         if (!string.IsNullOrEmpty(t.AiRecentlyWatchedUserId) && !IsKnownUser(knownUsers, t.AiRecentlyWatchedUserId))
                         {
                             t.AiRecentlyWatchedUserId = "";
-                            var msg = $"Group '{label}': the user for AI recently-watched context does not exist on this server – pick a new user.";
+                            var msg = $"分组“{label}”：AI 最近观看记录所选用户不在此服务端，请重新选择。";
                             if (!response.Warnings.Contains(msg)) response.Warnings.Add(msg);
                         }
                     }
                     // Same grouping key as the UI (Name + unit separator + Tag)
                     var groups = config.Tags.Select(t => string.IsNullOrEmpty(t.Name) ? t.Tag : t.Name + (char)31 + t.Tag).Distinct().Count();
-                    response.Applied.Add($"Tag & collection groups ({groups})");
+                    response.Applied.Add($"标签与合集分组（{groups}）");
                 }
 
                 if (request.SavedFilters && Has("SavedFilters") && backup.SavedFilters != null)
                 {
                     config.SavedFilters = backup.SavedFilters.Where(f => f != null).ToList();
                     foreach (var f in config.SavedFilters) f.Filters ??= new List<MediaInfoFilter>();
-                    response.Applied.Add($"Saved filters ({config.SavedFilters.Count})");
+                    response.Applied.Add($"已保存筛选器（{config.SavedFilters.Count}）");
                 }
 
                 if (request.HomeSync && Has("HomeSync") && backup.HomeSync != null)
@@ -2895,19 +2960,19 @@ public class HomeScreenCompanionService : IService
                         if (config.HomeSyncEnabled)
                         {
                             config.HomeSyncEnabled = false;
-                            response.Warnings.Add("Home screen sync: the source user does not exist on this server – sync has been disabled until you pick a new source user.");
+                            response.Warnings.Add("首页同步：来源用户不在此服务端，已暂停同步，请重新选择来源用户。");
                         }
                     }
-                    PruneUnknownUsers(config.HomeSyncTargetUserIds, knownUsers, response.Warnings, "Home screen sync targets");
+                    PruneUnknownUsers(config.HomeSyncTargetUserIds, knownUsers, response.Warnings, "首页同步目标用户");
                     if (h.ContinueWatchingBumpEnabled.HasValue)  config.ContinueWatchingBumpEnabled  = h.ContinueWatchingBumpEnabled.Value;
                     if (!string.IsNullOrEmpty(h.ContinueWatchingBumpMode)) config.ContinueWatchingBumpMode = h.ContinueWatchingBumpMode!;
                     if (h.ContinueWatchingBumpAllUsers.HasValue) config.ContinueWatchingBumpAllUsers = h.ContinueWatchingBumpAllUsers.Value;
                     if (h.ContinueWatchingBumpUserIds != null)
                     {
                         config.ContinueWatchingBumpUserIds = h.ContinueWatchingBumpUserIds.ToList();
-                        PruneUnknownUsers(config.ContinueWatchingBumpUserIds, knownUsers, response.Warnings, "Continue Watching bump users");
+                        PruneUnknownUsers(config.ContinueWatchingBumpUserIds, knownUsers, response.Warnings, "继续观看置顶用户");
                     }
-                    response.Applied.Add("Home screen sync");
+                    response.Applied.Add("首页同步");
                 }
 
                 if (request.TopLists && Has("TopLists") && backup.TopLists != null)
@@ -2923,7 +2988,7 @@ public class HomeScreenCompanionService : IService
                         tl.HomeSectionUserIds ??= new List<string>();
                         tl.HomeSectionTracked ??= new List<HomeSectionTracking>();
                         if (string.IsNullOrEmpty(tl.HomeSectionSettings)) tl.HomeSectionSettings = "{}";
-                        PruneUnknownUsers(tl.HomeSectionUserIds, knownUsers, response.Warnings, $"Top-list '{tl.TagName}'");
+                        PruneUnknownUsers(tl.HomeSectionUserIds, knownUsers, response.Warnings, $"榜单“{tl.TagName}”");
                         tl.HomeSectionTracked.RemoveAll(x => !IsKnownUser(knownUsers, x.UserId));
 
                         var settings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -2946,26 +3011,26 @@ public class HomeScreenCompanionService : IService
                                 {
                                     var r = Post(new PrepareManualTopListFolderRequest { ListName = tl.TagName, BadgeStyle = badgeStyle, Items = items, ContentType = tl.ContentType ?? "Movies" }) as PrepareTopListFolderResponse;
                                     if (r == null || !r.Success)
-                                        response.Warnings.Add($"Top-list '{tl.TagName}': files could not be rebuilt ({r?.Message ?? "unknown error"}).");
+                                        response.Warnings.Add($"榜单“{tl.TagName}”：无法重建文件（{r?.Message ?? "未知错误"}）。");
                                     else if (r.FilesCreated < items.Count)
-                                        response.Warnings.Add($"Top-list '{tl.TagName}': {items.Count - r.FilesCreated} of {items.Count} {(ShowTopList.IsShows(tl) ? "show(s)" : "movie(s)")} were not found in the library and were skipped.");
+                                        response.Warnings.Add($"榜单“{tl.TagName}”：{items.Count} 个{(ShowTopList.IsShows(tl) ? "剧集" : "电影")}中有 {items.Count - r.FilesCreated} 个未入库，已跳过。");
                                 }
                                 else
                                 {
                                     Directory.CreateDirectory(folderPath);
-                                    response.Warnings.Add($"Top-list '{tl.TagName}': the backup contains no {(ShowTopList.IsShows(tl) ? "shows" : "movies")} for this manual list.");
+                                    response.Warnings.Add($"榜单“{tl.TagName}”：备份中没有此手动榜单的{(ShowTopList.IsShows(tl) ? "剧集" : "电影")}。");
                                 }
                             }
                             else
                             {
                                 var r = Post(new PrepareTopListFolderRequest { TagName = tl.TagName, MaxItems = tl.MaxItems, BadgeStyle = badgeStyle, ContentType = tl.ContentType ?? "Movies" }) as PrepareTopListFolderResponse;
                                 if (r == null || !r.Success)
-                                    response.Warnings.Add($"Top-list '{tl.TagName}': files could not be rebuilt ({r?.Message ?? "unknown error"}).");
+                                    response.Warnings.Add($"榜单“{tl.TagName}”：无法重建文件（{r?.Message ?? "未知错误"}）。");
                             }
                         }
                         catch (Exception ex)
                         {
-                            response.Warnings.Add($"Top-list '{tl.TagName}': files could not be rebuilt ({ex.Message}).");
+                            response.Warnings.Add($"榜单“{tl.TagName}”：无法重建文件（{ex.Message}）。");
                         }
 
                         var libraryId = ResolveTopListLibraryId(tl.HomeSectionLibraryId, folderPath, virtualFolders);
@@ -2993,16 +3058,16 @@ public class HomeScreenCompanionService : IService
                     }
 
                     config.TopLists = restored;
-                    response.Applied.Add($"Top lists ({restored.Count})");
+                    response.Applied.Add($"榜单（{restored.Count}）");
                 }
 
                 if (response.Applied.Count == 0)
-                    return Fail(response, "Nothing selected to restore, or the selected sections are not present in the file.");
+                    return Fail(response, "未选择要恢复的内容，或备份中不含所选部分。");
 
                 plugin.SaveConfiguration();
                 if (mirrorChanged) TopListCollectionMirror.QueueFullSync();
                 response.Success = true;
-                response.Message = $"Restored {response.Applied.Count} section(s).";
+                response.Message = $"已恢复 {response.Applied.Count} 个部分。";
                 return response;
             }
             catch (Exception ex)
@@ -3041,7 +3106,7 @@ public class HomeScreenCompanionService : IService
             var unknown = ids.Where(id => !IsKnownUser(known, id)).Distinct().ToList();
             if (unknown.Count == 0) return;
             ids.RemoveAll(id => !IsKnownUser(known, id));
-            var msg = $"{context}: {unknown.Count} selected user(s) do not exist on this server and were removed – re-select users in the UI.";
+            var msg = $"{context}：所选用户中有 {unknown.Count} 位不在此服务端，已移除，请在界面中重新选择。";
             if (!warnings.Contains(msg)) warnings.Add(msg);
         }
 
@@ -3093,7 +3158,8 @@ public class HomeScreenCompanionService : IService
                 TmdbApiKey    = legacy.TmdbApiKey ?? "",
                 OpenAiApiKey  = legacy.OpenAiApiKey ?? "",
                 GeminiApiKey  = legacy.GeminiApiKey ?? "",
-                ClaudeApiKey  = legacy.ClaudeApiKey ?? ""
+                ClaudeApiKey  = legacy.ClaudeApiKey ?? "",
+                CompatibleAiApiKey = legacy.CompatibleAiApiKey ?? ""
             };
             result.Sections.Add("ApiKeys");
             if (HasKey("Tags")) { result.Tags = legacy.Tags ?? new List<TagConfig>(); result.Sections.Add("Tags"); }

@@ -53,12 +53,12 @@ namespace HomeScreenCompanion
         {
             _userManager = userManager;
             _logger = logManager.GetLogger("HomeScreenCompanion_HSC");
-            _log = new RunLog(ExecutionLog, _logger, "[Home Screen]", false);
+            _log = new RunLog(ExecutionLog, _logger, "[首页]", false);
         }
 
         public string Key => "HomeSectionSyncTask";
-        public string Name => "Home Screen Sync";
-        public string Description => "Syncs home screen sections from a source user to all selected target users.";
+        public string Name => "首页同步";
+        public string Description => "将来源用户的首页栏目同步到所有选定的目标用户。";
         public string Category => "Home Screen Companion";
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
@@ -77,29 +77,29 @@ namespace HomeScreenCompanion
                 if (config == null) return Task.CompletedTask;
 
                 bool debug = config.ExtendedConsoleOutput;
-                _log = new RunLog(ExecutionLog, _logger, "[Home Screen]", debug);
+                _log = new RunLog(ExecutionLog, _logger, "[首页]", debug);
                 var startTime = DateTime.Now;
                 _log.Rule();
-                _log.Info($"Home Screen Sync  ·  {startTime:yyyy-MM-dd HH:mm}");
+                _log.Info($"首页同步  ·  {startTime:yyyy-MM-dd HH:mm}");
                 _log.Rule();
 
                 if (!config.HomeSyncEnabled)
                 {
-                    _log.Skip("Home Screen Sync is disabled in Settings — nothing to do");
+                    _log.Skip("设置中未启用首页同步 — 无需操作");
                     return Task.CompletedTask;
                 }
 
                 if (string.IsNullOrWhiteSpace(config.HomeSyncSourceUserId))
                 {
-                    _log.Warn("No master user is selected in Settings — nothing to sync");
-                    LastSyncResult = "No source user configured.";
+                    _log.Warn("设置中未选择来源用户 — 无可同步内容");
+                    LastSyncResult = "未配置来源用户。";
                     return Task.CompletedTask;
                 }
 
                 if (config.HomeSyncTargetUserIds == null || config.HomeSyncTargetUserIds.Count == 0)
                 {
-                    _log.Warn("No target users are selected in Settings — nothing to sync");
-                    LastSyncResult = "No target users configured.";
+                    _log.Warn("设置中未选择目标用户 — 无可同步内容");
+                    LastSyncResult = "未配置目标用户。";
                     return Task.CompletedTask;
                 }
 
@@ -113,13 +113,13 @@ namespace HomeScreenCompanion
 
                 if (sourceSections?.Sections == null || sourceSections.Sections.Length == 0)
                 {
-                    _log.Warn($"Master user {sourceName} has no home screen sections — nothing to copy");
-                    LastSyncResult = "Source user has no home sections.";
+                    _log.Warn($"来源用户 {sourceName} 没有首页栏目 — 无可复制内容");
+                    LastSyncResult = "来源用户没有首页栏目。";
                     return Task.CompletedTask;
                 }
 
-                _log.Info($"  Master: {sourceName}  ·  {RunLog.Plural(sourceSections.Sections.Length, "section")}");
-                _log.Section("Master sections");
+                _log.Info($"  来源用户： {sourceName}  ·  {RunLog.Plural(sourceSections.Sections.Length, "个栏目")}");
+                _log.Section("来源用户的栏目");
                 foreach (var s in sourceSections.Sections)
                     _log.Debug($"  [{s.SectionType}] \"{s.CustomName ?? s.Name}\"");
 
@@ -127,7 +127,7 @@ namespace HomeScreenCompanion
                 int totalCopied = 0, failedUsers = 0;
                 int targetCount = config.HomeSyncTargetUserIds.Count;
                 _log.Blank();
-                _log.Info("» Copying home screen");
+                _log.Info("» 复制首页");
 
                 for (int i = 0; i < targetCount; i++)
                 {
@@ -144,7 +144,7 @@ namespace HomeScreenCompanion
                         var existing = _userManager.GetHomeSections(targetInternalId, cancellationToken);
                         if (existing?.Sections?.Length > 0)
                         {
-                            _log.Debug($"  {targetName}: replacing {existing.Sections.Length} existing sections");
+                            _log.Debug($"  {targetName}: 正在替换 {existing.Sections.Length} 个现有栏目");
                             var idsToDelete = existing.Sections
                                 .Where(s => !string.IsNullOrEmpty(s.Id))
                                 .Select(s => s.Id)
@@ -160,12 +160,12 @@ namespace HomeScreenCompanion
                             totalCopied++;
                         }
 
-                        _log.Ok($"{targetName}: {RunLog.Plural(sourceSections.Sections.Length, "section")} copied");
+                        _log.Ok($"{targetName}: {RunLog.Plural(sourceSections.Sections.Length, "个栏目")} 已复制");
                     }
                     catch (Exception ex)
                     {
                         failedUsers++;
-                        _log.Error($"{targetName}: could not copy home screen — {ex.Message}");
+                        _log.Error($"{targetName}: 无法复制首页 — {ex.Message}");
                     }
 
                     progress.Report(20 + (int)(80.0 * (i + 1) / targetCount));
@@ -174,7 +174,7 @@ namespace HomeScreenCompanion
                 if (config.HomeSyncLibraryOrder)
                 {
                     _log.Blank();
-                    _log.Info("» Library order");
+                    _log.Info("» 媒体库顺序");
                     try
                     {
                         var sourceUser = _userManager.GetUserById(config.HomeSyncSourceUserId);
@@ -183,7 +183,7 @@ namespace HomeScreenCompanion
                             var sourceConf = _userManager.GetUserConfiguration(sourceUser);
                             if (sourceConf?.OrderedViews != null && sourceConf.OrderedViews.Length > 0)
                             {
-                                _log.Debug($"  Master order: [{string.Join(", ", sourceConf.OrderedViews)}]");
+                                _log.Debug($"  来源用户顺序： [{string.Join(", ", sourceConf.OrderedViews)}]");
                                 foreach (var targetIdStr in config.HomeSyncTargetUserIds)
                                 {
                                     string targetName2 = Guid.TryParse(targetIdStr, out var tgtGuid2)
@@ -197,49 +197,49 @@ namespace HomeScreenCompanion
                                         if (targetConf == null) continue;
                                         targetConf.OrderedViews = sourceConf.OrderedViews;
                                         _userManager.UpdateConfiguration(_userManager.GetInternalId(targetIdStr), targetConf);
-                                        _log.Ok($"{targetName2}: library order copied");
+                                        _log.Ok($"{targetName2}: 已复制媒体库顺序");
                                     }
                                     catch (Exception ex)
                                     {
-                                        _log.Warn($"{targetName2}: library order could not be copied — {ex.Message}");
+                                        _log.Warn($"{targetName2}: 无法复制媒体库顺序 — {ex.Message}");
                                     }
                                 }
                             }
                             else
                             {
-                                _log.Skip($"{sourceName} has no custom library order — nothing to copy");
+                                _log.Skip($"{sourceName} 未自定义媒体库顺序 — 无可复制内容");
                             }
                         }
                         else
                         {
-                            _log.Warn("Master user could not be loaded — library order not copied");
+                            _log.Warn("无法加载来源用户 — 未复制媒体库顺序");
                         }
                     }
                     catch (Exception ex)
                     {
-                        _log.Error($"Library order sync failed: {ex.Message}");
+                        _log.Error($"媒体库顺序同步失败： {ex.Message}");
                     }
                 }
 
                 LastSectionsCopied = totalCopied;
                 LastSyncTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
-                LastSyncResult = $"OK — {totalCopied} section(s) copied to {targetCount} user(s).";
+                LastSyncResult = $"成功 — 已将 {totalCopied} 个栏目复制到 {targetCount} 位用户。";
                 _log.Rule();
-                _log.Info("Summary");
-                _log.Info($"  Sections:      {totalCopied} copied to {RunLog.Plural(targetCount - failedUsers, "user")}{(failedUsers > 0 ? $", {RunLog.Plural(failedUsers, "user")} failed" : "")}");
-                _log.Info($"  Done in {RunLog.Elapsed(DateTime.Now - startTime)}  ·  {(failedUsers > 0 ? "✖ Completed with " + RunLog.Plural(failedUsers, "error") : "✔ Completed")}");
+                _log.Info("汇总");
+                _log.Info($"  栏目：      {totalCopied} 已复制到 {RunLog.Plural(targetCount - failedUsers, "位用户")}{(failedUsers > 0 ? $", {RunLog.Plural(failedUsers, "位用户")} 失败" : "")}");
+                _log.Info($"  完成，耗时 {RunLog.Elapsed(DateTime.Now - startTime)}  ·  {(failedUsers > 0 ? "✖ 已完成，有 " + RunLog.Plural(failedUsers, "个错误") : "✔ 已完成")}");
                 _log.Rule();
                 progress.Report(100);
             }
             catch (OperationCanceledException)
             {
-                LastSyncResult = "Cancelled.";
-                _log.Warn("Sync was cancelled");
+                LastSyncResult = "已取消。";
+                _log.Warn("同步已取消");
             }
             catch (Exception ex)
             {
-                LastSyncResult = $"Error: {ex.Message}";
-                _log.Error($"Sync aborted: {ex.Message}");
+                LastSyncResult = $"错误： {ex.Message}";
+                _log.Error($"同步已中止： {ex.Message}");
             }
             finally
             {

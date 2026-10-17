@@ -60,7 +60,7 @@ namespace HomeScreenCompanion
         public void Debug(string message)
         {
             if (!Extended) return;
-            Add($"[{DateTime.Now:HH:mm:ss}] [DEBUG] {message}");
+            Add($"[{DateTime.Now:HH:mm:ss}] [调试] {message}");
         }
 
         /// <summary>Debug section divider, e.g. "── Tags ────────".</summary>
@@ -96,14 +96,14 @@ namespace HomeScreenCompanion
 
         // ── Small formatting helpers shared by the tasks ─────────────────────────
 
-        public static string Plural(int count, string singular, string? plural = null)
-            => count == 1 ? $"{count} {singular}" : $"{count} {plural ?? singular + "s"}";
+        public static string Plural(int count, string unit)
+            => $"{count} {unit}";
 
         public static string Elapsed(TimeSpan span)
         {
-            if (span.TotalMinutes >= 1) return $"{(int)span.TotalMinutes}m {span.Seconds}s";
-            if (span.TotalSeconds >= 10) return $"{(int)span.TotalSeconds}s";
-            return $"{span.TotalSeconds:0.0}s";
+            if (span.TotalMinutes >= 1) return $"{(int)span.TotalMinutes} 分 {span.Seconds} 秒";
+            if (span.TotalSeconds >= 10) return $"{(int)span.TotalSeconds} 秒";
+            return $"{span.TotalSeconds:0.0} 秒";
         }
     }
 }

@@ -2,6 +2,7 @@
 from pathlib import Path
 from html.parser import HTMLParser
 import subprocess
+import re
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -41,15 +42,41 @@ controls = {
     'selAnimeAiProvider': 'AnimeAiProvider',
     'txtAnimePrefix': 'AnimeCollectionPrefix',
     'txtAnimeApiBudget': 'AnimeMaxRequestsPerRun',
+    'txtCompatibleAiBaseUrl': 'CompatibleAiBaseUrl',
+    'txtCompatibleAiModel': 'CompatibleAiModel',
+    'txtCompatibleAiApiKey': 'CompatibleAiApiKey',
+    'chkAnimeAiNaming': 'AnimeAiNamingEnabled',
+    'chkAnimeAiCollectionReview': 'AnimeAiCollectionReviewEnabled',
+    'txtAnimeAiMaxCalls': 'AnimeAiMaxCallsPerRun',
+    'txtAnimeAiMaxTokensPerCall': 'AnimeAiMaxTokensPerCall',
+    'txtAnimeAiMaxTokensPerRun': 'AnimeAiMaxTokensPerRun',
 }
 for element,field in controls.items():
     assert checker.ids.count(element) == 1,element
     assert f"#{element}" in js,element
     assert field in model,field
 print(f'PASS: csproj XML, isolation GUID/routes, settings wiring ({len(controls)} fields)')
+# These assertions are source-integration evidence, not runtime authentication/import/UI tests.
+for route, verb, request in (
+    ('/HomeScreenCompanionAnime/Ai/TestConnection', 'POST', 'TestAnimeAiConnectionRequest'),
+    ('/HomeScreenCompanionAnime/Ai/Analysis', 'GET', 'GetAnimeAiAnalysisRequest'),
+):
+    pattern = (
+        r'\[Route\("' + re.escape(route) + r'", "' + verb + r'"\)\]\s*'
+        r'\[Authenticated\(Roles = "Admin"\)\]\s*public class ' + request + r'\b'
+    )
+    assert re.search(pattern, service), request
+for field in ('CompatibleAiApiKey', 'OpenAiApiKey', 'GeminiApiKey', 'ClaudeApiKey',
+              'TraktClientId', 'MdblistApiKey', 'TmdbApiKey'):
+    assert f'AiSecretPolicy.ExportKey(config.{field})' in service, field
+    assert f'AiSecretPolicy.PreserveImported(k.{field}, config.{field})' in service, field
+assert 'AiSecretPolicy.PreserveMissing(config, saved)' in service
+renderer = js.split('function loadAnimeAiAnalysis(view)', 1)[1].split('\n    function ', 1)[0]
+assert 'textContent' in renderer and 'innerHTML' not in renderer
+print('PASS: SOURCE ONLY admin-route attributes, backup secret-policy callsites, text-only analysis renderer')
 try:
     subprocess.run(['node','--check',str(SRC / 'Configuration/configPage.js')],check=True,capture_output=True,text=True)
     print('PASS: Node.js JavaScript syntax check')
 except FileNotFoundError:
     print('SKIP: Node.js not installed')
-print('NOT_TESTED by this script: C# build, smoke execution and Emby runtime; consult their separate logs')
+print('NOT_TESTED by this script: C# build/smoke, runtime authentication/backup HTTP, browser rendering, real AI providers or Emby runtime; consult separate logs')

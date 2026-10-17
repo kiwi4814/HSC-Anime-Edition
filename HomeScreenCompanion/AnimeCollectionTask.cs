@@ -109,17 +109,17 @@ namespace HomeScreenCompanion
                 }
                 progress?.Report(60);
 
-                if (config.AnimeAiReviewOtherEdges)
-                    await ReviewAmbiguousRelationsAsync(graph.Records, local, config, dataDir, cancellationToken, log);
                 var groups = policy.Apply(AnimeGroupPlanner.Plan(local, graph.Records, config.AnimeIncludeSpinOffs), local);
                 log.Info($"规划 {groups.Count} 个合集候选；每个合集仍须通过精确批准列表和分支审核。");
                 if (groups.Count == 0)
                 {
                     LastStatus = "没有合集候选";
                     log.Skip("没有安全的多媒体分组，保留现有合集。");
+                    await AnalyzeCollectionsAsync(config, local, graph.Records, groups, dataDir, cancellationToken, log);
                     return;
                 }
                 await SyncCollectionsAsync(groups, policy, dataDir, config, dryRun, cancellationToken, log, progress);
+                await AnalyzeCollectionsAsync(config, local, graph.Records, groups, dataDir, cancellationToken, log);
                 int writable = groups.Count(g => policy.CanWrite(g, dryRun));
                 LastStatus = dryRun ? $"预演：{groups.Count} 个候选" : $"处理完成：{writable} 个获批候选（冲突会跳过）";
                 log.Ok(LastStatus);
@@ -366,66 +366,23 @@ namespace HomeScreenCompanion
             else File.Move(tmp, path);
         }
 
-        private async Task ReviewAmbiguousRelationsAsync(List<AnimeRelationRecord> records,
-            List<AnimeLocalItem> local, PluginConfiguration config, string dir,
+        private async Task AnalyzeCollectionsAsync(PluginConfiguration config, List<AnimeLocalItem> local,
+            List<AnimeRelationRecord> records, List<AnimeGroup> groups, string dir,
             CancellationToken token, RunLog log)
         {
-            // AI can only promote an AniList-verified OTHER relationship between two items
-            // already matched to AniList IDs. It can never invent or overwrite identities.
-            var matched = new HashSet<int>(local.SelectMany(x => x.AniListIds));
-            var titleById = local.SelectMany(x => x.AniListIds.Select(id => new { id, x.Name }))
-                .GroupBy(x => x.id).ToDictionary(x => x.Key, x => x.First().Name);
-            var choices = records.Where(r => matched.Contains(r.Id))
-                .SelectMany(r => r.Relations.Where(e => e.Type == "ANIME" && e.Relation == "OTHER" && matched.Contains(e.Id))
-                    .Select(e => new { Source = r, Edge = e })).ToList();
-            if (choices.Count == 0) return;
-            var file = Path.Combine(dir, "anime-ai-decisions.json");
-            AnimeAiDecisionCache cache;
-            try { cache = File.Exists(file) ? (_json.DeserializeFromFile<AnimeAiDecisionCache>(file) ?? new AnimeAiDecisionCache()) : new AnimeAiDecisionCache(); }
-            catch { cache = new AnimeAiDecisionCache(); }
-            var fetcher = new ListFetcher(_httpClient, _json);
-            var seen = new HashSet<string>();
-            int queries = 0;
-            bool dirty = false;
+            if (!config.AnimeAiReviewOtherEdges && !config.AnimeAiNamingEnabled && !config.AnimeAiCollectionReviewEnabled)
+                return;
             try
             {
-                foreach (var pair in choices)
-                {
-                    token.ThrowIfCancellationRequested();
-                    string key = Math.Min(pair.Source.Id, pair.Edge.Id) + ":" + Math.Max(pair.Source.Id, pair.Edge.Id);
-                    if (!seen.Add(key)) continue;
-                    string a = titleById.TryGetValue(pair.Source.Id, out var ta) ? ta : pair.Source.Name;
-                    string b = titleById.TryGetValue(pair.Edge.Id, out var tb) ? tb : pair.Edge.Name;
-                    bool accept;
-                    if (cache.Decisions.TryGetValue(key, out var old) && old.CheckedUtc > DateTime.UtcNow.AddDays(-60))
-                    {
-                        accept = old.Approved;
-                    }
-                    else
-                    {
-                        if (queries >= 15) { log.Warn("已达到 AI 复核次数上限，其余 OTHER 关系不会纳入。"); break; }
-                        queries++;
-                        try { accept = await fetcher.CheckAnimeRelationAsync(config, a, b, token); }
-                        catch (Exception ex) { log.Warn("AI 复核不可用：" + ex.Message); break; }
-                        cache.Decisions[key] = new AnimeAiDecisionEntry { Approved = accept, CheckedUtc = DateTime.UtcNow };
-                        dirty = true;
-                    }
-                    if (accept)
-                    {
-                        pair.Edge.Relation = "SIDE_STORY"; // only the in-memory plan
-                        log.Info($"AI 已确认 AniList OTHER 关系：{a} ↔ {b}；分支仍须使用显式成员规则。");
-                    }
-                }
+                await new AnimeAiAnalysisService(_json).AnalyzeAsync(config, local, records, groups, dir, token, log.Warn);
             }
-            finally
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
-                if (dirty)
-                {
-                    var tmp = file + ".tmp";
-                    File.WriteAllText(tmp, _json.SerializeToString(cache), Encoding.UTF8);
-                    if (File.Exists(file)) File.Replace(tmp, file, null);
-                    else File.Move(tmp, file);
-                }
+                throw;
+            }
+            catch (Exception)
+            {
+                log.Warn("AI 分析未完成；确定性合集处理结果不受影响。请检查 AI 配置与服务状态。");
             }
         }
     }

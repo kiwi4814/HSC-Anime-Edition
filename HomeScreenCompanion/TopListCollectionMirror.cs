@@ -132,7 +132,7 @@ namespace HomeScreenCompanion
             foreach (var collId in desired.Where(id => !current.Contains(id)))
             {
                 try { await _collectionManager!.AddToCollection(collId, new[] { copy.InternalId }).ConfigureAwait(false); changes++; }
-                catch (Exception ex) { _logger?.Warn($"[TopList] Could not add '{copy.Name}' to collection {collId}: {ex.Message}"); }
+                catch (Exception ex) { _logger?.Warn($"[榜单] 无法将“{copy.Name}”加入合集 {collId}：{ex.Message}"); }
             }
             foreach (var collId in current.Where(id => !desired.Contains(id)))
             {
@@ -144,7 +144,7 @@ namespace HomeScreenCompanion
                         changes++;
                     }
                 }
-                catch (Exception ex) { _logger?.Warn($"[TopList] Could not remove '{copy.Name}' from collection {collId}: {ex.Message}"); }
+                catch (Exception ex) { _logger?.Warn($"[榜单] 无法将“{copy.Name}”移出合集 {collId}：{ex.Message}"); }
             }
             return changes;
         }
@@ -178,7 +178,7 @@ namespace HomeScreenCompanion
                     }
                 }
                 if (changes > 0)
-                    _logger?.Info($"[TopList] Collection mirror ({(Enabled ? "on" : "off")}): {changes} membership change(s).");
+                    _logger?.Info($"[榜单] 合集镜像（{(Enabled ? "开启" : "关闭")}）：已更改 {changes} 项合集归属。");
                 return changes;
             }
             finally { _mirrorLock.Release(); }
@@ -188,7 +188,7 @@ namespace HomeScreenCompanion
             Task.Run(async () =>
             {
                 try { await SyncAll(CancellationToken.None).ConfigureAwait(false); }
-                catch (Exception ex) { _logger?.Error("[TopList] Collection mirror sync failed: " + ex.Message); }
+                catch (Exception ex) { _logger?.Error("[榜单] 合集镜像同步失败：" + ex.Message); }
             });
 
         // Live follow-up when items are added to / removed from a collection (by the user, by
@@ -239,11 +239,11 @@ namespace HomeScreenCompanion
                 {
                     int changes = await ReconcileCollections(collectionIds).ConfigureAwait(false);
                     if (changes > 0)
-                        _logger?.Info($"[TopList] Collection mirror: {changes} membership change(s) in {collectionIds.Length} collection(s).");
+                        _logger?.Info($"[榜单] 合集镜像：已更改 {collectionIds.Length} 个合集中的 {changes} 项归属。");
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Warn($"[TopList] Collection mirror failed: {ex.Message}");
+                    _logger?.Warn($"[榜单] 合集镜像失败：{ex.Message}");
                 }
             });
         }
@@ -291,7 +291,7 @@ namespace HomeScreenCompanion
                     }
                     catch (Exception ex)
                     {
-                        _logger?.Warn($"[TopList] Collection mirror for collection {collId} failed: {ex.Message}");
+                        _logger?.Warn($"[榜单] 合集 {collId} 的镜像同步失败：{ex.Message}");
                     }
                 }
                 return changes;

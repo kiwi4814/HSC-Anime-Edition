@@ -35,9 +35,9 @@ namespace HomeScreenCompanion
         }
 
         public string Key => "ContinueWatchingBumpTask";
-        public string Name => "Continue Watching Bump";
-        public string Description => "Moves series you had finished to the front of Continue Watching when new episodes arrive.";
-        public string Category => "Home Screen Companion";
+        public string Name => "继续观看置顶";
+        public string Description => "已看完的剧集有新集上线时，将其移至“继续观看”前列。";
+        public string Category => "首页助手";
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {
@@ -54,21 +54,21 @@ namespace HomeScreenCompanion
             var config = Plugin.Instance?.Configuration;
             if (config == null) return Task.CompletedTask;
 
-            var log = new RunLog(ExecutionLog, _logger, "[CW Bump]", config.ExtendedConsoleOutput);
+            var log = new RunLog(ExecutionLog, _logger, "[继续观看置顶]", config.ExtendedConsoleOutput);
             log.Rule();
-            log.Info($"Continue Watching Bump  ·  {DateTime.Now:yyyy-MM-dd HH:mm}");
+            log.Info($"继续观看置顶  ·  {DateTime.Now:yyyy-MM-dd HH:mm}");
             log.Rule();
 
             if (!config.ContinueWatchingBumpEnabled)
             {
-                log.Skip("Continue Watching bump is disabled in Settings — nothing to do");
+                log.Skip("设置中未启用继续观看置顶，无需处理");
                 return Task.CompletedTask;
             }
 
             var users = ContinueWatchingBumper.ResolveUsers(config, _userManager);
             if (users.Count == 0)
             {
-                log.Warn("No users are selected in Settings — nothing to do");
+                log.Warn("设置中未选择用户，无需处理");
                 return Task.CompletedTask;
             }
 
@@ -85,7 +85,7 @@ namespace HomeScreenCompanion
             .Distinct()
             .ToList();
 
-            log.Info($"  {RunLog.Plural(seriesIds.Count, "series", "series")} with episodes added in the last {LookbackDays} days  ·  {RunLog.Plural(users.Count, "user")}");
+            log.Info($"  最近 {LookbackDays} 天内有新集入库的剧集：{RunLog.Plural(seriesIds.Count, "部剧集")}  ·  {RunLog.Plural(users.Count, "位用户")}");
 
             int bumped = 0;
             for (int i = 0; i < seriesIds.Count; i++)
@@ -96,8 +96,8 @@ namespace HomeScreenCompanion
                 progress.Report(100.0 * (i + 1) / seriesIds.Count);
             }
 
-            if (bumped == 0) log.Skip("Nothing to bump");
-            else log.Ok($"{RunLog.Plural(bumped, "bump")} done");
+            if (bumped == 0) log.Skip("没有需要置顶的剧集");
+            else log.Ok($"已完成 {RunLog.Plural(bumped, "次置顶")}");
             return Task.CompletedTask;
         }
     }

@@ -6,17 +6,16 @@
 
 | 检查 | 实际结果 |
 |---|---|
-| 插件 Release 构建（.NET SDK 8.0.426） | 退出 0；0 错误、104 警告 |
+| 插件 Release 构建（.NET SDK 8.0.426） | 退出 0；0 错误、107 警告（见 evidence 与 final-review 日志） |
 | 回归控制台构建（真实 MediaBrowser.Model 引用） | 退出 0；0 错误、0 警告 |
-| 回归控制台执行 | PASS: 128 assertions，退出 0 |
+| 回归控制台执行 | PASS: 296 assertions，虚构夹具与本机 HTTP mock，退出 0 |
 | 独立 --preview-demo | 退出 0；生成分组/审批/重复诊断 JSON |
-| verification/check_static.py | 退出 0：XML、GUID/路由/Key、原控件绑定及 Node.js 语法检查 |
-| 新 UI 校验函数离线执行 | 2 个有效输入通过、6 个无效输入拒绝 |
+| verification/check_static.py | 退出 0：XML、隔离 GUID/路由、15 个设置字段、管理路由与密钥导出调用点、Node.js 语法 |
+| 离线设置页（Windows Edge headless，本地 file） | PASS：真实 HTML 控件；空策略接受；通配批准被拒绝。无 Emby 框架或网络 |
 | DLL 只读程序集元数据 | HomeScreenCompanionAnimeEdition, Version=4.3.0.2 |
 | 新 DLL 的 Emby 运行验收 | 未执行，不连接生产环境 |
-| 浏览器实际显示 | 未验证；共享 Chromium daemon 启动失败，无设置改动 |
 
-构建警告未隐藏或抑制，全部来自未修改的原版 HSC 代码。本轮修复了动漫模块新增的一个可空性警告，最终构建恢复到 104 条。首次再次构建测试 EXE 遇到 Windows SDK/WSL UNC apphost 访问错误；测试项目改为 UseAppHost=false，随后重新构建并通过 dotnet 执行测试 DLL。最终成功日志在 evidence/。
+构建警告未隐藏或抑制。插件工程 107 条警告来自既有 HSC 代码路径；本轮动漫/AI 新增文件在测试工程中为 0 警告。测试项目 UseAppHost=false，通过 dotnet 执行测试 DLL。第二轮日志在 `artifacts/final-review/round-2-evidence/`（build-final、test-build-final、tests、preview、static、browser-ui）。
 
 ## 回归覆盖
 
