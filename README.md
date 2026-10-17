@@ -1,5 +1,7 @@
 # 🎬 Home Screen Companion for Emby
 
+> 本地增量版本 **HSC Anime Edition 4.3.0.2**：参见 [动漫模块说明](ANIME_EDITION.md)、[版本变更](CHANGELOG_4.3.0.2.md) 和 [本地构建验证](OMP_LOCAL_HANDOFF.md)。下方保留上游功能说明，不代表本版已在生产服务器验收。
+
 
 
 https://github.com/user-attachments/assets/74f6d998-6b59-42b6-b335-261ca6cc6645

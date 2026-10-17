@@ -92,12 +92,12 @@ namespace HomeScreenCompanion
                     // Never treat 429/5xx as an empty relationship graph; this must prevent writes.
                     response.EnsureSuccessStatusCode();
                     var jsonText = await response.Content.ReadAsStringAsync();
-                    if (jsonText.Length > 2_000_000) throw new InvalidDataException("Excessively large AniList response.");
+                    if (jsonText.Length > 2_000_000) throw new InvalidDataException("AniList 响应过大。");
                     var data = _json.DeserializeFromString<AniListGraphResponse>(jsonText);
                     if (data == null || data.data?.Media == null || data.errors?.Count > 0)
-                        throw new InvalidDataException("AniList returned no media or reported GraphQL errors.");
+                        throw new InvalidDataException("AniList 未返回作品，或报告了 GraphQL 错误。");
                     var media = data.data.Media;
-                    if (media.id != id) throw new InvalidDataException("AniList returned the wrong media ID.");
+                    if (media.id != id) throw new InvalidDataException("AniList 返回的作品 ID 与请求不符。");
                     return new AnimeRelationRecord
                     {
                         Id = id,

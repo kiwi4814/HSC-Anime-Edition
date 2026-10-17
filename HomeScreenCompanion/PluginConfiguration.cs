@@ -34,6 +34,9 @@ namespace HomeScreenCompanion
         public bool AnimeAiReviewOtherEdges { get; set; } = false;
         public string AnimeAiProvider { get; set; } = "OpenAI";
         public string AnimeCollectionPrefix { get; set; } = "动漫 · ";
+        public string AnimeCollectionRulesJson { get; set; } = "";
+        public string AnimeApprovedCollectionKeys { get; set; } = "";
+        public string AnimeCollectionAliasesJson { get; set; } = "";
         public int AnimeMappingRefreshDays { get; set; } = 7;
         public int AnimeMaxRequestsPerRun { get; set; } = 100;
 

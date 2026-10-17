@@ -1,85 +1,38 @@
-# HSC Anime Edition — OMP 本地验收交接（无 Docker / 不启动 Emby）
+# 4.3.0.2 本地构建与验收
 
-**来源**：`HSC-Anime-Edition-source.zip`（基于 HSC 官方 `68024c17ef041fb486535c75384a42c3f59af1d0`，Fork 源码版本 `4.3.0.1`）。
+不连接生产 Emby，不安装 DLL，不重启服务。
 
-**唯一任务**：在 Windows 本地完成源码/静态检查、C# 烟雾测试、尽可能完成 Emby 插件 DLL 编译，并交付日志及产物。**到编译和产物检查为止，绝不运行任何 Emby 实例。**
+## 前提
 
-## 禁止事项（硬边界）
+.NET SDK 8（本次 8.0.426）、Python 3、Node.js，以及本机已有的 Emby 4.10.1.0 `MediaBrowser.Common.dll`、`MediaBrowser.Controller.dll`、`MediaBrowser.Model.dll` 编译参考。NuGet 包版本沿用项目文件，无新增依赖。测试也使用真实 MediaBrowser.Model，不使用伪造 Emby 类型。
 
-- 不安装、不启动 Docker / Docker Desktop / WSL 容器；不运行 Emby Server（包括便携版、测试版、生产版）。
-- 不访问、扫描、连接或复制生产 Emby 服务器的任何目录或服务。不要连接 NAS、Plex、NanShare、115、302 或修改 STRM。
-- 不安装插件、不改动现有 Emby DLL 或配置、不修改 Windows 服务、系统代理、端口、反代和防火墙。
-- 不对 GitHub Fork、Push、建 PR 或发布 Release。
-- 缺 SDK / NuGet 源 / Emby 参考 DLL 时不得自动安装全局软件、猜测版本或造假 DLL；记录阻塞并提出最小需求。
-- 允许在**新建的独立工作目录**运行 `dotnet restore/build/run` 和 Python/Node 语法检查；如需临时配置，只作用于该工作目录。
-- 不为了让编译通过而删除功能、注释关键代码、使用空接口桩替代真正的 Emby DLL，或伪造测试结果。
-
-## A. 独立准备与静态检查
-
-1. 找到用户提供的 `HSC-Anime-Edition-source.zip`。新建唯一空目录解压，不覆盖既有源码。
-2. 记录 ZIP SHA-256、系统版本、`dotnet --info`、`node --version`、`python --version`（可用即记录；缺失直接标注 SKIP）。
-3. 确认 `ANIME_EDITION.md`、`verification/`、`AnimeMappingIndex.cs`、`AnimeAniListClient.cs`、`AnimeRelations.cs`、`AnimeCollectionTask.cs` 存在。
-4. Python 可用则运行 `python ./verification/check_static.py`，记录 stdout/stderr 和退出码。Node 可用时可另运行 `node --check ./HomeScreenCompanion/Configuration/configPage.js`。
-5. 检查项目 `HomeScreenCompanion/HomeScreenCompanion.csproj` 中 `TargetFramework=netstandard2.0`、`AssemblyName=HomeScreenCompanionAnimeEdition`；`verification/AnimeEdition.SmokeTests.csproj` 目标 `net8.0`。
-
-## B. 不依赖 Emby 的 C# 烟雾测试
-
-如果本机安装了兼容的 .NET SDK：
+源码根目录 `NuGet.Config` 清空远程源：本次仅用已有本地 NuGet 缓存完成构建。如在全新环境编译，请自行配置批准的包源/缓存，不要将生产配置、凭证、SDK 或整个服务器目录加入源码包。
 
 ```powershell
-# 在解压根目录；保存日志及 exit code
-$ErrorActionPreference = 'Continue'
-dotnet run --project ./verification/AnimeEdition.SmokeTests.csproj -c Release *> smoke.log
-$smokeExit = $LASTEXITCODE
-Write-Host "smoke_exit=$smokeExit"
-Get-Content smoke.log
+$refs = 'D:\EmbyApiRefs'
+$cache = 'D:\NuGetCache'
+dotnet build HomeScreenCompanion/HomeScreenCompanion.csproj -c Release "-p:EmbyReferenceDir=$refs" "-p:RestorePackagesPath=$cache"
+dotnet build verification/AnimeEdition.SmokeTests.csproj -c Release "-p:EmbyReferenceDir=$refs" "-p:RestorePackagesPath=$cache"
+dotnet verification/bin/Release/net8.0/AnimeEdition.SmokeTests.dll
+dotnet verification/bin/Release/net8.0/AnimeEdition.SmokeTests.dll --preview-demo
+python verification/check_static.py
 ```
 
-测试针对 AniBridge ID/季度映射与动漫关联分组算法，**不启动 Emby，不连接服务器，不调用真实 AniList API**。
+测试项目不生成平台 apphost，直接通过 dotnet 执行 DLL，避免 Windows SDK 在 WSL UNC 输出路径替换 EXE 的平台限制。预览模式明确使用隔离模拟库：Provider ID 案例取自已报告的真实结果，部分 Fate/KonoSuba 成员为显式合成夹具，不代表本次再次扫描服务器。
 
-如果缺 .NET SDK 或 NuGet 还原失败，先记录完整错误，再继续无需 SDK 的静态检查。不要擅自安装 SDK；把建议安装版本发回用户决定。
+## 已验证与未验证
 
-## C. 插件 DLL 编译（有真实参考 DLL 才执行）
+- Release 构建：0 错误、104 警告，警告位于未修改的原版 HSC 代码，本次动漫模块无编译警告。
+- 行为/配置与缓存兼容性：128 条断言通过。
+- 独立 `--preview-demo`：实际生产规则/分组/写入谓词产生候选、批准阻断及重复诊断，退出 0；不调用 Emby。
+- 静态：项目 XML、隔离 GUID/路由、任务 Key、原设置绑定及 Node JavaScript 语法通过。
+- 新 UI 校验函数离线执行：2 个合法输入接受、6 个非法策略拒绝。
+- 浏览器可视验证未完成：本地共享 Chromium daemon 启动失败，未修改浏览器配置或安装工具；没有进入生产后台。
+- 新 DLL 的程序集身份通过只读元数据检查，版本为 4.3.0.2。
+- 新版 Emby 插件加载、真实 API 写入/移除成员及重启持久化未运行。未将旧版 4.3.0.1 生产 Dry Run 验收冒充新版运行证据。
 
-项目编译需三份与**目标 Emby Server 版本相匹配**的原始二进制引用：
+别名仅应用于新建合集。Emby 既有重命名 API 未验证，不自动改名。实际写入仍须部署后在受控环境验收；本次仅复用已有 CreateCollection/AddToCollection/RemoveFromCollection 调用。
 
-- `MediaBrowser.Common.dll`
-- `MediaBrowser.Controller.dll`
-- `MediaBrowser.Model.dll`
+## 交付核对
 
-优先使用用户**事先提供的离线 DLL 包**，或已存放在本机、来自相同版本 Emby 安装包的 DLL。参考 DLL 必须复制到独立只读目录；验证文件来源、版本和 SHA-256。**本轮不要为获取 DLL 而访问运行中的 Emby 服务器**。如果 DLL 不齐或版本无法证实，此步状态记为 `BLOCKED_REFERENCE_DLL`，不要跳过引用强制编译，也不要模拟“成功”。
-
-当三份引用齐全后：
-
-```powershell
-$refs = 'D:\EmbyApiRefs'   # 修改为真实的本地离线引用目录
-$names = @('MediaBrowser.Common.dll','MediaBrowser.Controller.dll','MediaBrowser.Model.dll')
-foreach ($name in $names) {
-  if (-not (Test-Path (Join-Path $refs $name))) { throw "Missing reference: $name" }
-}
-
-dotnet build ./HomeScreenCompanion/HomeScreenCompanion.csproj -c Release "-p:EmbyReferenceDir=$refs" *> build.log
-$buildExit = $LASTEXITCODE
-Write-Host "build_exit=$buildExit"
-Get-Content build.log
-```
-
-如果出现 CS 编译错误：对照**实际 DLL 类型和方法签名**做必要的最小 C# 修复，保留原 HSC 功能，保存统一差异 Patch；重复执行烟雾测试、静态检查和完整构建。不要编造接口或改动运行中的服务。
-
-若编译成功，核对 `HomeScreenCompanion/bin/Release/netstandard2.0/HomeScreenCompanionAnimeEdition.dll`（实际路径以编译输出为准），记录 SHA-256、文件大小、构建 warning 数量、生成目录；该 DLL 只能作为**待运行验收的候选产物**。
-
-## D. 到这里立即停止
-
-**不要**进一步安装插件、启动 Emby、测试 Emby 配置页、调用 Emby API、连接生产媒体库、修改合集或下载实际动漫媒体。Emby 阶段由用户自行完成。
-
-如果 C# 烟雾测试通过但缺参考 DLL，应交付现有结果并标记编译未完成；若用户日后愿意提供只读 DLL，再继续编译，不需要运行 Emby。
-
-## 必须返回给 ChatGPT Web 的验收材料
-
-1. `OFFLINE_VERIFICATION_REPORT.md`：逐项 PASS / FAIL / SKIP / BLOCKED，注明命令、退出码及证据；不要把静态测试通过写成插件成功编译。
-2. `smoke.log`、`build.log`（未运行则注明原因）、静态脚本结果。
-3. 如生成：`HomeScreenCompanionAnimeEdition.dll` + SHA-256 + 引用 DLL 版本信息（避免暴露路径中的敏感信息）。
-4. 如修改源码：完整修改后 ZIP、最小 `.patch`、变更原因，以及修复后的重新运行结果。
-5. 最后单独写明：**未使用 Docker；未启动 Emby；未触碰生产；未执行任何 Emby 运行时验证。**
-
-验收截止点：编译产物检查。Emby 插件运行、媒体合集操作、网络 API 联调及发布均**不属于本轮**。
+完整源码 ZIP、独立 DLL、相对原 `source-fixed.zip` 的补丁、`TEST_REPORT.md`、`CHANGELOG_4.3.0.2.md`、证据日志与 SHA256SUMS 一并交付。补丁应在 4.3.0.1 源码根目录以 `git apply --check` 检查后应用；本次用独立解压副本实际执行 `patch --dry-run` 与应用/字节比对验证，不改生产代码。

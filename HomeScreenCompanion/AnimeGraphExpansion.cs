@@ -36,7 +36,7 @@ namespace HomeScreenCompanion
                     cancellationToken.ThrowIfCancellationRequested();
                     if (queued.Count > graphNodeLimit)
                     {
-                        onProgress("Relationship graph node limit reached; no collections were modified.");
+                        onProgress("关系图节点数已达上限；未修改任何合集。");
                         break;
                     }
                     var node = toVisit.Dequeue();
@@ -45,7 +45,7 @@ namespace HomeScreenCompanion
                     {
                         if (result.NetworkRequests >= requestBudget)
                         {
-                            onProgress("AniList request budget reached; run the task again to warm the cache.");
+                            onProgress("AniList 请求数已达本次上限；请再次运行任务以填充缓存。");
                             // The dequeued node is still unresolved, even if it was the last
                             // queued node. Never let an empty queue turn this into Complete.
                             return result;
@@ -58,7 +58,7 @@ namespace HomeScreenCompanion
                         if (result.NetworkRequests % 12 == 0)
                         {
                             save();
-                            onProgress($"AniList: fetched {result.NetworkRequests} relationships");
+                            onProgress($"AniList：已获取 {result.NetworkRequests} 份作品关系");
                         }
                     }
                     result.Records.Add(record);

@@ -10,6 +10,7 @@ namespace HomeScreenCompanion
         public string Name { get; set; } = "";
         public bool IsSeries { get; set; }
         public List<int> AniListIds { get; set; } = new List<int>();
+        public List<string> ProviderIds { get; set; } = new List<string>();
     }
 
     internal sealed class AnimeRelation
@@ -31,6 +32,10 @@ namespace HomeScreenCompanion
     internal sealed class AnimeGroup
     {
         public int Anchor { get; set; }
+        private string? _key;
+        public string Key { get => _key ?? "anilist:" + Anchor.ToString(System.Globalization.CultureInfo.InvariantCulture); set => _key = value; }
+        public bool ReviewRequired { get; set; }
+        public bool HasExplicitRule { get; set; }
         public string Name { get; set; } = "";
         public List<long> EmbyIds { get; set; } = new List<long>();
     }
@@ -84,6 +89,9 @@ namespace HomeScreenCompanion
             bool includeSpinOffs)
         {
             var local = source.Where(i => i.EmbyId > 0 && i.AniListIds.Count > 0).ToList();
+            var records = relations.ToList();
+            var branchIds = new HashSet<int>();
+            var continuity = new HashSet<(int From, int To)>();
             var uf = new UnionFind();
             foreach (var item in local)
             {
@@ -94,14 +102,37 @@ namespace HomeScreenCompanion
                 // films containing multiple shorts, etc). Keep that item in one group.
                 foreach (var id in ids.Skip(1)) uf.Join(ids[0], id);
             }
-            foreach (var record in relations)
+            foreach (var record in records)
             {
                 foreach (var edge in record.Relations)
                 {
-                    if (edge.Id > 0 && edge.Type == "ANIME" && IsSafeRelation(edge.Relation, includeSpinOffs))
+                    if (edge.Id <= 0 || edge.Type != "ANIME") continue;
+                    var relation = (edge.Relation ?? "").Trim().ToUpperInvariant();
+                    if (relation == "SPIN_OFF" || relation == "SIDE_STORY" || relation == "PARENT" ||
+                        relation == "ALTERNATIVE" || relation == "ALTERNATIVE_VERSION")
+                    {
+                        // Disabled SPIN_OFF edges still reveal a branch; excluding an edge
+                        // from connectivity does not establish strict mainline membership.
+                        branchIds.Add(record.Id);
+                        branchIds.Add(edge.Id);
+                    }
+                    if (relation == "SEQUEL") continuity.Add((record.Id, edge.Id));
+                    if (relation == "PREQUEL") continuity.Add((edge.Id, record.Id));
+                    if (IsSafeRelation(relation, includeSpinOffs))
                         uf.Join(record.Id, edge.Id);
                 }
             }
+            foreach (var fork in continuity.GroupBy(e => e.From).Where(g => g.Count() > 1))
+            {
+                branchIds.Add(fork.Key);
+                foreach (var edge in fork) branchIds.Add(edge.To);
+            }
+            foreach (var fork in continuity.GroupBy(e => e.To).Where(g => g.Count() > 1))
+            {
+                branchIds.Add(fork.Key);
+                foreach (var edge in fork) branchIds.Add(edge.From);
+            }
+            var branchRoots = new HashSet<int>(branchIds.Select(uf.Find));
             var components = local.SelectMany(i => i.AniListIds.Select(id => new { id, item = i }))
                 .Where(x => x.id > 0)
                 .GroupBy(x => uf.Find(x.id))
@@ -117,7 +148,8 @@ namespace HomeScreenCompanion
             {
                 Anchor = g.Anchor,
                 EmbyIds = g.Items.Select(i => i.EmbyId).OrderBy(id => id).ToList(),
-                Name = ChooseName(g.Items)
+                Name = ChooseName(g.Items),
+                ReviewRequired = g.Items.SelectMany(i => i.AniListIds).Any(id => branchRoots.Contains(uf.Find(id)))
             }).ToList();
         }
 
@@ -126,7 +158,7 @@ namespace HomeScreenCompanion
             var candidates = items.OrderByDescending(i => i.IsSeries)
                 .Select(i => (i.Name ?? "").Trim()).Where(s => s.Length >= 2)
                 .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-            if (candidates.Count == 0) return "Unnamed anime";
+            if (candidates.Count == 0) return "未命名动漫";
             var shortest = candidates.OrderBy(s => s.Length).ThenBy(s => s, StringComparer.Ordinal).First();
             // Use an existing Chinese title if available, otherwise an existing original title;
             // never ask an LLM to invent the IP name.

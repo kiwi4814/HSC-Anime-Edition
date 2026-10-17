@@ -60,7 +60,7 @@ namespace HomeScreenCompanion
             }
             json.EnsureFinished();
             if (index.SourceDescriptors < 1 || index.IdentityLinks < 1)
-                throw new InvalidDataException("AniBridge mapping file contains no usable identity links.");
+                throw new InvalidDataException("AniBridge 映射文件中没有可用的作品身份关联。");
             return index;
         }
 
@@ -154,14 +154,14 @@ namespace HomeScreenCompanion
                 {
                     next = _reader.Peek();
                     if (next < 0 || next == ',' || next == '}' || next == ']' || char.IsWhiteSpace((char)next)) break;
-                    if (token.Length > 100) throw new InvalidDataException("Invalid JSON primitive.");
+                    if (token.Length > 100) throw new InvalidDataException("JSON 基本值无效。");
                     token.Append((char)_reader.Read());
                 }
                 var value = token.ToString();
                 if (value != "true" && value != "false" && value != "null" &&
                     !double.TryParse(value, System.Globalization.NumberStyles.Float,
                         System.Globalization.CultureInfo.InvariantCulture, out _))
-                    throw new InvalidDataException("Invalid JSON primitive.");
+                    throw new InvalidDataException("JSON 基本值无效。");
             }
         }
 
@@ -169,7 +169,7 @@ namespace HomeScreenCompanion
         {
             while (_reader.Peek() >= 0)
                 if (!char.IsWhiteSpace((char)_reader.Read()))
-                    throw new InvalidDataException("Trailing JSON content.");
+                    throw new InvalidDataException("JSON 末尾包含多余内容。");
         }
 
         private string ReadString()
@@ -179,7 +179,7 @@ namespace HomeScreenCompanion
             while (true)
             {
                 int code = _reader.Read();
-                if (code < 0) throw new EndOfStreamException("Truncated JSON string.");
+                if (code < 0) throw new EndOfStreamException("JSON 字符串不完整。");
                 if (code == '"') return value.ToString();
                 if (code == '\\')
                 {
@@ -197,18 +197,18 @@ namespace HomeScreenCompanion
                             for (int i = 0; i < 4; i++)
                             {
                                 int d = _reader.Read();
-                                if (d < 0) throw new EndOfStreamException("Truncated JSON escape.");
+                                if (d < 0) throw new EndOfStreamException("JSON 转义序列不完整。");
                                 hex[i] = (char)d;
                             }
                             if (!int.TryParse(new string(hex), System.Globalization.NumberStyles.HexNumber,
                                     System.Globalization.CultureInfo.InvariantCulture, out code))
-                                throw new InvalidDataException("Invalid JSON unicode escape.");
+                                throw new InvalidDataException("JSON Unicode 转义序列无效。");
                             break;
-                        default: throw new InvalidDataException("Invalid JSON escape.");
+                        default: throw new InvalidDataException("JSON 转义序列无效。");
                     }
                 }
-                else if (code < 0x20) throw new InvalidDataException("Invalid control character in JSON.");
-                if (value.Length >= MaxStringLength) throw new InvalidDataException("Excessively long JSON string.");
+                else if (code < 0x20) throw new InvalidDataException("JSON 中包含无效的控制字符。");
+                if (value.Length >= MaxStringLength) throw new InvalidDataException("JSON 字符串过长。");
                 value.Append((char)code);
             }
         }
@@ -217,13 +217,13 @@ namespace HomeScreenCompanion
         {
             int value;
             while ((value = _reader.Peek()) >= 0 && char.IsWhiteSpace((char)value)) _reader.Read();
-            if (value < 0) throw new EndOfStreamException("Truncated JSON.");
+            if (value < 0) throw new EndOfStreamException("JSON 数据不完整。");
             return value;
         }
 
         private void Expect(char expected)
         {
-            if (Peek() != expected) throw new InvalidDataException("Malformed JSON; expected " + expected);
+            if (Peek() != expected) throw new InvalidDataException("JSON 格式错误；预期字符：" + expected);
             _reader.Read();
         }
     }

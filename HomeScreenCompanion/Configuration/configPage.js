@@ -3400,6 +3400,80 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
     // ---- End Home Section Tab helpers ----
 
+    function validateAnimePolicy(view) {
+        function fail(id, message) {
+            view.querySelector(id).focus();
+            throw new Error('动漫合集配置：' + message);
+        }
+        function parse(id, label, fallback) {
+            var text = view.querySelector(id).value.trim();
+            if (!text) return fallback;
+            try {
+                var parsed = JSON.parse(text);
+                // JSON.parse otherwise silently accepts duplicate object keys.
+                var tokens = text.match(/"(?:\\.|[^"\\])*"|[{}\[\]:,]|[^\s{}\[\]:,]+/g) || [];
+                var objects = [];
+                tokens.forEach(function (token, index) {
+                    if (token === '{') objects.push(new Set());
+                    else if (token === '}') objects.pop();
+                    else if (token.charAt(0) === '"' && tokens[index + 1] === ':') {
+                        var key = JSON.parse(token), current = objects[objects.length - 1];
+                        if (current.has(key)) throw new Error('重复的 JSON 属性：' + key);
+                        current.add(key);
+                    }
+                });
+                return parsed;
+            }
+            catch (error) { fail(id, label + '不是有效的 JSON：' + error.message); }
+        }
+        function keyValid(key) {
+            return typeof key === 'string' && /^anilist:[1-9][0-9]*$/.test(key) && Number(key.slice(8)) <= 2147483647;
+        }
+        function idValid(id) {
+            if (typeof id !== 'string' || !/^(?:(?:anilist|tmdb_movie|tmdb_show|tvdb_movie|tvdb_show):[1-9][0-9]*|imdb_(?:movie|show):tt[0-9]+)$/.test(id)) return false;
+            return id.indexOf('anilist:') === 0 ? Number(id.slice(8)) <= 2147483647 :
+                (id.indexOf('imdb_') !== 0 || /[1-9]/.test(id.split(':tt')[1]));
+        }
+        var ruleField = '#txtAnimeCollectionRulesJson';
+        var rules = parse(ruleField, '成员规则', []);
+        if (!Array.isArray(rules)) fail(ruleField, '成员规则必须是 JSON 数组。');
+        var keys = new Set(), owners = new Map();
+        rules.forEach(function (rule, index) {
+            var label = '第 ' + (index + 1) + ' 条规则';
+            if (!rule || typeof rule !== 'object' || Array.isArray(rule) || !keyValid(rule.Key))
+                fail(ruleField, label + '必须包含规范的 anilist:正整数 Key（无前导零，最大 2147483647）。');
+            if (keys.has(rule.Key)) fail(ruleField, '规则 Key 重复：' + rule.Key);
+            keys.add(rule.Key);
+            if (Object.keys(rule).some(function (key) { return ['Key', 'IncludeIds', 'ExcludeIds'].indexOf(key) < 0; }))
+                fail(ruleField, label + '包含未知字段，仅支持 Key、IncludeIds、ExcludeIds。');
+            if (!Array.isArray(rule.IncludeIds) || (rule.ExcludeIds !== undefined && !Array.isArray(rule.ExcludeIds)))
+                fail(ruleField, label + '的 IncludeIds 必须是数组；可选的 ExcludeIds 也必须是数组。');
+            rule.IncludeIds.concat(rule.ExcludeIds || []).forEach(function (id) {
+                if (!idValid(id)) fail(ruleField, label + '包含无效的带类型 ID：' + String(id));
+            });
+            var excluded = new Set(rule.ExcludeIds || []);
+            rule.IncludeIds.forEach(function (id) {
+                if (excluded.has(id)) return;
+                if (owners.has(id) && owners.get(id) !== rule.Key)
+                    fail(ruleField, '同一 ID 被两条规则选择：' + id + '。同一媒体的不同提供商 ID 冲突还会由服务端检查。');
+                owners.set(id, rule.Key);
+            });
+        });
+        var aliasField = '#txtAnimeCollectionAliasesJson';
+        var aliases = parse(aliasField, '中文别名', {});
+        if (!aliases || typeof aliases !== 'object' || Array.isArray(aliases))
+            fail(aliasField, '中文别名必须是 JSON 对象。');
+        Object.keys(aliases).forEach(function (key) {
+            if (!keyValid(key) || typeof aliases[key] !== 'string' || !aliases[key].trim() || aliases[key] !== aliases[key].trim() || /[\x00-\x1f\x7f]/.test(aliases[key]))
+                fail(aliasField, '别名必须以有效稳定 Key 为键、非空显示名称为值。');
+        });
+        view.querySelector('#txtAnimeApprovedCollectionKeys').value.split(/\r?\n/).forEach(function (line) {
+            var key = line.trim();
+            if (key && !keyValid(key)) fail('#txtAnimeApprovedCollectionKeys', '批准名单每行只能填写一个准确的稳定 Key，不支持空白分隔或通配符。');
+            if (/[*?]/.test(key)) fail('#txtAnimeApprovedCollectionKeys', '批准名单不支持通配符。');
+        });
+    }
+
     function getUiConfig(view, forComparison) {
         var flatTags = [];
         view.querySelectorAll('.tag-row').forEach(row => {
@@ -3604,6 +3678,9 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             AnimeCollectionPrefix: view.querySelector('#txtAnimePrefix').value || '动漫 · ',
             AnimeMappingRefreshDays: 7,
             AnimeMaxRequestsPerRun: Math.min(300, Math.max(10, parseInt(view.querySelector('#txtAnimeApiBudget').value, 10) || 100)),
+            AnimeCollectionRulesJson: view.querySelector('#txtAnimeCollectionRulesJson').value,
+            AnimeApprovedCollectionKeys: view.querySelector('#txtAnimeApprovedCollectionKeys').value,
+            AnimeCollectionAliasesJson: view.querySelector('#txtAnimeCollectionAliasesJson').value,
             Tags: flatTags,
             SavedFilters: savedFilters,
             HomeSyncEnabled: hscEnabled ? hscEnabled.checked : (lastHscConfig.HomeSyncEnabled || false),
@@ -3736,7 +3813,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanionAnime/Version"))
             .then(function (result) {
                 var footer = document.getElementById('footerVersionText');
-                if (footer) footer.textContent = 'Anime Edition v' + (result.Version || '?');
+                if (footer) footer.textContent = '动漫版 v' + (result.Version || '?');
                 var upd = document.getElementById('footerUpdateInfo');
                 if (upd) upd.textContent = '';
             }).catch(function () {});
@@ -7201,6 +7278,8 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             }
             doSave();
             function doSave() {
+            try { validateAnimePolicy(view); }
+            catch (error) { alert(error.message); return; }
 
             // If CLEANUP tab is active and has pending deletions, show its modal instead of normal config save
             var cleanupTab = view.querySelector('#tabCleanup');
@@ -7234,7 +7313,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
             // Pre-fetch current config to preserve HomeSectionTracked set by the sync task
             // (UI dataset may be stale if sync ran after page load)
-            window.ApiClient.getPluginConfiguration(pluginId).catch(function() { return { Tags: [] }; }).then(function(currentConfig) {
+            window.ApiClient.getPluginConfiguration(pluginId).then(function(currentConfig) {
                 var currentGrouped = groupConfigTags(currentConfig.Tags);
                 configObj.Tags.forEach(function(t) {
                     var key = t.Name ? t.Name + '\x1F' + t.Tag : t.Tag;
@@ -7285,7 +7364,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                             }
                         });
                     }
-                    return window.ApiClient.updatePluginConfiguration(pluginId, configObj);
+                    return window.ApiClient.updatePluginConfiguration(pluginId, Object.assign({}, currentConfig, configObj));
                 });
             }).then(r => {
                 window.Dashboard.processPluginConfigurationUpdateResult(r);
@@ -7441,6 +7520,9 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 view.querySelector('#selAnimeAiProvider').value = config.AnimeAiProvider || 'OpenAI';
                 view.querySelector('#txtAnimePrefix').value = config.AnimeCollectionPrefix || '动漫 · ';
                 view.querySelector('#txtAnimeApiBudget').value = config.AnimeMaxRequestsPerRun || 100;
+                view.querySelector('#txtAnimeCollectionRulesJson').value = config.AnimeCollectionRulesJson || '';
+                view.querySelector('#txtAnimeApprovedCollectionKeys').value = config.AnimeApprovedCollectionKeys || '';
+                view.querySelector('#txtAnimeCollectionAliasesJson').value = config.AnimeCollectionAliasesJson || '';
                 if (view.querySelector('#txtSearchTags')) {
                     view.querySelector('#txtSearchTags').value = '';
                     view.querySelector('#btnClearSearch').style.display = 'none';

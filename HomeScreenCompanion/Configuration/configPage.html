@@ -1043,41 +1043,41 @@
                 <div class="advanced-section settings-panel" style="margin-bottom:25px;">
                     <div class="advanced-header settings-panel-toggle">
                         <i class="md-icon" style="margin-right:10px;color:#52B54B;">movie_filter</i>
-                        <span style="font-size:1.05em;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#52B54B;">Anime IP Collections · Edition</span>
+                        <span style="font-size:1.05em;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#52B54B;">动漫 IP 合集 · 动漫版</span>
                         <i class="md-icon settings-panel-chevron" style="margin-left:auto;transition:transform .2s;">expand_more</i>
                     </div>
                     <div class="advanced-body settings-panel-body" style="display:none;">
                         <div class="fieldDescription" style="margin-bottom:14px;line-height:1.7;">
-                            Automatically group anime TV series, OVA and movies into franchises using AniBridge Mappings v3 and AniList.
-                            Uses Emby provider IDs only; does not touch STRM paths or video files. Run the separate
-                            <strong>Anime IP Collection Sync</strong> task from Emby Dashboard &rarr; Scheduled Tasks to preview.
+                            使用 AniBridge Mappings v3 与 AniList，将动画剧集、OVA 和电影按作品系列分组。
+                            仅使用 Emby 的外部提供商 ID，不修改 STRM 路径或视频文件。请在 Emby 控制台 &rarr; 计划任务中运行独立的
+                            <strong>动漫 IP 合集同步</strong>任务，先查看预览。
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeEnabled" /><span>Enable Anime IP collections</span></label>
-                            <div class="fieldDescription">Off by default. New collections are prefixed and existing manual collections are not adopted.</div>
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeEnabled" /><span>启用动漫 IP 合集</span></label>
+                            <div class="fieldDescription">默认关闭。新合集使用指定前缀；绝不接管已有的手工合集。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeDryRun" /><span>Anime Dry Run (recommended first)</span></label>
-                            <div class="fieldDescription">Checked by default. Global HSC Dry Run also prevents writes.</div>
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeDryRun" /><span>动漫试运行（建议先开启）</span></label>
+                            <div class="fieldDescription">默认开启，只预览不写入。全局 HSC 试运行也会阻止写入；实际写入还必须通过下方批准名单。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeIncludeSpinOffs" /><span>Include confirmed AniList spin-offs</span></label>
-                            <div class="fieldDescription">Prequel, sequel, side story and parent relations are always included. Similar/cameo/adaptation links are excluded.</div>
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeIncludeSpinOffs" /><span>包含 AniList 已确认的衍生作品</span></label>
+                            <div class="fieldDescription">自动遍历前传、续作、支线及母作品关系，排除相似、客串和改编关系。关闭衍生作品不代表严格主线安全；有分支歧义的自动分组必须人工复核并用明确成员规则确认后才能写入。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:15px;">
-                            <input is="emby-input" type="text" id="txtAnimePrefix" label="Collection name prefix" placeholder="动漫 · " />
-                            <div class="fieldDescription">Use a unique prefix to avoid colliding with manually created Emby Collections.</div>
+                            <input is="emby-input" type="text" id="txtAnimePrefix" label="合集名称前缀" placeholder="动漫 · " />
+                            <div class="fieldDescription">建议使用独特前缀，避免与手工创建的 Emby 合集重名。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
-                            <input is="emby-input" type="number" min="10" max="300" id="txtAnimeApiBudget" label="Maximum new AniList requests per sync" />
-                            <div class="fieldDescription">Initial scans may require repeated runs to warm the relation cache. AniList requests are throttled.</div>
+                            <input is="emby-input" type="number" min="10" max="300" id="txtAnimeApiBudget" label="每次同步最多新增 AniList 请求数" />
+                            <div class="fieldDescription">首次扫描可能需要多次运行以填充关系缓存；AniList 请求会限速。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:16px;">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiOther" /><span>Optional AI review for ambiguous AniList OTHER links</span></label>
-                            <div class="fieldDescription">Off by default. Reviews at most 15 weak links in one run; uses the API keys and models configured above. AI cannot invent identity links.</div>
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiOther" /><span>可选：用 AI 复核有歧义的 AniList OTHER 关系</span></label>
+                            <div class="fieldDescription">默认关闭，每次最多复核 15 条弱关系；使用上方配置的 API 密钥和模型。AI 不能凭空建立作品身份关联，也不能替代明确成员规则与人工批准。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
-                            <label class="inputLabel" for="selAnimeAiProvider">AI provider</label>
+                            <label class="inputLabel" for="selAnimeAiProvider">AI 提供商</label>
                             <select is="emby-select" id="selAnimeAiProvider" class="emby-select-withcolor">
                                 <option value="OpenAI">OpenAI</option>
                                 <option value="Gemini">Gemini</option>
@@ -1085,7 +1085,23 @@
                                 <option value="Ollama">Ollama</option>
                             </select>
                         </div>
-                        <p class="fieldDescription" style="margin-top:16px;">The source mapping is cached for 7 days. No collections are updated if its download, JSON validation or relationship traversal fails. Existing collections are never automatically deleted.</p>
+                        <div class="inputContainer" style="margin-top:16px;">
+                            <label class="inputLabel" for="txtAnimeCollectionRulesJson">明确成员规则（JSON 数组）</label>
+                            <textarea is="emby-textarea" id="txtAnimeCollectionRulesJson" rows="7" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='[{"Key":"anilist:356","IncludeIds":["anilist:356","tmdb_movie:123"],"ExcludeIds":["tvdb_show:456"]}]'></textarea>
+                            <div class="fieldDescription">留空表示无人工规则。Key 是稳定合集身份，不是显示名称；规则、批准与别名的 Key 均须使用 anilist:正整数（无前导零，最大 2147483647）。自动分组使用 anilist:&lt;Anchor&gt;。IncludeIds 是完整、精确的成员选择，不会追加自动成员；ExcludeIds 优先。同一媒体不能归属两条规则，冲突会阻止写入。被规则认领的成员不会保留在原自动分组。</div>
+                            <div class="fieldDescription">示例仅演示格式，请替换为真实 ID。支持 anilist、tmdb_movie、tmdb_show、tvdb_movie、tvdb_show、imdb_movie、imdb_show；电影与剧集 ID 不可混用。</div>
+                        </div>
+                        <div class="inputContainer" style="margin-top:16px;">
+                            <label class="inputLabel" for="txtAnimeApprovedCollectionKeys">已人工批准的稳定 Key（每行一个）</label>
+                            <textarea is="emby-textarea" id="txtAnimeApprovedCollectionKeys" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder="anilist:356&#10;anilist:127230"></textarea>
+                            <div class="fieldDescription">先查看任务预览及待复核警告，再填入准确的 Key；首尾空白会忽略，区分大小写，不支持通配符。名单为空时，即使全局和动漫试运行均关闭，也不会实际写入。批准不能绕过分支歧义或规则错误。</div>
+                        </div>
+                        <div class="inputContainer" style="margin-top:16px;">
+                            <label class="inputLabel" for="txtAnimeCollectionAliasesJson">中文合集别名（JSON 对象）</label>
+                            <textarea is="emby-textarea" id="txtAnimeCollectionAliasesJson" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='{"anilist:127230":"电锯人","anilist:21202":"为美好的世界献上祝福！"}'></textarea>
+                            <div class="fieldDescription">用稳定 Key 指定显示名称，不改变合集身份。内置别名：anilist:127230 → 电锯人；anilist:21202 → 为美好的世界献上祝福！。留空使用默认值，填写同一 Key 可覆盖内置别名。</div>
+                        </div>
+                        <p class="fieldDescription" style="margin-top:16px;">映射缓存保留 7 天。下载、JSON 校验或关系遍历失败时不更新任何合集；规则、别名或批准格式无效也会在写入前终止。不会自动删除已有合集。重复媒体仅按带类型的提供商 ID 提示，不会去重或修改媒体。</p>
                     </div>
                 </div>
 
