@@ -45,6 +45,7 @@ namespace HomeScreenCompanion
         public Dictionary<string, AnimeAiDecisionEntry> Decisions { get; set; } =
             new Dictionary<string, AnimeAiDecisionEntry>();
     }
+
     internal sealed class AnimeAiDecisionEntry
     {
         public bool Approved { get; set; }

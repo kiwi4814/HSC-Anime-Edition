@@ -38,11 +38,7 @@ namespace HomeScreenCompanion
 
         private readonly List<Rule> _rules = new List<Rule>();
         private readonly HashSet<string> _approved = new HashSet<string>(StringComparer.Ordinal);
-        private readonly Dictionary<string, string> _aliases = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["anilist:127230"] = "电锯人",
-            ["anilist:21202"] = "为美好的世界献上祝福！"
-        };
+        private readonly Dictionary<string, string> _aliases = new Dictionary<string, string>(StringComparer.Ordinal);
 
         internal static AnimeCollectionPolicy Parse(string rulesJson, string approvedKeys, string aliasesJson)
         {
