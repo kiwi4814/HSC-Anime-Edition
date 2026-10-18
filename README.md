@@ -1,6 +1,14 @@
 # 🎬 Home Screen Companion for Emby
 
-> 本地增量版本 **HSC Anime Edition 4.3.0.2**：参见 [动漫模块说明](ANIME_EDITION.md)、[版本变更](CHANGELOG_4.3.0.2.md) 和 [本地构建验证](OMP_LOCAL_HANDOFF.md)。下方保留上游功能说明，不代表本版已在生产服务器验收。
+> 本地开发版本 **HSC Anime Edition 4.3.0.3**：参见 [动漫模块说明](ANIME_EDITION.md)、[历史版本变更](CHANGELOG_4.3.0.2.md) 和 [开发基线与构建验证](OMP_LOCAL_HANDOFF.md)。下方保留上游功能说明，不代表本版已在生产服务器验收。
+
+## 开发基线
+
+- 个人 Fork：[kiwi4814/HSC-Anime-Edition](https://github.com/kiwi4814/HSC-Anime-Edition)；日常开发分支 `develop`，基线标签 `baseline-2026-10-18`。
+- 保留上游历史和已有两轮本地提交；`upstream` 指向官方仓库，`origin` 指向个人 Fork。后续调整从 `develop` 创建功能分支，不改写基线标签。
+- 本轮重新构建插件与回归程序，296 条断言、离线规划预览及静态检查通过；插件仍有 107 条编译警告。详细结果见 [验证记录](TEST_REPORT.md)。
+- **已知限制**：设置备份尚未包含 `AnimeCollectionRulesJson`、`AnimeApprovedCollectionKeys`、`AnimeCollectionAliasesJson`。不要依赖插件设置备份迁移这三项策略；恢复后须逐项核对并保持 Dry Run。
+- 这是源码开发基线，不是生产发布；本轮没有连接、部署或重启 Emby，也没有进行真实 AI 供应商验收。
 
 
 

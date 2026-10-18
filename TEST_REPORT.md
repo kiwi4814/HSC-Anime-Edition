@@ -1,3 +1,26 @@
+# 2026-10-18 · 4.3.0.3 开发基线验证
+
+代码基于 `60ef252`，保留官方上游 `68024c1` 及其后的五个真实本地提交；本轮仅整理忽略规则、NuGet 说明、审查材料和开发文档，未修改 C# 或 UI 业务逻辑。
+
+| 本轮实际执行 | 结果 |
+|---|---|
+| Windows .NET SDK 10.0.402，插件 Release `-t:Rebuild`，已有 Emby 4.10.1.0 引用 | 退出 0；0 错误、107 警告，未隐藏或抑制 |
+| 同一 SDK，回归程序 Release `-t:Rebuild` | 退出 0；0 错误、0 警告 |
+| Linux .NET 8.0.32 执行新构建的回归 DLL | `PASS: 296 assertions; fictional fixtures and localhost HTTP only` |
+| 独立 `--preview-demo` | 退出 0；四个候选组的 `WritesAllowedNow` 全部为 false，输出虚构数据的重复诊断 |
+| `python3 verification/check_static.py` | XML、源码集成检查及 Node.js 语法检查通过；不代表运行时认证或浏览器验收 |
+| 五个本地提交的 103 个不同 Git blob 与待加入审查报告的凭据模式扫描 | 未匹配 GitHub/OpenAI/AWS token 或私钥模式；不是完整安全审计 |
+| 已跟踪文件的产物检查 | 无 artifacts、bin/obj、浏览器 Profile 或 Zone.Identifier；本地下载标记由忽略规则排除 |
+
+## 本轮审查结论
+
+- Standards：确认一项发布卫生问题（Windows `Zone.Identifier`），已通过忽略规则排除；历史与本地产物保留在本机，不上传。
+- Spec：确认一项 P2 已知缺口，设置备份遗漏精确成员规则、批准名单、别名。源代码位置：`HomeScreenCompanionService.cs` 的 `BackupSettings`（390 起）、导出（2748 起）、导入（2873 起）。本轮只建立可追溯开发基线，不修改此业务行为；迁移配置前须补齐备份往返并验证旧备份兼容。
+- 不将离线成功宣称为生产验收：本轮未验证浏览器实际界面、Emby 插件加载/配置 HTTP/持久化/真实合集写入或真实 AI 供应商。
+- 下文与 `LOCAL_VERIFICATION.json`、`CHANGELOG_4.3.0.2.md` 保留早期交付记录，不作为本轮新结果。
+
+---
+
 # 4.3.0.2 本地验证记录
 
 日期：2026-10-17。基线：既有 source-fixed.zip；本轮无 SSH、生产 Emby HTTP 或外部 AniList 请求。

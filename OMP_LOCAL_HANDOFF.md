@@ -1,37 +1,58 @@
-# 4.3.0.2 本地构建与验收
+# 4.3.0.3 开发基线与本地验证
 
-不连接生产 Emby，不安装 DLL，不重启服务。
+本轮仅建立 GitHub 源码开发基线，不连接生产 Emby，不安装 DLL，不重启服务。历史审查材料见 `HSC-Anime-Edition-Code-Review-2026-10-18.md`；本轮结果以 `TEST_REPORT.md` 顶部为准。
 
-## 前提
+## Git 基线
 
-.NET SDK 8（本次 8.0.426）、Python 3、Node.js，以及本机已有的 Emby 4.10.1.0 `MediaBrowser.Common.dll`、`MediaBrowser.Controller.dll`、`MediaBrowser.Model.dll` 编译参考。NuGet 包版本沿用项目文件，无新增依赖。测试也使用真实 MediaBrowser.Model，不使用伪造 Emby 类型。
+- 个人 Fork：https://github.com/kiwi4814/HSC-Anime-Edition
+- `origin`：个人 Fork；`upstream`：https://github.com/soderlund91/HomeScreenCompanion.git。
+- `develop`：后续开发起点；`baseline-2026-10-18`：带注释的固定基线标签，不改写。
+- 保留官方历史以及 `62d3ad5`、`9a7ebfe`、`c46de63`、`47237da`、`60ef252` 五个既有本地提交，不重新伪造开发过程。
+- 后续调整从 `develop` 创建独立功能分支；先完成相关构建与行为验证，再提交。生产安装与真实合集写入另行批准。
 
-源码根目录 `NuGet.Config` 清空远程源：本次仅用已有本地 NuGet 缓存完成构建。如在全新环境编译，请自行配置批准的包源/缓存，不要将生产配置、凭证、SDK 或整个服务器目录加入源码包。
-
-```powershell
-$refs = 'D:\EmbyApiRefs'
-$cache = 'D:\NuGetCache'
-dotnet build HomeScreenCompanion/HomeScreenCompanion.csproj -c Release "-p:EmbyReferenceDir=$refs" "-p:RestorePackagesPath=$cache"
-dotnet build verification/AnimeEdition.SmokeTests.csproj -c Release "-p:EmbyReferenceDir=$refs" "-p:RestorePackagesPath=$cache"
-dotnet verification/bin/Release/net8.0/AnimeEdition.SmokeTests.dll
-dotnet verification/bin/Release/net8.0/AnimeEdition.SmokeTests.dll --preview-demo
-python verification/check_static.py
+```bash
+git switch develop
+git switch -c feature/your-change
 ```
 
-测试项目不生成平台 apphost，直接通过 dotnet 执行 DLL，避免 Windows SDK 在 WSL UNC 输出路径替换 EXE 的平台限制。预览模式明确使用隔离模拟库：Provider ID 案例取自已报告的真实结果，部分 Fate/KonoSuba 成员为显式合成夹具，不代表本次再次扫描服务器。
+## 工具与编译参考
 
-## 已验证与未验证
+需要 .NET SDK、Python 3、Node.js，以及匹配 Emby 4.10.1.0 的只读 `MediaBrowser.Common.dll`、`MediaBrowser.Controller.dll`、`MediaBrowser.Model.dll`。插件目标是 `netstandard2.0`，回归程序目标是 `net8.0`，运行回归需要 .NET 8 runtime。
 
-- Release 构建：0 错误、107 警告。警告在既有 HSC 文件；AI/动漫新增代码在测试工程构建中 0 警告。
-- 行为、配置、缓存与本机 AI HTTP：296 条断言通过。输入为虚构作品与 localhost mock，不是生产 Emby。
-- 独立 `--preview-demo`：实际生产规则/分组/写入谓词产生候选、批准阻断及重复诊断，退出 0；不调用 Emby。
-- 静态：项目 XML、隔离 GUID/路由、15 个设置字段、管理路由与备份密钥调用点、Node JavaScript 语法通过。
-- Windows Edge headless 打开真实 `configPage.html`：空策略接受，通配批准键被拒绝。未进入生产后台，未改浏览器安装配置。
-- 新 DLL 的程序集身份通过只读元数据检查，版本为 4.3.0.2。
-- 新版 Emby 插件加载、真实 API 写入/移除成员及重启持久化未运行。未将旧版 4.3.0.1 生产 Dry Run 验收冒充新版运行证据。
+本轮使用现有 Windows .NET SDK 10.0.402 编译，并用 WSL .NET 8.0.32 执行新构建的回归 DLL。早期交付使用 SDK 8.0.426；不把旧工具版本当作本轮结果。项目沿用原有 NuGet 依赖版本；`NuGet.Config` 已恢复官方 `https://api.nuget.org/v3/index.json`，不再依赖预热缓存才能还原。
 
-别名仅应用于新建合集。Emby 既有重命名 API 未验证，不自动改名。实际写入仍须部署后在受控环境验收；本次仅复用已有 CreateCollection/AddToCollection/RemoveFromCollection 调用。
+参考 DLL 放在源码树外，通过 `EmbyReferenceDir` 传入；不把 SDK、包缓存、生产配置、凭据或服务器目录加入 Git。以下环境变量由本机设置：`EMBY_REFERENCE_DIR` 指向三个参考 DLL 所在目录，`DOTNET` 指向用于编译的 dotnet，`DOTNET8` 指向带 .NET 8 runtime 的 dotnet；同一安装具备 SDK 与 runtime 时二者可以相同。
 
-## 交付核对
+```bash
+"$DOTNET" build HomeScreenCompanion/HomeScreenCompanion.csproj -c Release -t:Rebuild "-p:EmbyReferenceDir=$EMBY_REFERENCE_DIR"
+"$DOTNET" build verification/AnimeEdition.SmokeTests.csproj -c Release -t:Rebuild "-p:EmbyReferenceDir=$EMBY_REFERENCE_DIR"
+"$DOTNET8" verification/bin/Release/net8.0/AnimeEdition.SmokeTests.dll
+"$DOTNET8" verification/bin/Release/net8.0/AnimeEdition.SmokeTests.dll --preview-demo
+python3 verification/check_static.py
+```
 
-完整源码 ZIP、独立 DLL、相对原 `source-fixed.zip` 的补丁、`TEST_REPORT.md`、`CHANGELOG_4.3.0.2.md`、证据日志与 SHA256SUMS 一并交付。补丁应在 4.3.0.1 源码根目录以 `git apply --check` 检查后应用；本次用独立解压副本实际执行 `patch --dry-run` 与应用/字节比对验证，不改生产代码。
+从 WSL 调用 Windows SDK 时，`EmbyReferenceDir` 必须使用 Windows 可识别的路径（可用 `wslpath -w` 转换），不要直接把 Linux 路径传给 Windows MSBuild。测试项目不生成平台 apphost，直接通过 dotnet 执行 DLL。
+
+## 本轮验证与边界
+
+- 插件 Release 重建：退出 0，0 错误、107 警告，未隐藏或抑制。
+- 回归程序 Release 重建：退出 0，0 错误、0 警告。
+- 行为、配置、缓存与 localhost AI HTTP：296 条断言通过；夹具为虚构作品和模拟 ID。
+- 独立 `--preview-demo`：调用实际生产规划器与写入谓词，四个候选组在 Dry Run 中均禁止写入；不访问 Emby。
+- `verification/check_static.py`：项目 XML、源码集成检查和 Node.js JavaScript 语法检查通过。静态源码检查不证明运行时认证、备份 HTTP 或浏览器交互。
+- 发布卫生：排除 `artifacts/`、bin/obj、浏览器 Profile 与 Windows `Zone.Identifier`。对五个本地提交的 103 个不同 Git blob 和审查报告进行常见 token/私钥模式扫描，未命中；不宣称完整安全审计。
+- 本轮未运行浏览器界面验收、Emby 插件加载、真实配置保存/回读、合集写入/移除/持久化或真实 AI 供应商验证；不把早期生产结果当作当前版本证据。
+
+## 已知问题与后续优先项
+
+1. **P2：设置备份遗漏合集策略。** `HomeScreenCompanionService.cs` 的 `BackupSettings`、设置导出与导入路径没有 `AnimeCollectionRulesJson`、`AnimeApprovedCollectionKeys`、`AnimeCollectionAliasesJson`。新实例恢复会遗漏这些值，既有实例恢复会沿用目标实例的值，不能完整还原原配置。迁移前应补齐三字段的备份往返，并验证旧备份缺字段时的兼容语义；当前恢复后保持 Dry Run，逐项核对策略。
+2. **107 条编译警告仍在。** 不在保存基线时夹带大规模空值/风格重构；后续按可观测风险逐项处理。
+3. **生产验收独立。** 别名仅用于新建合集；既有合集重命名 API 尚未验证。源码验证不等于允许生产部署或真实合集写入。
+
+## 本轮整理记录
+
+新增：可追溯的开发分支/基线标签约定与现有附件审查报告入库。
+
+修改：README 与动漫模块说明对齐 4.3.0.3、空默认别名和实际验证边界；NuGet 注释对齐官方源；忽略 Windows 下载标记。
+
+移除：仅移除过时文档断言；未删除本地产物、未改写历史、未修改 C# 或 UI 业务逻辑。早期 `LOCAL_VERIFICATION.json`、`SOURCE_MANIFEST.json` 与 `CHANGELOG_4.3.0.2.md` 作为历史交付记录保留，不代表当前源码/产物清单。

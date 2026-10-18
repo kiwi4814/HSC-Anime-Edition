@@ -421,3 +421,6 @@ FodyWeavers.xsd
 
 # Local review deliverables and build evidence (not source inputs).
 /artifacts/
+
+# Windows download provenance is local metadata, not project source.
+*:Zone.Identifier
