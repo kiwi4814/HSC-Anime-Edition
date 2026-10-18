@@ -1,25 +1,16 @@
 # 4.3.0.3 开发基线与本地验证
 
-本轮仅建立 GitHub 源码开发基线，不连接生产 Emby，不安装 DLL，不重启服务。历史审查材料见 `HSC-Anime-Edition-Code-Review-2026-10-18.md`；本轮结果以 `TEST_REPORT.md` 顶部为准。
+本文保留 2026-10-18 源码开发基线的构建入口和验证结果，不是生产安装授权。历史审查材料见 `HSC-Anime-Edition-Code-Review-2026-10-18.md`；验证结果按 `TEST_REPORT.md` 的日期与范围解释，当前功能事实从 [项目文档索引](docs/README.md) 进入。
 
 ## Git 基线
 
-- 个人 Fork：https://github.com/kiwi4814/HSC-Anime-Edition
-- `origin`：个人 Fork；`upstream`：https://github.com/soderlund91/HomeScreenCompanion.git。
-- `develop`：后续开发起点；`baseline-2026-10-18`：带注释的固定基线标签，不改写。
-- 保留官方历史以及 `62d3ad5`、`9a7ebfe`、`c46de63`、`47237da`、`60ef252` 五个既有本地提交，不重新伪造开发过程。
-- 后续调整从 `develop` 创建独立功能分支；先完成相关构建与行为验证，再提交。生产安装与真实合集写入另行批准。
-
-```bash
-git switch develop
-git switch -c feature/your-change
-```
+固定基线、已集成上游 SHA、现存差异与已知缺口见 [Fork 台账](docs/fork/delta.md)。后续功能分支和上游集成按 [维护协议](docs/fork/upstream-sync.md) 执行，保留真实历史，不改写基线标签；生产部署另行批准。
 
 ## 工具与编译参考
 
 需要 .NET SDK、Python 3、Node.js，以及匹配 Emby 4.10.1.0 的只读 `MediaBrowser.Common.dll`、`MediaBrowser.Controller.dll`、`MediaBrowser.Model.dll`。插件目标是 `netstandard2.0`，回归程序目标是 `net8.0`，运行回归需要 .NET 8 runtime。
 
-本轮使用现有 Windows .NET SDK 10.0.402 编译，并用 WSL .NET 8.0.32 执行新构建的回归 DLL。早期交付使用 SDK 8.0.426；不把旧工具版本当作本轮结果。项目沿用原有 NuGet 依赖版本；`NuGet.Config` 已恢复官方 `https://api.nuget.org/v3/index.json`，不再依赖预热缓存才能还原。
+源码基线验证使用现有 Windows .NET SDK 10.0.402 编译，并用 WSL .NET 8.0.32 执行新构建的回归 DLL。早期交付使用 SDK 8.0.426；不混用两次结果。项目沿用原有 NuGet 依赖版本；`NuGet.Config` 已恢复官方 `https://api.nuget.org/v3/index.json`，不再依赖预热缓存才能还原。
 
 参考 DLL 放在源码树外，通过 `EmbyReferenceDir` 传入；不把 SDK、包缓存、生产配置、凭据或服务器目录加入 Git。以下环境变量由本机设置：`EMBY_REFERENCE_DIR` 指向三个参考 DLL 所在目录，`DOTNET` 指向用于编译的 dotnet，`DOTNET8` 指向带 .NET 8 runtime 的 dotnet；同一安装具备 SDK 与 runtime 时二者可以相同。
 
@@ -33,7 +24,7 @@ python3 verification/check_static.py
 
 从 WSL 调用 Windows SDK 时，`EmbyReferenceDir` 必须使用 Windows 可识别的路径（可用 `wslpath -w` 转换），不要直接把 Linux 路径传给 Windows MSBuild。测试项目不生成平台 apphost，直接通过 dotnet 执行 DLL。
 
-## 本轮验证与边界
+## 2026-10-18 源码基线验证与边界
 
 - 插件 Release 重建：退出 0，0 错误、107 警告，未隐藏或抑制。
 - 回归程序 Release 重建：退出 0，0 错误、0 警告。
@@ -45,11 +36,11 @@ python3 verification/check_static.py
 
 ## 已知问题与后续优先项
 
-1. **P2：设置备份遗漏合集策略。** `HomeScreenCompanionService.cs` 的 `BackupSettings`、设置导出与导入路径没有 `AnimeCollectionRulesJson`、`AnimeApprovedCollectionKeys`、`AnimeCollectionAliasesJson`。新实例恢复会遗漏这些值，既有实例恢复会沿用目标实例的值，不能完整还原原配置。迁移前应补齐三字段的备份往返，并验证旧备份缺字段时的兼容语义；当前恢复后保持 Dry Run，逐项核对策略。
+1. **设置备份遗漏合集策略。** 当前行为和迁移风险以 [动漫合集：备份限制](docs/features/anime-collections/README.md#备份限制) 为准；恢复后保持 Dry Run 并逐项核对。
 2. **107 条编译警告仍在。** 不在保存基线时夹带大规模空值/风格重构；后续按可观测风险逐项处理。
 3. **生产验收独立。** 别名仅用于新建合集；既有合集重命名 API 尚未验证。源码验证不等于允许生产部署或真实合集写入。
 
-## 本轮整理记录
+## 2026-10-18 源码基线整理记录
 
 新增：可追溯的开发分支/基线标签约定与现有附件审查报告入库。
 

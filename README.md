@@ -6,9 +6,15 @@
 
 - 个人 Fork：[kiwi4814/HSC-Anime-Edition](https://github.com/kiwi4814/HSC-Anime-Edition)；日常开发分支 `develop`，基线标签 `baseline-2026-10-18`。
 - 保留上游历史和已有两轮本地提交；`upstream` 指向官方仓库，`origin` 指向个人 Fork。后续调整从 `develop` 创建功能分支，不改写基线标签。
-- 本轮重新构建插件与回归程序，296 条断言、离线规划预览及静态检查通过；插件仍有 107 条编译警告。详细结果见 [验证记录](TEST_REPORT.md)。
-- **已知限制**：设置备份尚未包含 `AnimeCollectionRulesJson`、`AnimeApprovedCollectionKeys`、`AnimeCollectionAliasesJson`。不要依赖插件设置备份迁移这三项策略；恢复后须逐项核对并保持 Dry Run。
+- 2026-10-18 源码基线重建及离线验证结果见 [验证记录](TEST_REPORT.md)，不代表生产验收。
+- 当前本地新增、官方文件修改和已知缺口见 [Fork 差异台账](docs/fork/delta.md)；不要依赖插件设置备份完整迁移合集策略。
 - 这是源码开发基线，不是生产发布；本轮没有连接、部署或重启 Emby，也没有进行真实 AI 供应商验收。
+
+## 开发维护文档
+
+入口见 [项目文档索引](docs/README.md)。后续改功能或同步官方分支，按 [维护协议](docs/fork/upstream-sync.md) 在同一变更集中更新当前功能说明、Fork 差异和变化归档；代理规则见 [AGENTS.md](AGENTS.md)。
+
+Matt 工作流已采用本地 Markdown 任务跟踪：`.scratch/<feature>/spec.md` 与独立 `issues/` 文件。配置见 [任务跟踪](docs/agents/issue-tracker.md)、[分诊标签](docs/agents/triage-labels.md) 和 [领域文档](docs/agents/domain.md)；不会因此启用 GitHub Issues。
 
 
 
