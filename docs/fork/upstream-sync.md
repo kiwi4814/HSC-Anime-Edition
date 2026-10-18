@@ -6,7 +6,7 @@
 
 - `upstream/main`：官方远端跟踪分支；fetch 后可前进，不等于已经集成。
 - `origin/develop`：个人 Fork 的共享开发分支；本地 `develop` 跟踪它。
-- `main`：当前本地仍跟踪官方 `upstream/main`，不是 Anime Edition 的发布分支。
+- `main`：原开发机的本地分支仍跟踪官方 `upstream/main`，不是 Anime Edition 的发布分支；新 clone 不自动继承该本地跟踪配置，也不要求创建它。换机步骤见 [本地验证](../../OMP_LOCAL_HANDOFF.md#换电脑继续开发)。
 - `feature/<name>`：本地功能分支；`sync/upstream-YYYY-MM-DD`：单次上游集成分支。
 - `baseline-2026-10-18`：固定源码基线，保持不变；上游同步不移动旧标签。
 

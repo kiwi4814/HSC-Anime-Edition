@@ -6,6 +6,28 @@
 
 固定基线、已集成上游 SHA、现存差异与已知缺口见 [Fork 台账](docs/fork/delta.md)。后续功能分支和上游集成按 [维护协议](docs/fork/upstream-sync.md) 执行，保留真实历史，不改写基线标签；生产部署另行批准。
 
+## 换电脑继续开发
+
+新电脑先安装 Git、.NET 8 SDK（包含 net8.0 测试所需 runtime）、Python 3、Node.js。也可使用已验证的较新 SDK，但仍须有 .NET 8 runtime。直接构建下面的 `.csproj`，无需依赖 IDE 或 `.slnx` 支持。
+
+```bash
+git clone --branch develop https://github.com/kiwi4814/HSC-Anime-Edition.git
+cd HSC-Anime-Edition
+git remote add upstream https://github.com/soderlund91/HomeScreenCompanion.git
+git fetch upstream
+git status --short --branch
+```
+
+clone 会取得源码、历史、文档及基线标签；`origin` 自动指向个人 Fork，`develop` 自动跟踪 `origin/develop`。原电脑的 `.git/config` 不随 Git 分发，因此新电脑需添加 `upstream`；默认不要求创建本地 `main`。已有克隆先检查 `git remote -v`，不要重复添加或覆盖不同的 remote。
+
+接着阅读 `AGENTS.md` → `docs/README.md`，按任务读取领域词汇、当前功能和 Fork 差异。项目的 Matt 配置已随仓库保存，但全局 Matt skills、代理客户端及 `/skill:` 命令不是项目文件：新电脑需要另行安装相同技能；无需为了换机再次初始化或覆盖已存在的 `docs/agents/`。没有相应工具时可按已写明的本地 Markdown 约定继续工作，但不能声称执行了未安装的技能。
+
+**编译前必须另备参考程序集**：从匹配 Emby 4.10.1.0 的官方安装/受信任开发引用中取得 `MediaBrowser.Common.dll`、`MediaBrowser.Controller.dll`、`MediaBrowser.Model.dll`，放在源码树外，按下一节传入目录。它们不在 GitHub 仓库里；无需连接生产服务器即可编辑代码，但缺少这些引用不能完成插件编译/离线回归。NuGet feed 可还原公共包，不能替代这些 Emby 引用。
+
+配置下一节的 `DOTNET`、`DOTNET8` 和 `EMBY_REFERENCE_DIR`，执行两项目构建、回归 DLL、预览与静态检查；PowerShell 用户使用 `$env:` 环境变量和 `&` 调用对应命令，或直接运行 `dotnet build ... -p:EmbyReferenceDir=...`。Windows 上 Python 命令可能为 `py -3`，按本机安装调用。
+
+提交前设置新电脑的 Git 作者身份；向个人 Fork push 时另行完成 GitHub 认证，不复制旧电脑的 token/凭据文件。未跟踪的 `artifacts/`、bin/obj、临时 Emby 引用和机器环境不随 clone 恢复；历史报告保留在已提交文档中。代码基线能跨机续作，不代表新机器已具备所有依赖或已通过生产验收。
+
 ## 工具与编译参考
 
 需要 .NET SDK、Python 3、Node.js，以及匹配 Emby 4.10.1.0 的只读 `MediaBrowser.Common.dll`、`MediaBrowser.Controller.dll`、`MediaBrowser.Model.dll`。插件目标是 `netstandard2.0`，回归程序目标是 `net8.0`，运行回归需要 .NET 8 runtime。
