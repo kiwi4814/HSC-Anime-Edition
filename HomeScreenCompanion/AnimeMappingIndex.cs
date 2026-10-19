@@ -60,7 +60,7 @@ namespace HomeScreenCompanion
             }
             json.EnsureFinished();
             if (index.SourceDescriptors < 1 || index.IdentityLinks < 1)
-                throw new InvalidDataException("AniBridge 映射文件中没有可用的作品身份关联。");
+                throw new InvalidDataException("动漫映射数据中没有可用的作品对应关系。");
             return index;
         }
 

@@ -18,7 +18,7 @@
 
 ## Configuration contracts
 
-设置页的动漫 IP 合集区读写以下策略。示例均为虚构 ID/名称，不是生产批准名单。
+设置页的“动漫合集”面板读写以下策略。示例均为虚构 ID/名称，不是生产批准名单。
 
 ### 明确成员规则
 
@@ -58,7 +58,7 @@ anilist:1900000104
 
 ## Data and interfaces
 
-任务内部 Key 为 `HscAnimeEditionCollections`，显示名“动漫 IP 合集同步”，默认每日 05:00。动漫任务与已有 HSC 任务独立。
+任务内部 Key 为 `HscAnimeEditionCollections`，显示名“动漫合集同步”，分类“Home Screen Companion 动漫版”，默认每日 05:00。动漫任务与已有 HSC 任务独立。
 
 在插件数据目录的 `anime/` 下维护：
 

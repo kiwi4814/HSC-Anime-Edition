@@ -62,6 +62,7 @@ _Avoid_：AI 自动批准、AI 已确认映射。
 | AI provider | AI 提供商 | AI 提供方 |
 | Token（AI 计量） | Token | 令牌（TMDb 的"API 读取访问令牌"是另一种凭据，保留原译） |
 | Approved keys | 批准名单 | 批准列表 |
+| Collection key（界面） | 合集 Key（对应领域词汇“合集键”与 JSON 字段 `Key`） | 稳定 Key |
 
 保留英文的技术标记：日志级别与标记 `[DEBUG]`、`[Cleanup]`、`[Dry run]`，服务器日志组件前缀（如 `[TopList]`、`[Anime]`），以及 API、ID、JSON、URL、IMDb/TMDb/AniList 等通用名称。日志查看器靠这些标记和 ✔⚠✖– 符号着色，不要翻译或删除。
 

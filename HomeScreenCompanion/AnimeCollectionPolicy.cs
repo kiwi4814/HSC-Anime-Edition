@@ -189,7 +189,7 @@ namespace HomeScreenCompanion
             foreach (var group in groups)
             {
                 ValidateKey(group.Key);
-                if (ParseAnchor(group.Key) != group.Anchor || !keys.Add(group.Key)) throw Invalid("合集稳定 Key 重复或与 Anchor 不一致：" + group.Key);
+                if (ParseAnchor(group.Key) != group.Anchor || !keys.Add(group.Key)) throw Invalid("合集 Key 重复或无效：" + group.Key);
                 foreach (var id in group.EmbyIds)
                     if (id <= 0 || !members.Add(id)) throw Invalid("合集成员重叠或无效：" + id);
             }
@@ -231,7 +231,7 @@ namespace HomeScreenCompanion
         private static void ValidateKey(string key)
         {
             if (key == null || !key.StartsWith("anilist:", StringComparison.Ordinal) || !IsIdentifier(key))
-                throw Invalid("稳定 Key 必须为 anilist:<正整数>，不允许前导零。");
+                throw Invalid("合集 Key 格式应为 anilist:数字，例如 anilist:12345。");
         }
         private static int ParseAnchor(string key) => int.Parse(key.Substring(8), CultureInfo.InvariantCulture);
         private static InvalidDataException Invalid(string message) => new InvalidDataException(message);

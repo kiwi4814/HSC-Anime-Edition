@@ -1043,17 +1043,16 @@
                 <div class="advanced-section settings-panel" style="margin-bottom:25px;">
                     <div class="advanced-header settings-panel-toggle">
                         <i class="md-icon" style="margin-right:10px;color:#52B54B;">movie_filter</i>
-                        <span style="font-size:1.05em;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#52B54B;">动漫 IP 合集 · 动漫版</span>
+                        <span style="font-size:1.05em;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#52B54B;">动漫合集</span>
                         <i class="md-icon settings-panel-chevron" style="margin-left:auto;transition:transform .2s;">expand_more</i>
                     </div>
                     <div class="advanced-body settings-panel-body" style="display:none;">
                         <div class="fieldDescription" style="margin-bottom:14px;line-height:1.7;">
-                            使用 AniBridge Mappings v3 与 AniList，将动画剧集、OVA 和电影按作品系列分组。
-                            仅使用 Emby 的外部提供商 ID，不修改 STRM 路径或视频文件。请在 Emby 控制台 &rarr; 计划任务中运行独立的
-                            <strong>动漫 IP 合集同步</strong>任务，先查看预览。
+                            按作品系列把动画剧集、OVA 和剧场版整理成 Emby 合集。作品关系来自 AniList，只读取媒体已有的外部 ID，不改动媒体文件。
+                            启用后，在 Emby 控制台 &rarr; 计划任务中运行 <strong>动漫合集同步</strong>，先查看预览结果。
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeEnabled" /><span>启用动漫 IP 合集</span></label>
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeEnabled" /><span>启用动漫合集</span></label>
                             <div class="fieldDescription">默认关闭。新合集使用指定前缀；绝不接管已有的手工合集。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
@@ -1073,7 +1072,7 @@
                             <div class="fieldDescription">首次扫描可能需要多次运行以填充关系缓存；AniList 请求会限速。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:16px;">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiOther" /><span>可选：用 AI 复核有歧义的 AniList OTHER 关系</span></label>
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiOther" /><span>用 AI 复核关系不明确的作品</span></label>
                             <div class="fieldDescription">默认关闭，使用统一提供商、凭据和预算。AI 不确认缺失身份映射，也不能替代明确成员规则与人工批准。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
@@ -1124,20 +1123,20 @@
                             <div id="animeAiAnalysis" role="status" aria-live="polite" style="margin-top:10px;overflow-wrap:anywhere;">尚未加载分析建议。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:16px;">
-                            <label class="inputLabel" for="txtAnimeCollectionRulesJson">明确成员规则（JSON 数组）</label>
+                            <label class="inputLabel" for="txtAnimeCollectionRulesJson">明确成员规则（JSON）</label>
                             <textarea is="emby-textarea" id="txtAnimeCollectionRulesJson" rows="7" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='[{"Key":"anilist:&lt;作品ID&gt;","IncludeIds":["anilist:&lt;作品ID&gt;","tmdb_movie:&lt;作品ID&gt;"],"ExcludeIds":["tvdb_show:&lt;另一作品ID&gt;"]}]'></textarea>
-                            <div class="fieldDescription">留空表示无规则。Key 是稳定身份，须为 anilist:正整数（无前导零，最大 2147483647），自动分组为 anilist:&lt;Anchor&gt;。IncludeIds 是完整成员列表，不追加自动成员；ExcludeIds 优先。规则认领的成员会移出原自动分组；同一媒体被多条规则认领时禁止写入。</div>
-                            <div class="fieldDescription">示例仅演示格式，请替换为真实 ID。支持 anilist、tmdb_movie、tmdb_show、tvdb_movie、tvdb_show、imdb_movie、imdb_show；电影与剧集 ID 不可混用。</div>
+                            <div class="fieldDescription">留空表示不使用。每条规则用 Key 指定一个合集，IncludeIds 列出它的全部成员，ExcludeIds 列出要排除的作品。规则会取代该合集的自动分组结果。</div>
+                            <div class="fieldDescription">示例中的 ID 请换成真实 ID。合集 Key 和作品 ID 可以在预览日志中找到。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:16px;">
-                            <label class="inputLabel" for="txtAnimeApprovedCollectionKeys">已人工批准的稳定 Key（每行一个）</label>
+                            <label class="inputLabel" for="txtAnimeApprovedCollectionKeys">批准名单（每行一个合集 Key）</label>
                             <textarea is="emby-textarea" id="txtAnimeApprovedCollectionKeys" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder="anilist:&lt;作品ID&gt;&#10;anilist:&lt;另一作品ID&gt;"></textarea>
-                            <div class="fieldDescription">查看预览后填入准确 Key；区分大小写，不支持通配符。名单为空时不会写入。批准不能绕过分支歧义或规则错误。</div>
+                            <div class="fieldDescription">从预览日志中复制要创建的合集 Key。名单为空时不会创建或修改任何合集。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:16px;">
-                            <label class="inputLabel" for="txtAnimeCollectionAliasesJson">中文合集别名（JSON 对象）</label>
+                            <label class="inputLabel" for="txtAnimeCollectionAliasesJson">合集别名（JSON）</label>
                             <textarea is="emby-textarea" id="txtAnimeCollectionAliasesJson" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='{"anilist:&lt;作品ID&gt;":"虚构作品甲","anilist:&lt;另一作品ID&gt;":"虚构作品乙"}'></textarea>
-                            <div class="fieldDescription">用稳定 Key 指定显示名称，不改变合集身份。默认无别名；示例为虚构作品与 ID，请替换后使用。</div>
+                            <div class="fieldDescription">为合集 Key 指定显示名称。示例中的作品和 ID 均为虚构，请替换后使用。</div>
                         </div>
                         <p class="fieldDescription" style="margin-top:16px;">映射缓存保留 7 天。下载、校验或遍历失败，以及规则、别名、批准格式错误时均禁止写入。不自动删除合集；重复媒体仅按带类型的提供商 ID 提示，不去重或修改媒体。</p>
                     </div>

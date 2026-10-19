@@ -49,8 +49,8 @@ namespace HomeScreenCompanion
         }
 
         public string Key => "HscAnimeEditionCollections";
-        public string Name => "动漫 IP 合集同步";
-        public string Description => "按需启用，使用 AniBridge Mappings v3、AniList 和经批准的成员规则整理动漫合集。";
+        public string Name => "动漫合集同步";
+        public string Description => "按作品系列整理动漫合集。需先在插件设置中启用。";
         public string Category => "Home Screen Companion 动漫版";
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers() => new[]
@@ -69,7 +69,7 @@ namespace HomeScreenCompanion
             var log = new RunLog(ExecutionLog, _logger, "[Anime]", config?.ExtendedConsoleOutput ?? false);
             try
             {
-                log.Info("动漫 IP 合集同步 · " + DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
+                log.Info("动漫合集同步  ·  " + DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
                 if (config == null || !config.AnimeEnabled)
                 {
                     log.Skip("功能未启用：请先在设置中启用动漫合集。");
@@ -86,13 +86,13 @@ namespace HomeScreenCompanion
                 var mappingPath = Path.Combine(dataDir, "anibridge-v3.json");
                 await EnsureMappingsAsync(mappingPath, config.AnimeMappingRefreshDays, cancellationToken, log);
                 var index = AnimeMappingIndex.Load(mappingPath);
-                log.Info($"AniBridge：{index.SourceDescriptors} 条来源描述，{index.IdentityLinks} 条身份映射。");
+                log.Debug($"AniBridge 映射：{index.SourceDescriptors} 条来源描述，{index.IdentityLinks} 条身份映射");
                 progress?.Report(15);
 
                 var local = ScanLocalAnime(index, log);
                 var seeds = local.SelectMany(x => x.AniListIds).Distinct().ToArray();
                 foreach (var duplicate in AnimeCollectionPolicy.FindDuplicates(local))
-                    log.Warn($"疑似重复媒体 [{duplicate.Identifier}]：Emby {string.Join("、", duplicate.EmbyIds)}。仅提示，不会合并或删除媒体。");
+                    { log.Warn($"疑似重复媒体：{duplicate.Identifier}（{duplicate.EmbyIds.Count} 个项目）。仅提示，不会处理。"); log.Debug($"  重复媒体 {duplicate.Identifier} 的 Emby ID：{string.Join(", ", duplicate.EmbyIds)}"); }
                 log.Info($"扫描 {local.Count} 个电影/剧集项目，匹配 {seeds.Length} 条 AniList 记录。");
                 progress?.Report(30);
                 var client = new AnimeAniListClient(_json, dataDir);
@@ -133,8 +133,9 @@ namespace HomeScreenCompanion
             }
             catch (Exception ex)
             {
-                LastStatus = "失败：" + ex.GetType().Name;
+                LastStatus = "失败（详见日志）";
                 log.Error("同步已安全中止：" + ex.Message);
+                log.Debug("异常类型：" + ex.GetType().FullName);
                 throw; // Scheduler should show failure; never treat source failure as zero items.
             }
             finally
@@ -221,7 +222,8 @@ namespace HomeScreenCompanion
                 if (parsed.IdentityLinks < 1000) throw new InvalidDataException("映射文件的数据量异常偏小。");
                 if (File.Exists(path)) File.Replace(tmp, path, null);
                 else File.Move(tmp, path);
-                log.Ok("AniBridge 映射已刷新并通过校验。");
+                log.Ok("动漫映射数据已更新。");
+                log.Debug($"AniBridge 映射已刷新并通过校验：{path}");
             }
             catch
             {
@@ -265,7 +267,8 @@ namespace HomeScreenCompanion
                 var group = groups[i];
                 if (!policy.CanWrite(group, false))
                 {
-                    log.Skip($"[{group.Key}] {group.Name}：未获精确批准、成员不足两部或存在未经显式规则确认的分支；不写入合集及归属记录。成员：{string.Join("、", group.EmbyIds)}");
+                    log.Skip($"[{group.Key}] {group.Name}：未获精确批准、成员不足两部或存在未经显式规则确认的分支；不写入合集及归属记录。");
+                    log.Debug($"  [{group.Key}] 成员 Emby ID：{string.Join(", ", group.EmbyIds)}");
                     blocked++;
                     continue;
                 }

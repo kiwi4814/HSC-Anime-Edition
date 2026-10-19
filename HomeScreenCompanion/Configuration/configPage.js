@@ -1282,57 +1282,41 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 parent.appendChild(element);
             }
             line(target, '更新时间：', data.UpdatedUtc ? new Date(data.UpdatedUtc).toLocaleString('zh-CN') : '尚无记录');
-            line(target, '已用调用数：', data.CallsUsed || 0);
-            line(target, '已预留 Token：', data.TokensReserved || 0);
-            (data.Warnings || []).forEach(function (warning) { line(target, '警告：', warning); });
-            var kinds = { relation: '关系复核', naming: '中文命名', review: '合集审查', mapping: '映射检索方向' };
-            var decisions = { same_ip: '同一作品系列', different_ip: '不同作品系列', uncertain: '无法判断', suggest: '命名建议', keep: '保留', split: '建议拆分', search: '检索方向（未确认映射）' };
-            var issueTypes = { cross_ip: '跨作品系列', duplicate: '重复媒体', branch: '分支歧义', naming: '命名问题', missing_local: '遗漏本地成员' };
+            (data.Warnings || []).forEach(function (warning) { line(target, '提示：', warning); });
+            var kinds = { relation: '关系复核', naming: '中文命名', review: '合集检查', mapping: '查找建议' };
+            var decisions = { same_ip: '同一作品系列', different_ip: '不同作品系列', uncertain: '无法判断', suggest: '建议改名', keep: '保持现状', split: '建议拆分', search: '建议人工查找' };
+            var issueTypes = { cross_ip: '混入其他作品系列', duplicate: '重复媒体', branch: '分支待确认', naming: '名称问题', missing_local: '可能漏掉的本地作品' };
             var risks = { low: '低', medium: '中', high: '高' };
-            var nameEvidence = { existing_title: '现有输入标题', derived_prefix: '输入标题公共前缀', unverified: '未经输入标题验证，须人工核实' };
+            var nameEvidence = { existing_title: '沿用现有标题', derived_prefix: '取自标题共同部分', unverified: '未经核实，请人工确认' };
+            function label(map, value) { return value ? (map[value] || '其他') : ''; }
+            function names(list) {
+                var seen = {};
+                return (list || []).map(function (x) { return x && x.Name; })
+                    .filter(function (n) { if (!n || seen[n]) return false; seen[n] = true; return true; }).join('、');
+            }
             var suggestions = data.Suggestions || [];
             if (!suggestions.length) line(target, '', '暂无分析建议。启用所需 AI 功能后运行动漫合集任务，再刷新查看。');
             suggestions.forEach(function (suggestion) {
                 var item = document.createElement('section');
                 item.style.cssText = 'border-top:1px solid var(--line-color);margin-top:12px;padding-top:10px;';
-                line(item, '建议类型：', kinds[suggestion.Kind] || suggestion.Kind);
+                line(item, '建议类型：', label(kinds, suggestion.Kind));
                 line(item, '合集 Key：', suggestion.GroupKey);
                 line(item, '当前名称：', suggestion.OriginalName);
-                line(item, '明确成员规则：', suggestion.HasExplicitRule == null ? '未记录' : suggestion.HasExplicitRule ? '有' : '无');
-                line(item, '当前成员 Emby ID：', (suggestion.MemberEmbyIds || []).join(', '));
+                line(item, '涉及作品：', names((suggestion.InputItems || []).concat(suggestion.InputTitles || [])));
                 line(item, '建议名称：', suggestion.SuggestedName);
-                line(item, '名称依据：', nameEvidence[suggestion.NameEvidenceStatus] || suggestion.NameEvidenceStatus);
-                line(item, '审查结论：', decisions[suggestion.Decision] || suggestion.Decision);
-                line(item, '依据：', suggestion.Reason);
+                line(item, '名称来源：', label(nameEvidence, suggestion.NameEvidenceStatus));
+                line(item, '结论：', label(decisions, suggestion.Decision));
+                line(item, '理由：', suggestion.Reason);
                 line(item, '置信度：', suggestion.Confidence);
-                line(item, 'Emby ID：', (suggestion.EmbyIds || []).join(', '));
-                line(item, 'AniList ID：', (suggestion.AniListIds || []).join(', '));
                 (suggestion.ReviewIssues || []).forEach(function (issue) {
                     var details = document.createElement('div');
                     details.style.cssText = 'margin:8px 0;padding-left:12px;border-left:2px solid var(--line-color);';
-                    line(details, '审查问题：', issueTypes[issue.IssueType] || issue.IssueType);
-                    line(details, '涉及 Emby ID：', (issue.EmbyIds || []).join(', '));
+                    line(details, '问题：', label(issueTypes, issue.IssueType));
                     line(details, '原因：', issue.Reason);
-                    line(details, '风险等级：', risks[issue.RiskLevel] || issue.RiskLevel);
-                    line(details, '建议操作（需人工处理）：', issue.RecommendedAction);
-                    line(details, '置信度：', issue.Confidence);
+                    line(details, '风险：', label(risks, issue.RiskLevel));
+                    line(details, '建议处理：', issue.RecommendedAction);
                     item.appendChild(details);
                 });
-                (suggestion.Evidence || []).forEach(function (evidence) {
-                    line(item, '关系证据：', evidence.FromId + ' → ' + evidence.ToId + ' (' + evidence.Relation + ')');
-                });
-                (suggestion.ProviderEvidence || []).forEach(function (evidence) {
-                    line(item, '共享提供商 ID 证据：', evidence.ProviderId + ' (Emby ' + (evidence.EmbyIds || []).join(', ') + ')');
-                });
-                (suggestion.InputItems || []).forEach(function (input) {
-                    line(item, '输入媒体：', input.Name + ' (Emby ' + input.EmbyId + ')');
-                    line(item, '输入 AniList ID：', (input.AniListIds || []).join(', '));
-                    if (input.ProviderIds) line(item, '输入提供商 ID：', JSON.stringify(input.ProviderIds));
-                });
-                (suggestion.InputTitles || []).forEach(function (input) {
-                    line(item, 'AniList 输入标题：', input.Name + ' (AniList ' + input.AniListId + ')');
-                });
-                line(item, '提供商 / 模型：', [suggestion.Provider, suggestion.Model].filter(Boolean).join(' / '));
                 line(item, '生成时间：', suggestion.CreatedUtc ? new Date(suggestion.CreatedUtc).toLocaleString('zh-CN') : '');
                 target.appendChild(item);
             });
@@ -3574,7 +3558,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         rules.forEach(function (rule, index) {
             var label = '第 ' + (index + 1) + ' 条规则';
             if (!rule || typeof rule !== 'object' || Array.isArray(rule) || !keyValid(rule.Key))
-                fail(ruleField, label + '必须包含规范的 anilist:正整数 Key（无前导零，最大 2147483647）。');
+                fail(ruleField, label + '的 Key 格式应为 anilist:数字，例如 anilist:12345。');
             if (keys.has(rule.Key)) fail(ruleField, '规则 Key 重复：' + rule.Key);
             keys.add(rule.Key);
             if (Object.keys(rule).some(function (key) { return ['Key', 'IncludeIds', 'ExcludeIds'].indexOf(key) < 0; }))
@@ -3582,13 +3566,13 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             if (!Array.isArray(rule.IncludeIds) || (rule.ExcludeIds !== undefined && !Array.isArray(rule.ExcludeIds)))
                 fail(ruleField, label + '的 IncludeIds 必须是数组；可选的 ExcludeIds 也必须是数组。');
             rule.IncludeIds.concat(rule.ExcludeIds || []).forEach(function (id) {
-                if (!idValid(id)) fail(ruleField, label + '包含无效的带类型 ID：' + String(id));
+                if (!idValid(id)) fail(ruleField, label + '包含无效的 ID：' + String(id));
             });
             var excluded = new Set(rule.ExcludeIds || []);
             rule.IncludeIds.forEach(function (id) {
                 if (excluded.has(id)) return;
                 if (owners.has(id) && owners.get(id) !== rule.Key)
-                    fail(ruleField, '同一 ID 被两条规则选择：' + id + '。同一媒体的不同提供商 ID 冲突还会由服务端检查。');
+                    fail(ruleField, '同一 ID 出现在两条规则中：' + id);
                 owners.set(id, rule.Key);
             });
         });
@@ -3598,11 +3582,11 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             fail(aliasField, '中文别名必须是 JSON 对象。');
         Object.keys(aliases).forEach(function (key) {
             if (!keyValid(key) || typeof aliases[key] !== 'string' || !aliases[key].trim() || aliases[key] !== aliases[key].trim() || /[\x00-\x1f\x7f]/.test(aliases[key]))
-                fail(aliasField, '别名必须以有效稳定 Key 为键、非空显示名称为值。');
+                fail(aliasField, '别名的键须为合集 Key，值为非空名称。');
         });
         view.querySelector('#txtAnimeApprovedCollectionKeys').value.split(/\r?\n/).forEach(function (line) {
             var key = line.trim();
-            if (key && !keyValid(key)) fail('#txtAnimeApprovedCollectionKeys', '批准名单每行只能填写一个准确的稳定 Key，不支持空白分隔或通配符。');
+            if (key && !keyValid(key)) fail('#txtAnimeApprovedCollectionKeys', '批准名单每行只能填写一个合集 Key，格式如 anilist:12345。');
             if (/[*?]/.test(key)) fail('#txtAnimeApprovedCollectionKeys', '批准名单不支持通配符。');
         });
     }
