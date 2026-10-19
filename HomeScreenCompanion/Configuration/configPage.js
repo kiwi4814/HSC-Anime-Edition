@@ -2922,6 +2922,208 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         renderLogLines(content, entries, running(selected));
     }
 
+
+    function syncAnimeModeFromCheckbox(view) {
+        var dry = view.querySelector('#chkAnimeDryRun');
+        var write = view.querySelector('#animeSyncModeWrite');
+        var preview = view.querySelector('#animeSyncModePreview');
+        if (!dry || !write || !preview) return;
+        if (dry.checked) { preview.checked = true; write.checked = false; }
+        else { write.checked = true; preview.checked = false; }
+        var lblW = view.querySelector('#lblAnimeSyncWrite');
+        var lblP = view.querySelector('#lblAnimeSyncPreview');
+        if (lblW) lblW.classList.toggle('active', write.checked);
+        if (lblP) lblP.classList.toggle('active', preview.checked);
+        updateAnimeGlobalDryHint(view);
+    }
+
+    function syncAnimeCheckboxFromMode(view) {
+        var dry = view.querySelector('#chkAnimeDryRun');
+        var preview = view.querySelector('#animeSyncModePreview');
+        if (!dry || !preview) return;
+        dry.checked = !!preview.checked;
+        syncAnimeModeFromCheckbox(view);
+        try { checkFormState(); } catch (e) { }
+    }
+
+    function updateAnimeGlobalDryHint(view) {
+        var hint = view.querySelector('#animeGlobalDryHint');
+        if (!hint) return;
+        var globalDry = false;
+        try {
+            if (originalConfigState) globalDry = !!JSON.parse(originalConfigState).DryRunMode;
+        } catch (e) { }
+        var live = view.querySelector('#chkDryRunMode');
+        if (live) globalDry = !!live.checked;
+        var wantWrite = view.querySelector('#animeSyncModeWrite');
+        hint.style.display = (globalDry && wantWrite && wantWrite.checked) ? 'block' : 'none';
+    }
+
+    function animeStatusLabel(status) {
+        switch (status) {
+            case 'will_create': return '将新建';
+            case 'will_update': return '将更新';
+            case 'created': return '已新建';
+            case 'updated': return '已更新';
+            case 'unchanged': return '无需改动';
+            case 'skipped': return '跳过';
+            default: return status || '';
+        }
+    }
+
+    function renderAnimeCards(view, summary) {
+        var grid = view.querySelector('#animeCardGrid');
+        var empty = view.querySelector('#animeCardEmpty');
+        var heading = view.querySelector('#animeCardsHeading');
+        var hint = view.querySelector('#animeCardsHint');
+        var line = view.querySelector('#animeLastRunSummaryLine');
+        if (!grid) return;
+        grid.innerHTML = '';
+        summary = summary || {};
+        var cards = summary.Cards || [];
+        var owned = summary.Owned || [];
+        var dry = !!summary.DryRun;
+        if (line) line.textContent = summary.StatusText || '';
+        if (heading) heading.textContent = dry ? '预览结果' : '合集一览';
+        if (hint) {
+            if (dry) hint.textContent = '仅预览，尚未写入媒体库';
+            else if (summary.GlobalDryRun) hint.textContent = '全局仅预览仍开着，实际未写入';
+            else hint.textContent = owned.length ? ('插件管理 ' + owned.length + ' 个合集') : '';
+        }
+
+        function addCard(card) {
+            var el = document.createElement('div');
+            el.className = 'anime-card';
+            var st = card.Status || '';
+            var titles = card.MemberTitles || [];
+            var members = titles.join('、');
+            if (card.MoreCount > 0) members += (members ? '；' : '') + '还有 ' + card.MoreCount + ' 部';
+            var reason = card.Reason || '';
+            el.appendChild(Object.assign(document.createElement('div'), { className: 'anime-card-title', textContent: card.Name || '未命名合集' }));
+            var stEl = document.createElement('div');
+            stEl.className = 'anime-card-status ' + st;
+            stEl.textContent = animeStatusLabel(st);
+            el.appendChild(stEl);
+            if (members) {
+                var m = document.createElement('div');
+                m.className = 'anime-card-members';
+                m.textContent = members;
+                el.appendChild(m);
+            } else if (card.MemberCount > 0) {
+                var m2 = document.createElement('div');
+                m2.className = 'anime-card-members';
+                m2.textContent = card.MemberCount + ' 部';
+                el.appendChild(m2);
+            }
+            if (reason) {
+                var r = document.createElement('div');
+                r.className = 'anime-card-reason';
+                r.textContent = reason;
+                el.appendChild(r);
+            }
+            grid.appendChild(el);
+        }
+
+        if (cards.length) {
+            cards.forEach(addCard);
+            if (empty) empty.style.display = 'none';
+        } else if (!dry && owned.length) {
+            owned.forEach(function (o) {
+                addCard({
+                    Name: o.Name || '未命名合集',
+                    Status: 'unchanged',
+                    MemberCount: o.MemberCount || 0,
+                    MemberTitles: [],
+                    MoreCount: 0,
+                    Reason: ''
+                });
+            });
+            if (empty) empty.style.display = 'none';
+        } else {
+            if (empty) empty.style.display = '';
+        }
+    }
+
+    function loadAnimeLastRunSummary(view) {
+        return window.ApiClient.getJSON(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/LastRunSummary'))
+            .then(function (summary) {
+                renderAnimeCards(view, summary);
+                return summary;
+            })
+            .catch(function () {
+                renderAnimeCards(view, null);
+            });
+    }
+
+    function saveAnimeFieldsThen(view) {
+        return window.ApiClient.getPluginConfiguration(pluginId).then(function (current) {
+            var ui = getUiConfig(view, false);
+            current.AnimeEnabled = ui.AnimeEnabled;
+            current.AnimeDryRun = ui.AnimeDryRun;
+            current.AnimeIncludeSpinOffs = ui.AnimeIncludeSpinOffs;
+            current.AnimeCollectionPrefix = ui.AnimeCollectionPrefix;
+            current.AnimeMaxRequestsPerRun = ui.AnimeMaxRequestsPerRun;
+            current.AnimeCollectionRulesJson = ui.AnimeCollectionRulesJson;
+            current.AnimeApprovedCollectionKeys = ui.AnimeApprovedCollectionKeys;
+            current.AnimeCollectionAliasesJson = ui.AnimeCollectionAliasesJson;
+            current.AnimeMappingUrl = ui.AnimeMappingUrl;
+            current.AnimeAiReviewOtherEdges = ui.AnimeAiReviewOtherEdges;
+            current.AnimeAiNamingEnabled = ui.AnimeAiNamingEnabled;
+            current.AnimeAiCollectionReviewEnabled = ui.AnimeAiCollectionReviewEnabled;
+            current.AnimeAiMaxCallsPerRun = ui.AnimeAiMaxCallsPerRun;
+            current.AnimeAiMaxTokensPerCall = ui.AnimeAiMaxTokensPerCall;
+            current.AnimeAiMaxTokensPerRun = ui.AnimeAiMaxTokensPerRun;
+            current.AnimeAiProvider = ui.AnimeAiProvider;
+            current.CompatibleAiBaseUrl = ui.CompatibleAiBaseUrl;
+            current.CompatibleAiModel = ui.CompatibleAiModel;
+            current.CompatibleAiApiKey = ui.CompatibleAiApiKey;
+            return window.ApiClient.updatePluginConfiguration(pluginId, current).then(function (r) {
+                try {
+                    originalConfigState = JSON.stringify(getUiConfig(view, true));
+                    checkFormState();
+                    updateDryRunWarning();
+                    updateAnimeGlobalDryHint(view);
+                } catch (e) { }
+                return r;
+            });
+        });
+    }
+
+    function runAnimeCollectionTask(view) {
+        var enabled = view.querySelector('#chkAnimeEnabled');
+        if (enabled && !enabled.checked) {
+            window.Dashboard.alert('请先启用动漫合集。');
+            return;
+        }
+        try { validateAnimePolicy(view); } catch (error) { alert(error.message); return; }
+        syncAnimeCheckboxFromMode(view);
+        var btn = view.querySelector('#btnAnimeRunNow');
+        if (btn) { btn.disabled = true; }
+        saveAnimeFieldsThen(view).then(function () {
+            return window.ApiClient.getScheduledTasks();
+        }).then(function (tasks) {
+            var t = tasks.find(function (x) { return x.Key === 'HscAnimeEditionCollections'; });
+            if (!t) {
+                window.Dashboard.alert('未找到动漫合集任务。');
+                return;
+            }
+            return window.ApiClient.startScheduledTask(t.Id).then(function () {
+                window.Dashboard.alert('动漫合集同步已启动！');
+                refreshStatus(view);
+                loadAnimeLastRunSummary(view);
+            });
+        }).catch(function (err) {
+            window.Dashboard.alert('无法启动同步：' + (err && err.message ? err.message : err));
+        }).then(function () {
+            if (btn) btn.disabled = false;
+        });
+    }
+
+    function switchToAnimeTab(view) {
+        var btn = view.querySelector('.page-tab-btn[data-page-tab="AnimeCollections"]');
+        if (btn) btn.click();
+    }
+
     function refreshStatus(view) {
         var myId = ++statusRequestId;
         Promise.all([
@@ -2970,6 +3172,18 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 else if (/失败|错误/.test(ast)) animeDot.classList.add('failed');
                 else if (/等待|警告/.test(ast)) animeDot.classList.add('warn');
             }
+            var animeRunBtn = view.querySelector('#btnAnimeRunNow');
+            if (animeRunBtn && animeResult) animeRunBtn.disabled = !!animeResult.IsRunning;
+            var animeTab = view.querySelector('#tabAnimeCollections');
+            var animeVisible = animeTab && animeTab.style.display !== 'none';
+            var wasRunning = !!(view._animeWasRunning);
+            var nowRunning = !!(animeResult && animeResult.IsRunning);
+            view._animeWasRunning = nowRunning;
+            if (animeVisible && (!nowRunning) && (wasRunning || !view._animeSummaryLoaded)) {
+                view._animeSummaryLoaded = true;
+                loadAnimeLastRunSummary(view);
+            }
+            updateAnimeGlobalDryHint(view);
             if (content) renderLogModal(view);
         }).catch(function () {
             if (myId !== statusRequestId) return;
@@ -3895,6 +4109,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 warn.style.display = 'none';
             }
         }
+        updateAnimeGlobalDryHint(view);
     }
 
     function applyFilters(view) {
@@ -7143,6 +7358,11 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             settingsTab.addEventListener('change', changeHandler, { signal: _signal });
             settingsTab.addEventListener('input', function () { updateAiHttpWarning(view); }, { signal: _signal });
             settingsTab.addEventListener('change', function () { updateAiHttpWarning(view); }, { signal: _signal });
+            var animeTabEl = view.querySelector('#tabAnimeCollections');
+            if (animeTabEl) {
+                animeTabEl.addEventListener('input', changeHandler, { signal: _signal });
+                animeTabEl.addEventListener('change', changeHandler, { signal: _signal });
+            }
             view.querySelector('#btnRefreshAnimeAiAnalysis').addEventListener('click', function () {
                 loadAnimeAiAnalysis(view);
             }, { signal: _signal });
@@ -7628,6 +7848,17 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             runTask('HscAnimeEditionCollections', '动漫合集同步');
         });
 
+        var animeRunNow = view.querySelector('#btnAnimeRunNow');
+        if (animeRunNow) animeRunNow.addEventListener('click', function () { runAnimeCollectionTask(view); });
+        var animeGoStudio = view.querySelector('#btnAnimeGoToStudio');
+        if (animeGoStudio) animeGoStudio.addEventListener('click', function () { switchToAnimeTab(view); });
+        var modeGroup = view.querySelector('#animeSyncModeGroup');
+        if (modeGroup) {
+            modeGroup.addEventListener('change', function () { syncAnimeCheckboxFromMode(view); });
+        }
+        var dryRunChk = view.querySelector('#chkDryRunMode');
+        if (dryRunChk) dryRunChk.addEventListener('change', function () { updateAnimeGlobalDryHint(view); });
+
         view.querySelector('#btnDialHomeScreen').addEventListener('click', function () {
             runTask('HomeSectionSyncTask', '主屏幕同步');
         });
@@ -7697,8 +7928,9 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 view.querySelector('#chkPreserveTagsOnEmptyResult').checked = config.PreserveTagsOnEmptyResult || false;
                 view.querySelector('#chkTopListMirrorCollections').checked = config.TopListMirrorCollections || false;
                 view.querySelector('#chkAnimeEnabled').checked = config.AnimeEnabled || false;
-                view.querySelector('#chkAnimeDryRun').checked = config.AnimeDryRun !== false;
+                view.querySelector('#chkAnimeDryRun').checked = !!config.AnimeDryRun;
                 view.querySelector('#chkAnimeIncludeSpinOffs').checked = config.AnimeIncludeSpinOffs !== false;
+                syncAnimeModeFromCheckbox(view);
                 view.querySelector('#chkAnimeAiOther').checked = config.AnimeAiReviewOtherEdges || false;
                 view.querySelector('#selAnimeAiProvider').value = config.AnimeAiProvider || 'OpenAICompatible';
                 view.querySelector('#txtCompatibleAiBaseUrl').value = config.CompatibleAiBaseUrl || '';
@@ -7719,15 +7951,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 var mapUrlEl = view.querySelector('#txtAnimeMappingUrl');
                 if (mapUrlEl) mapUrlEl.value = config.AnimeMappingUrl || '';
                 updateCompatibleAiVisibility(view);
-                if (config.AnimeEnabled) {
-                    var animePanel = view.querySelector('#animeSettingsPanel');
-                    if (animePanel) {
-                        var body = animePanel.querySelector('.settings-panel-body');
-                        var chevron = animePanel.querySelector('.settings-panel-chevron');
-                        if (body) body.style.display = 'block';
-                        if (chevron) chevron.style.transform = 'rotate(180deg)';
-                    }
-                }
+
                 if (view.querySelector('#txtSearchTags')) {
                     view.querySelector('#txtSearchTags').value = '';
                     view.querySelector('#btnClearSearch').style.display = 'none';
@@ -7797,6 +8021,10 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 } else if (target === 'TopLists') {
                     var tlContainer = view.querySelector('#tlContainer');
                     if (tlContainer && !tlContainer.dataset.loaded) loadTopListsTab(view);
+                } else if (target === 'AnimeCollections') {
+                    view._animeSummaryLoaded = false;
+                    loadAnimeLastRunSummary(view).then(function () { view._animeSummaryLoaded = true; });
+                    updateAnimeGlobalDryHint(view);
                 }
             });
         });

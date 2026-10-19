@@ -526,6 +526,60 @@
             border-bottom-color: rgba(128, 128, 128, 0.3);
         }
 
+        /* Anime Studio tab (P0) */
+        .anime-studio-wrap { max-width: 960px; }
+        .anime-studio-lead { margin: 0 0 18px; line-height: 1.7; opacity: 0.85; font-size: 0.95em; }
+        .anime-studio-toolbar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+            margin-bottom: 18px; padding: 14px 16px;
+            border: 1px solid rgba(82,181,75,0.35); border-radius: 8px;
+            background: rgba(82,181,75,0.06);
+        }
+        .anime-sync-mode {
+            display: inline-flex; gap: 0; border: 1px solid var(--line-color);
+            border-radius: 8px; overflow: hidden; margin: 8px 0 4px;
+        }
+        .anime-sync-mode label {
+            margin: 0; padding: 8px 16px; cursor: pointer; font-size: 0.9em; font-weight: 600;
+            background: transparent; border-right: 1px solid var(--line-color);
+        }
+        .anime-sync-mode label:last-child { border-right: none; }
+        .anime-sync-mode input { position: absolute; opacity: 0; pointer-events: none; }
+        .anime-sync-mode label.active {
+            background: rgba(82,181,75,0.22); color: #52B54B;
+        }
+        .anime-global-dry-hint {
+            display: none; margin: 10px 0 0; padding: 8px 12px; border-radius: 6px;
+            border: 1px solid rgba(232,168,56,0.45); background: rgba(232,168,56,0.08);
+            font-size: 0.9em; line-height: 1.6;
+        }
+        .anime-card-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 14px; margin-top: 12px;
+        }
+        .anime-card {
+            border: 1px solid var(--line-color); border-radius: 10px;
+            background: var(--theme-background-level2); padding: 14px 16px;
+            display: flex; flex-direction: column; gap: 8px; min-height: 120px;
+        }
+        .anime-card-title { font-weight: 700; font-size: 1.02em; line-height: 1.35; }
+        .anime-card-status {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.78em; font-weight: 700; letter-spacing: 0.3px;
+            text-transform: uppercase; opacity: 0.9;
+        }
+        .anime-card-status.will_create, .anime-card-status.created { color: #52B54B; }
+        .anime-card-status.will_update, .anime-card-status.updated { color: #4aa3df; }
+        .anime-card-status.skipped { color: #e8a838; }
+        .anime-card-status.unchanged { color: var(--theme-text-secondary); }
+        .anime-card-members { font-size: 0.88em; line-height: 1.55; opacity: 0.9; }
+        .anime-card-reason { font-size: 0.85em; line-height: 1.5; opacity: 0.8; }
+        .anime-card-empty {
+            padding: 28px 16px; text-align: center; opacity: 0.65; font-size: 0.95em;
+            border: 1px dashed var(--line-color); border-radius: 10px;
+        }
+        .anime-summary-line { font-size: 0.92em; opacity: 0.85; margin: 4px 0 0; }
+
         /* Home Screen tab */
         .hsc-card {
             background: var(--theme-background-level2);
@@ -1029,6 +1083,9 @@
                 <button class="page-tab-btn" data-page-tab="HomeCompanion">
                     <i class="md-icon tab-icon">home</i>主屏幕
                 </button>
+                <button class="page-tab-btn" data-page-tab="AnimeCollections">
+                    <i class="md-icon tab-icon">movie_filter</i>动漫合集
+                </button>
                 <button class="page-tab-btn" data-page-tab="Cleanup">
                     <i class="md-icon tab-icon">auto_delete</i>清理
                 </button>
@@ -1039,7 +1096,7 @@
 
             <div id="tabSettings" class="page-tab-content" style="display:none;">
 
-                <!-- Anime Edition: independent scheduled task; never alters normal HSC groups -->
+                <!-- Anime Edition: advanced/support only; main path lives on 动漫合集 tab -->
                 <div id="animeSettingsPanel" class="advanced-section settings-panel" style="margin-bottom:25px;">
                     <div class="advanced-header settings-panel-toggle">
                         <i class="md-icon" style="margin-right:10px;color:#52B54B;">movie_filter</i>
@@ -1048,52 +1105,28 @@
                     </div>
                     <div class="advanced-body settings-panel-body" style="display:none;">
                         <div class="fieldDescription" style="margin-bottom:14px;line-height:1.7;">
-                            按作品系列把动画剧集、OVA 和剧场版整理成 Emby 合集。作品关系来自 AniList，只读取媒体已有的外部 ID，不改动媒体文件。
-                            启用后，用页面右下角 <strong>运行</strong> → <strong>动漫合集同步</strong>，或在 Emby 控制台的计划任务中运行。默认会自动创建候选合集；想先看结果可开「仅预览」，日志在本页「日志」弹窗的「动漫」选项卡。
+                            启用、前缀、同步方式和立即同步已移到顶栏的 <strong>动漫合集</strong> 页。
+                            <button type="button" is="emby-button" class="raised btn-neutral" id="btnAnimeGoToStudio" style="margin-left:8px;">去动漫合集页</button>
                         </div>
                         <div role="status" style="margin-bottom:14px;padding:10px 12px;border:1px solid rgba(232,168,56,0.45);border-radius:6px;background:rgba(232,168,56,0.08);line-height:1.7;font-size:0.92em;">
                             <strong>请勿与官方 Home Screen Companion 同时启用。</strong>
                             本版与官方插件的计划任务名称相同，两边同时装开时，运行菜单可能点到错误的任务。迁移建议：先导出本插件备份 → 卸官方插件 → 安装本版 → 再导入备份。
                         </div>
-                        <div id="animeRunStatusBar" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px;padding:10px 12px;border:1px solid rgba(82,181,75,0.35);border-radius:6px;background:rgba(82,181,75,0.06);">
-                            <span style="font-size:0.85em;opacity:0.7;">上次运行：</span>
-                            <span class="status-dot" id="animeDotStatus"></span>
-                            <span id="animeLastRunStatusLabel" style="font-size:0.9em;">尚未运行</span>
-                            <button type="button" is="emby-button" class="raised btn-neutral" id="btnAnimeOpenLogs" style="margin-left:auto;">查看动漫日志</button>
-                        </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeEnabled" /><span>启用动漫合集</span></label>
-                            <div class="fieldDescription">默认关闭。插件只管理自己创建的合集，不会改动手工创建的合集。</div>
-                        </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeDryRun" /><span>动漫合集仅预览</span></label>
-                            <div class="fieldDescription">开启时只在日志中列出预计的改动，不实际创建或修改合集。全局“仅预览”也有同样效果。关闭后按下方批准名单写入（名单留空则处理全部候选）。</div>
-                        </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeIncludeSpinOffs" /><span>包含 AniList 已确认的衍生作品</span></label>
-                            <div class="fieldDescription">包括前传、续作、外传和母作品，不包括相似作品、客串和改编。系列有多条续作线时仍会自动创建；若要手工指定成员，可用下方的成员规则（可选）。</div>
-                        </div>
-                        <div class="inputContainer" style="margin-top:15px;">
-                            <input is="emby-input" type="text" id="txtAnimePrefix" label="合集名称前缀" placeholder="动漫 · " />
-                            <div class="fieldDescription">建议使用独特前缀，避免与手工创建的 Emby 合集重名。</div>
-                        </div>
-                        <div class="inputContainer" style="margin-top:12px;">
-                            <input is="emby-input" type="number" min="10" max="600" id="txtAnimeApiBudget" label="每次同步最多新增 AniList 请求数" />
-                            <div class="fieldDescription">默认 300（约 10 分钟）。AniList 有频率限制；首次同步可能需要运行几次。单次最多 600。作品关系节点上限为 8000，触顶时日志会说明，调高本值无法突破。</div>
-                        </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:16px;">
+
+                        <div style="font-size:0.75em;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;opacity:0.45;margin:8px 0;">可选：改名与审查建议</div>
+                        <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:8px;">
                             <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiOther" /><span>用 AI 复核关系不明确的作品</span></label>
-                            <div class="fieldDescription">默认关闭。使用下方的 AI 设置和预算。AI 只提供建议，不会自动修改合集。</div>
+                            <div class="fieldDescription">默认关闭。只提供建议，不会自动修改合集。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiNaming" /><span>AI 中文命名建议</span></label>
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiNaming" /><span>中文命名建议</span></label>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiCollectionReview" /><span>AI 合集审查建议</span></label>
-                            <div class="fieldDescription">默认关闭。只生成建议，不会自动改名或调整成员。不开启 AI 也能正常分组。开启后，会把相关作品的名称与外部编号发给所选 AI 服务；不会再把整库未识别作品整批送出。</div>
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiCollectionReview" /><span>合集审查建议</span></label>
+                            <div class="fieldDescription">默认关闭。不开启也能正常分组。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
-                            <label class="inputLabel" for="selAnimeAiProvider">AI 提供商</label>
+                            <label class="inputLabel" for="selAnimeAiProvider">AI 服务</label>
                             <select is="emby-select" id="selAnimeAiProvider" class="emby-select-withcolor">
                                 <option value="OpenAICompatible">OpenAI 兼容接口</option>
                                 <option value="OpenAI">OpenAI</option>
@@ -1102,60 +1135,71 @@
                                 <option value="Ollama">Ollama</option>
                             </select>
                         </div>
-                        <div id="animeAiProviderHint" class="fieldDescription" style="display:none;margin-top:8px;">使用「设置 → API 密钥」中对应提供商的密钥与模型。</div>
+                        <div id="animeAiProviderHint" class="fieldDescription" style="display:none;margin-top:8px;">使用「设置 → API 密钥」中对应服务的密钥与模型。</div>
                         <div id="compatibleAiFields">
                             <div class="inputContainer" style="margin-top:12px;">
-                                <input is="emby-input" type="url" id="txtCompatibleAiBaseUrl" label="兼容接口 BaseURL" placeholder="https://example.com/v1" />
+                                <input is="emby-input" type="url" id="txtCompatibleAiBaseUrl" label="兼容接口地址" placeholder="https://example.com/v1" />
                             </div>
                             <div class="inputContainer" style="margin-top:12px;">
                                 <input is="emby-input" type="text" id="txtCompatibleAiModel" label="兼容接口模型" />
                             </div>
                             <div class="inputContainer" style="margin-top:12px;">
-                                <input is="emby-input" type="password" id="txtCompatibleAiApiKey" label="兼容接口 API 密钥" autocomplete="new-password" />
+                                <input is="emby-input" type="password" id="txtCompatibleAiApiKey" label="兼容接口密钥" autocomplete="new-password" />
                                 <label style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;">
                                     <input type="checkbox" class="chkShowApiKey" data-target="txtCompatibleAiApiKey" /> 显示
                                 </label>
                             </div>
-                            <div id="compatibleAiHttpWarning" role="status" style="display:none;color:#e8a838;margin:12px 0;">HTTP 不加密，请求内容和密钥会以明文传输。请只在本机或可信局域网中使用。</div>
+                            <div id="compatibleAiHttpWarning" role="status" style="display:none;color:#e8a838;margin:12px 0;">未加密连接会明文传输内容和密钥。请只在本机或可信局域网中使用。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
-                            <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxCalls" label="每次运行最多 AI 调用数" />
+                            <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxCalls" label="每次运行最多建议调用数" />
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
-                            <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxTokensPerCall" label="单次 AI 调用 Token 上限" />
+                            <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxTokensPerCall" label="单次建议长度上限" />
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
-                            <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxTokensPerRun" label="每次运行 AI Token 总上限" />
-                            <div class="fieldDescription">默认每次运行最多调用 15 次，每次 800 Token，合计 4000 Token。任一项设为 0 即不调用 AI。</div>
+                            <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxTokensPerRun" label="每次运行建议总长度上限" />
+                            <div class="fieldDescription">任一项设为 0 即不调用。默认够用即可。</div>
                         </div>
-                        <button is="emby-button" type="button" id="btnTestAnimeAiConnection" class="raised btn-neutral">测试 AI 连接</button>
+                        <button is="emby-button" type="button" id="btnTestAnimeAiConnection" class="raised btn-neutral">测试连接</button>
                         <div id="animeAiConnectionResult" role="status" aria-live="polite" style="margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere;"></div>
                         <div style="margin-top:16px;">
-                            <strong>AI 分析建议（只读）</strong>
+                            <strong>建议（只读）</strong>
                             <button is="emby-button" type="button" id="btnRefreshAnimeAiAnalysis" class="raised btn-neutral">刷新建议</button>
-                            <div id="animeAiAnalysis" role="status" aria-live="polite" style="margin-top:10px;overflow-wrap:anywhere;">尚未加载分析建议。</div>
+                            <div id="animeAiAnalysis" role="status" aria-live="polite" style="margin-top:10px;overflow-wrap:anywhere;">尚未加载建议。</div>
                         </div>
+
                         <div class="inputContainer" style="margin-top:16px;">
-                            <label class="inputLabel" for="txtAnimeCollectionRulesJson">成员规则（JSON，可选）</label>
-                            <textarea is="emby-textarea" id="txtAnimeCollectionRulesJson" rows="7" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='[{"Key":"anilist:&lt;作品ID&gt;","IncludeIds":["anilist:&lt;作品ID&gt;","tmdb_movie:&lt;作品ID&gt;"],"ExcludeIds":["tvdb_show:&lt;另一作品ID&gt;"]}]'></textarea>
-                            <div class="fieldDescription">高级可选。留空则用自动分组。填写后，每条规则用 Key 指定合集，IncludeIds 列出全部成员，ExcludeIds 列出要排除的作品；规则会取代该合集的自动结果。</div>
-                            <div class="fieldDescription">示例中的 ID 请换成真实 ID。合集 Key 和作品 ID 可在运行日志中找到。</div>
+                            <input is="emby-input" type="number" min="10" max="600" id="txtAnimeApiBudget" label="每次同步最多查询外网次数" />
+                            <div class="fieldDescription">默认 300。首次同步可能需要多跑几次。单次最多 600。</div>
                         </div>
-                        <div class="inputContainer" style="margin-top:16px;">
-                            <label class="inputLabel" for="txtAnimeApprovedCollectionKeys">批准名单（每行一个合集 Key）</label>
-                            <textarea is="emby-textarea" id="txtAnimeApprovedCollectionKeys" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder="anilist:&lt;作品ID&gt;&#10;anilist:&lt;另一作品ID&gt;"></textarea>
-                            <div class="fieldDescription">留空则自动创建所有候选合集；填写后只处理列出的 Key。</div>
+
+                        <div class="advanced-section settings-panel" style="margin-top:22px;border:1px solid var(--line-color);border-radius:8px;">
+                            <div class="advanced-header settings-panel-toggle" style="padding:12px 14px;cursor:pointer;display:flex;align-items:center;">
+                                <span style="font-size:0.9em;font-weight:600;opacity:0.75;">高级 / 原始数据（支援用）</span>
+                                <i class="md-icon settings-panel-chevron" style="margin-left:auto;transition:transform .2s;opacity:0.6;">expand_more</i>
+                            </div>
+                            <div class="advanced-body settings-panel-body" style="display:none;padding:4px 14px 16px;">
+                                <div class="fieldDescription" style="margin-bottom:12px;">以下仅供支援排查。日常使用请去「动漫合集」页，不必填写。</div>
+                                <div class="inputContainer" style="margin-top:8px;">
+                                    <label class="inputLabel" for="txtAnimeCollectionRulesJson">成员规则（JSON，可选）</label>
+                                    <textarea is="emby-textarea" id="txtAnimeCollectionRulesJson" rows="7" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='[{"Key":"anilist:&lt;作品ID&gt;","IncludeIds":["anilist:&lt;作品ID&gt;","tmdb_movie:&lt;作品ID&gt;"],"ExcludeIds":["tvdb_show:&lt;另一作品ID&gt;"]}]'></textarea>
+                                </div>
+                                <div class="inputContainer" style="margin-top:16px;">
+                                    <label class="inputLabel" for="txtAnimeApprovedCollectionKeys">批准名单（每行一个合集 Key）</label>
+                                    <textarea is="emby-textarea" id="txtAnimeApprovedCollectionKeys" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder="anilist:&lt;作品ID&gt;&#10;anilist:&lt;另一作品ID&gt;"></textarea>
+                                    <div class="fieldDescription">留空则自动处理全部候选；填写后只处理列出的项。</div>
+                                </div>
+                                <div class="inputContainer" style="margin-top:16px;">
+                                    <label class="inputLabel" for="txtAnimeCollectionAliasesJson">合集别名（JSON）</label>
+                                    <textarea is="emby-textarea" id="txtAnimeCollectionAliasesJson" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='{"anilist:&lt;作品ID&gt;":"虚构作品甲","anilist:&lt;另一作品ID&gt;":"虚构作品乙"}'></textarea>
+                                </div>
+                                <div class="inputContainer" style="margin-top:16px;">
+                                    <input is="emby-input" type="url" id="txtAnimeMappingUrl" label="映射数据地址（可选）" placeholder="留空则使用默认地址" />
+                                    <div class="fieldDescription">无法访问默认源时可填镜像；也可手动放到插件数据目录 anime/anibridge-v3.json。</div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="inputContainer" style="margin-top:16px;">
-                            <label class="inputLabel" for="txtAnimeCollectionAliasesJson">合集别名（JSON）</label>
-                            <textarea is="emby-textarea" id="txtAnimeCollectionAliasesJson" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='{"anilist:&lt;作品ID&gt;":"虚构作品甲","anilist:&lt;另一作品ID&gt;":"虚构作品乙"}'></textarea>
-                            <div class="fieldDescription">为合集 Key 指定显示名称。示例中的作品和 ID 均为虚构，请替换后使用。</div>
-                        </div>
-                        <div class="inputContainer" style="margin-top:16px;">
-                            <input is="emby-input" type="url" id="txtAnimeMappingUrl" label="映射数据地址（可选）" placeholder="留空则使用默认 GitHub 地址" />
-                            <div class="fieldDescription">高级选项。无法访问 GitHub 时可填写镜像地址；也可将 mappings.min.json 手动放到插件数据目录下的 anime/anibridge-v3.json。</div>
-                        </div>
-                        <p class="fieldDescription" style="margin-top:16px;">映射数据缓存 7 天。数据获取失败或上面的设置格式有误时，本次不会改动任何合集。插件不会自动删除合集；发现重复媒体时只在日志中提示，不会处理。</p>
                     </div>
                 </div>
 
@@ -1457,6 +1501,58 @@
                 <br /><br /><br /><br /><br />
 
                 </form>
+            </div>
+
+
+            <div id="tabAnimeCollections" class="page-tab-content" style="display:none;">
+                <div class="anime-studio-wrap">
+                    <p class="anime-studio-lead">打开后点同步，会按作品系列自动生成合集。吃不准的会标提醒，其它合集照常处理。</p>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label><input is="emby-checkbox" type="checkbox" id="chkAnimeEnabled" /><span>启用动漫合集</span></label>
+                        <div class="fieldDescription">默认关闭。插件只管理自己创建的合集，不会改动手工合集。</div>
+                    </div>
+
+                    <div class="inputContainer" style="margin-top:14px;">
+                        <input is="emby-input" type="text" id="txtAnimePrefix" label="合集名称前缀" placeholder="动漫 · " />
+                        <div class="fieldDescription">建议用独特前缀，避免与手工合集重名。</div>
+                    </div>
+
+                    <div style="margin-top:14px;">
+                        <div class="inputLabel" style="margin-bottom:4px;">同步方式</div>
+                        <div class="anime-sync-mode" id="animeSyncModeGroup" role="radiogroup" aria-label="同步方式">
+                            <label id="lblAnimeSyncWrite"><input type="radio" name="animeSyncMode" value="write" id="animeSyncModeWrite" />写入媒体库</label>
+                            <label id="lblAnimeSyncPreview"><input type="radio" name="animeSyncMode" value="preview" id="animeSyncModePreview" />先预览</label>
+                        </div>
+                        <input is="emby-checkbox" type="checkbox" id="chkAnimeDryRun" style="display:none;" tabindex="-1" aria-hidden="true" />
+                        <div class="fieldDescription">先预览只展示预计结果，不改媒体库。写入媒体库会直接创建或更新插件管理的合集。</div>
+                        <div class="anime-global-dry-hint" id="animeGlobalDryHint">设置里的「仅预览」总开关仍开着，这次即使选写入也不会真正改合集。可到设置里关闭后再同步。</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:14px;">
+                        <label><input is="emby-checkbox" type="checkbox" id="chkAnimeIncludeSpinOffs" /><span>包含衍生作品</span></label>
+                        <div class="fieldDescription">前传、续作、外传等一并归进同一合集。</div>
+                    </div>
+
+                    <div class="anime-studio-toolbar" id="animeRunStatusBar">
+                        <button type="button" is="emby-button" class="raised button-submit" id="btnAnimeRunNow">
+                            <i class="md-icon" style="margin-right:6px;">play_arrow</i>立即同步
+                        </button>
+                        <span class="status-dot" id="animeDotStatus"></span>
+                        <span id="animeLastRunStatusLabel" style="font-size:0.92em;">尚未运行</span>
+                        <span class="anime-summary-line" id="animeLastRunSummaryLine"></span>
+                        <button type="button" is="emby-button" class="raised btn-neutral" id="btnAnimeOpenLogs" style="margin-left:auto;">详细日志</button>
+                    </div>
+
+                    <div id="animeCardsSection" style="margin-top:8px;">
+                        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                            <h2 class="sectionTitle" style="margin:0;font-size:1.1em;" id="animeCardsHeading">合集一览</h2>
+                            <span class="fieldDescription" id="animeCardsHint" style="margin:0;"></span>
+                        </div>
+                        <div id="animeCardGrid" class="anime-card-grid"></div>
+                        <div id="animeCardEmpty" class="anime-card-empty" style="display:none;margin-top:12px;">还没有结果。启用后点「立即同步」，预览模式会在这里显示合集卡片。</div>
+                    </div>
+                </div>
             </div>
 
             <div id="tabCleanup" class="page-tab-content" style="display:none;">

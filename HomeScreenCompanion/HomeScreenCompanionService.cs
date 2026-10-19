@@ -170,6 +170,10 @@ namespace HomeScreenCompanion
     [Authenticated(Roles = "Admin")]
     public class GetAnimeTaskStatusRequest : IReturn<StatusResponse> { }
 
+    [Route("/HomeScreenCompanionAnime/Anime/LastRunSummary", "GET")]
+    [Authenticated(Roles = "Admin")]
+    public class GetAnimeLastRunSummaryRequest : IReturn<AnimeLastRunSummary> { }
+
     [Route("/HomeScreenCompanionAnime/TopList/Status", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetTopListStatusRequest : IReturn<TopListStatusResponse> { }
@@ -928,6 +932,23 @@ public class HomeScreenCompanionService : IService
                 IsRunning = AnimeCollectionTask.IsRunning,
                 StartedUtc = AnimeCollectionTask.LastStartedUtc?.ToString("o") ?? ""
             };
+        }
+
+        public object Get(GetAnimeLastRunSummaryRequest request)
+        {
+            try
+            {
+                var dataDir = Path.Combine(Plugin.Instance!.DataFolderPath, "anime");
+                var path = Path.Combine(dataDir, "last-run-summary.json");
+                if (!File.Exists(path))
+                    return new AnimeLastRunSummary();
+                var summary = _jsonSerializer.DeserializeFromFile<AnimeLastRunSummary>(path);
+                return summary ?? new AnimeLastRunSummary();
+            }
+            catch
+            {
+                return new AnimeLastRunSummary();
+            }
         }
 
         public object Get(HscGetUserSectionsRequest request)

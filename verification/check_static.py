@@ -87,4 +87,16 @@ try:
     print('PASS: Node.js JavaScript syntax check')
 except FileNotFoundError:
     print('SKIP: Node.js not installed')
+
+assert 'data-page-tab="AnimeCollections"' in html
+assert 'id="tabAnimeCollections"' in html
+assert 'btnAnimeRunNow' in html and '#btnAnimeRunNow' in js
+assert 'LastRunSummary' in service
+assert 'last-run-summary.json' in (SRC / 'AnimeCollectionTask.cs').read_text(encoding='utf-8')
+# Main anime path must not show jargon; advanced fold may keep support labels.
+anime_tab = html.split('id="tabAnimeCollections"', 1)[1].split('id="tabCleanup"', 1)[0]
+for banned in ('批准名单', '成员规则', 'Dry Run', 'Anchor', '连通分量', '赋能', '闭环', 'Provider', 'Token'):
+    assert banned not in anime_tab, 'banned on anime tab: ' + banned
+print('PASS: P0 anime studio tab + last-run summary wiring')
+
 print('NOT_TESTED by this script: C# build/smoke, runtime authentication/backup HTTP, browser rendering, real AI providers or Emby runtime; consult separate logs')

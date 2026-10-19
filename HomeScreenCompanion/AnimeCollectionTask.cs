@@ -23,6 +23,42 @@ namespace HomeScreenCompanion
     /// Runs only after the entire finite AniList graph was resolved; uncertain / failed
     /// datasets can never trigger removal from Emby.
     /// </summary>
+
+    /// <summary>Last anime sync card summary for the Anime tab UI (P0).</summary>
+    public sealed class AnimeLastRunSummary
+    {
+        public bool DryRun { get; set; }
+        public bool GlobalDryRun { get; set; }
+        public string FinishedUtc { get; set; } = "";
+        public string StatusText { get; set; } = "";
+        public int Created { get; set; }
+        public int Updated { get; set; }
+        public int Skipped { get; set; }
+        public int Unchanged { get; set; }
+        public int Reminders { get; set; }
+        public List<AnimeRunCard> Cards { get; set; } = new List<AnimeRunCard>();
+        public List<AnimeOwnedCard> Owned { get; set; } = new List<AnimeOwnedCard>();
+    }
+
+    public sealed class AnimeRunCard
+    {
+        public string Key { get; set; } = "";
+        public string Name { get; set; } = "";
+        /// <summary>will_create | will_update | created | updated | unchanged | skipped</summary>
+        public string Status { get; set; } = "";
+        public string Reason { get; set; } = "";
+        public int MemberCount { get; set; }
+        public List<string> MemberTitles { get; set; } = new List<string>();
+        public int MoreCount { get; set; }
+    }
+
+    public sealed class AnimeOwnedCard
+    {
+        public long CollectionId { get; set; }
+        public string Name { get; set; } = "";
+        public int MemberCount { get; set; }
+    }
+
     public sealed class AnimeCollectionTask : IScheduledTask
     {
         private const string MappingUrl =
@@ -155,6 +191,7 @@ namespace HomeScreenCompanion
                 {
                     LastStatus = "没有合集候选";
                     log.Skip("没有符合条件的候选合集，现有合集保持不变。");
+                    WriteEmptyLastRunSummary(dataDir, config, dryRun, "没有合集候选");
                     await AnalyzeCollectionsAsync(config, local, graph.Records, groups, dataDir, cancellationToken, log);
                     return;
                 }
@@ -319,7 +356,8 @@ namespace HomeScreenCompanion
             {
                 IncludeItemTypes = new[] { "BoxSet" }, Recursive = true
             }).ToList();
-            int made = 0, updated = 0, collisions = 0, blocked = 0;
+            int made = 0, updated = 0, collisions = 0, blocked = 0, unchanged = 0;
+            var cards = new List<AnimeRunCard>();
             var confirmedReassignments = new HashSet<long>(groups.Where(g => policy.CanWrite(g, false)).SelectMany(g => g.EmbyIds));
             // Detect splits against ALL candidates, including denied and review-blocked groups.
             // Filtering to the approved writer set first could strip a denied sibling's members.
@@ -329,11 +367,13 @@ namespace HomeScreenCompanion
             {
                 token.ThrowIfCancellationRequested();
                 var group = groups[i];
+                var displayName = (config.AnimeCollectionPrefix ?? "动漫 · ") + group.Name;
                 var block = policy.ExplainWriteBlock(group);
                 if (block != null)
                 {
                     log.Skip($"已跳过 [{group.Key}] {group.Name}：{block}");
                     LogMemberTitles(log, group, nameById);
+                    cards.Add(MakeRunCard(group, displayName, "skipped", HumanizeSkipReason(block), nameById));
                     blocked++;
                     continue;
                 }
@@ -344,21 +384,25 @@ namespace HomeScreenCompanion
                 var matches = state.Collections.Where(c => c.Anchor == group.Anchor || c.ManagedItemIds.Any(desired.Contains)).ToList();
                 if (matches.Count > 1)
                 {
-                    log.Warn($"已跳过 [{group.Key}] {group.Name}：与多个由插件创建的合集重叠，请人工检查。");
+                    string reason = "与多个由插件管理的合集重叠，请人工检查。";
+                    log.Warn($"已跳过 [{group.Key}] {group.Name}：{reason}");
                     LogMemberTitles(log, group, nameById);
+                    cards.Add(MakeRunCard(group, displayName, "skipped", reason, nameById));
                     collisions++;
                     continue;
                 }
                 var owned = matches.Count == 1 ? matches[0] : null;
                 if (owned != null && (splitIds.Contains(owned.CollectionId) || !visitedOwned.Add(owned.CollectionId)))
                 {
-                    log.Warn($"已跳过 [{group.Key}] {group.Name}：原合集已拆分成多个分组，请人工检查。");
+                    string reason = "原合集已拆分成多个分组，请人工检查。";
+                    log.Warn($"已跳过 [{group.Key}] {group.Name}：{reason}");
                     LogMemberTitles(log, group, nameById);
+                    cards.Add(MakeRunCard(group, displayName, "skipped", reason, nameById));
                     collisions++;
                     continue;
                 }
                 BaseItem? box = owned == null ? null : existing.FirstOrDefault(x => x.InternalId == owned.CollectionId);
-                var name = (config.AnimeCollectionPrefix ?? "动漫 · ") + group.Name;
+                var name = displayName;
                 var nameMatches = existing.Where(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase))
                     .Select(x => x.InternalId).ToList();
 
@@ -373,11 +417,15 @@ namespace HomeScreenCompanion
 
                 if (!AnimeCollectionPolicy.CanUseIdentity(owned?.CollectionId, box?.InternalId, nameMatches))
                 {
+                    string reason = owned == null && nameMatches.Count > 0
+                        ? "和已有合集重名，为避免改动手工合集已跳过。可先在 Emby 中重命名或删除后再同步。"
+                        : "原合集已不存在，或名称与其他合集重复。手工合集不会被改动。";
                     if (owned == null && nameMatches.Count > 0)
                         log.Warn($"已跳过 [{group.Key}] {name}：存在同名合集且无有效归属，已跳过以免改动手工合集。若确认为旧插件合集，请先在 Emby 中重命名或删除后再运行。");
                     else
                         log.Warn($"已跳过 [{group.Key}] {name}：原合集已不存在，或名称与其他合集重复。手工创建的合集不会被改动。");
                     LogMemberTitles(log, group, nameById);
+                    cards.Add(MakeRunCard(group, name, "skipped", reason, nameById));
                     collisions++;
                     continue;
                 }
@@ -400,10 +448,12 @@ namespace HomeScreenCompanion
                         });
                         SaveState(stateFile, state);
                     }
+                    cards.Add(MakeRunCard(group, name, mayWrite ? "created" : "will_create", "", nameById));
                     made++;
                 }
                 else
                 {
+                    var cardName = box!.Name ?? name;
                     if (!string.Equals(box!.Name, name, StringComparison.Ordinal))
                         log.Info($"[{group.Key}] 保留现有合集名称“{box.Name}”；别名“{name}”只在新建合集时使用。");
                     var current = new HashSet<long>(_libraryManager.GetItemList(new InternalItemsQuery
@@ -417,8 +467,10 @@ namespace HomeScreenCompanion
                     var toRemove = AnimeCollectionPolicy.PlanRemovals(group, prevOwned, current, confirmedReassignments);
                     if (toRemove.Length > 0 && !(box is BoxSet))
                     {
-                        log.Warn($"已跳过 [{group.Key}]：无法从此合集移除成员。");
+                        string reason = "无法从此合集移除成员。";
+                        log.Warn($"已跳过 [{group.Key}]：{reason}");
                         LogMemberTitles(log, group, nameById);
+                        cards.Add(MakeRunCard(group, cardName, "skipped", reason, nameById));
                         collisions++;
                         continue;
                     }
@@ -431,10 +483,15 @@ namespace HomeScreenCompanion
                             if (toAdd.Length > 0) await _collections.AddToCollection(box.InternalId, toAdd);
                             if (toRemove.Length > 0) _collections.RemoveFromCollection((BoxSet)box, toRemove);
                         }
+                        cards.Add(MakeRunCard(group, cardName, mayWrite ? "updated" : "will_update", "", nameById));
                         updated++;
                     }
                     else
+                    {
                         LogMemberTitles(log, group, nameById);
+                        cards.Add(MakeRunCard(group, cardName, "unchanged", "", nameById));
+                        unchanged++;
+                    }
                     if (mayWrite)
                     {
                         owned.Anchor = group.Anchor;
@@ -444,11 +501,125 @@ namespace HomeScreenCompanion
                 }
                 progress?.Report(65.0 + 35.0 * (i + 1) / groups.Count);
             }
+            int skipped = collisions + blocked;
             log.Ok($"{(dryRun ? "仅预览" : "已完成")}：新建 {made} 个，更新 {updated} 个，冲突 {collisions} 个，跳过 {blocked} 个。");
             log.Debug("不会删除合集，也不会移除手工添加的成员。");
+            SaveLastRunSummary(dataDir, config, dryRun, made, updated, skipped, unchanged, cards, state, existing);
         }
 
-        private static void LogMemberTitles(RunLog log, AnimeGroup group, IReadOnlyDictionary<long, string> nameById)
+
+        private void WriteEmptyLastRunSummary(string dataDir, PluginConfiguration config, bool dryRun, string statusText)
+        {
+            try
+            {
+                Directory.CreateDirectory(dataDir);
+                var pathFile = Path.Combine(dataDir, "last-run-summary.json");
+                AnimeCollectionState? state = null;
+                string stateFile = Path.Combine(dataDir, "owned-collections.json");
+                if (File.Exists(stateFile))
+                {
+                    try { state = _json.DeserializeFromFile<AnimeCollectionState>(stateFile); } catch { }
+                }
+                var owned = new List<AnimeOwnedCard>();
+                if (state?.Collections != null)
+                {
+                    foreach (var c in state.Collections)
+                    {
+                        if (c == null || c.CollectionId <= 0) continue;
+                        owned.Add(new AnimeOwnedCard
+                        {
+                            CollectionId = c.CollectionId,
+                            Name = c.Name ?? "",
+                            MemberCount = c.ManagedItemIds?.Count ?? 0
+                        });
+                    }
+                }
+                var summary = new AnimeLastRunSummary
+                {
+                    DryRun = dryRun,
+                    GlobalDryRun = config.DryRunMode,
+                    FinishedUtc = DateTime.UtcNow.ToString("o"),
+                    StatusText = statusText ?? "",
+                    Owned = owned
+                };
+                var textOut = _json.SerializeToString(summary);
+                var tmp = pathFile + ".tmp";
+                File.WriteAllText(tmp, textOut, Encoding.UTF8);
+                if (File.Exists(pathFile)) File.Replace(tmp, pathFile, null);
+                else File.Move(tmp, pathFile);
+            }
+            catch { }
+        }
+
+        private void SaveLastRunSummary(string dataDir, PluginConfiguration config, bool dryRun,
+            int made, int updated, int skipped, int unchanged, List<AnimeRunCard> cards,
+            AnimeCollectionState state, List<BaseItem> existing)
+        {
+            var ownedCards = new List<AnimeOwnedCard>();
+            if (state?.Collections != null)
+            {
+                foreach (var c in state.Collections)
+                {
+                    if (c == null || c.CollectionId <= 0) continue;
+                    var box = existing.FirstOrDefault(x => x.InternalId == c.CollectionId);
+                    ownedCards.Add(new AnimeOwnedCard
+                    {
+                        CollectionId = c.CollectionId,
+                        Name = box?.Name ?? c.Name ?? "",
+                        MemberCount = c.ManagedItemIds?.Count ?? 0
+                    });
+                }
+            }
+            var summary = new AnimeLastRunSummary
+            {
+                DryRun = dryRun,
+                GlobalDryRun = config.DryRunMode,
+                FinishedUtc = DateTime.UtcNow.ToString("o"),
+                StatusText = dryRun
+                    ? $"预览：将新建 {made} · 将更新 {updated} · 跳过 {skipped}"
+                    : $"完成：新建 {made} · 更新 {updated} · 跳过 {skipped}",
+                Created = made,
+                Updated = updated,
+                Skipped = skipped,
+                Unchanged = unchanged,
+                Reminders = 0,
+                Cards = cards,
+                Owned = ownedCards
+            };
+            try
+            {
+                Directory.CreateDirectory(dataDir);
+                var path = Path.Combine(dataDir, "last-run-summary.json");
+                var text = _json.SerializeToString(summary);
+                var tmp = path + ".tmp";
+                File.WriteAllText(tmp, text, Encoding.UTF8);
+                if (File.Exists(path)) File.Replace(tmp, path, null);
+                else File.Move(tmp, path);
+            }
+            catch
+            {
+                // Card UI is best-effort; never fail the sync because summary write failed.
+            }
+        }
+
+        private static AnimeRunCard MakeRunCard(AnimeGroup group, string displayName, string status,
+            string reason, IReadOnlyDictionary<long, string> nameById)
+        {
+            const int previewCap = 6;
+            var titles = MemberTitleList(group, nameById);
+            return new AnimeRunCard
+            {
+                Key = group.Key,
+                Name = displayName,
+                Status = status,
+                Reason = reason ?? "",
+                MemberCount = titles.Count,
+                MemberTitles = titles.Take(previewCap).ToList(),
+                MoreCount = Math.Max(0, titles.Count - previewCap)
+            };
+        }
+
+        private static List<string> MemberTitleList(AnimeGroup group, IReadOnlyDictionary<long, string> nameById)
         {
             var titles = new List<string>();
             foreach (var id in group.EmbyIds)
@@ -458,6 +629,23 @@ namespace HomeScreenCompanion
                 else
                     titles.Add("未命名项目");
             }
+            return titles;
+        }
+
+        /// <summary>Map policy/internal skip text to card UI wording (no jargon on the main path).</summary>
+        private static string HumanizeSkipReason(string? reason)
+        {
+            if (string.IsNullOrWhiteSpace(reason)) return "";
+            if (reason.IndexOf("批准名单", StringComparison.Ordinal) >= 0)
+                return "当前设置未允许同步此合集。";
+            if (reason.IndexOf("成员不足", StringComparison.Ordinal) >= 0)
+                return "成员不足两部。";
+            return reason.Trim();
+        }
+
+        private static void LogMemberTitles(RunLog log, AnimeGroup group, IReadOnlyDictionary<long, string> nameById)
+        {
+            var titles = MemberTitleList(group, nameById);
             const int cap = 20;
             string line = titles.Count <= cap
                 ? string.Join("、", titles)
