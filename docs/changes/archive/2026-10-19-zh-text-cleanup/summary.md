@@ -39,3 +39,10 @@
 - 默认 AniList 请求配额 100→300，UI 上限 300→600；关系图节点硬上限 2400→8000；缓存 TTL 14 天不变。
 - AniList 429/5xx/超时最多 3 次尝试，退避 5s→15s→45s（尊 Retry-After≤120s）；配额用尽与节点触顶使用不同 `LastStatus`。
 
+## 批次 6（Batch 2）：跳过原因 / 预览成员 / Key 稳定 / 归属恢复
+
+- 跳过原因拆分为未批准、不足两部、分支需规则；开启包含衍生时 SPIN_OFF/SIDE_STORY/PARENT 单独不再强制 JSON。
+- 预览 `log.Detail` 成员片名（上限 20）；Emby ID 仍 DEBUG。
+- Anchor = 库∪关系图分量最小 ID；归属成员重叠时粘滞 owned.Anchor。
+- 归属指向缺失合集时清除记录并允许按批准重建；同名他合集仍跳过。
+

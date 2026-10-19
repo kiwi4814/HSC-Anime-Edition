@@ -29,7 +29,7 @@
 | `HomeScreenCompanion/AnimeAniListClient.cs` | AniList GraphQL 与关系缓存 | 请求/身份校验；真实服务未由离线测试验收 |
 | `HomeScreenCompanion/AnimeCollectionPolicy.cs` | 精确成员、批准、别名、身份和重复诊断 | 排除优先、完整替代、无默认作品规则、写入门槛 |
 | `HomeScreenCompanion/AnimeCollectionMembership.cs` | 维护已管理成员集合 | 只追踪插件管理成员，保留人工成员 |
-| `HomeScreenCompanion/AnimeCollectionTask.cs` | 扫描、映射、规划、审批后调用 Emby 合集 API；RestoreLog/LogStore.Anime、节点上限 8000、配额状态区分 | 动漫独立开关/Dry Run、归属保护、失败不清空合集 |
+| `HomeScreenCompanion/AnimeCollectionTask.cs` | 扫描、映射、规划、审批后调用 Emby 合集 API；RestoreLog/LogStore.Anime、节点上限 8000、配额状态区分；图 min Anchor、归属粘滞、失效归属清除、拆分跳过原因 | 动漫独立开关/Dry Run、归属保护、失败不清空合集 |
 | `HomeScreenCompanion/AiRequestClient.cs` | 五种 provider 共用 HTTP 传输 | 超时/取消、体积边界、禁重定向、脱敏错误 |
 | `HomeScreenCompanion/AiResponseDtos.cs` | 统一 provider 响应 DTO | 是响应模型单一归属；不要在旧 DTO 文件重建重复类 |
 | `HomeScreenCompanion/AiSecretPolicy.cs` | 密钥导出清空、空导入保留 | 覆盖实际导出/导入调用点，而非只保留 helper |

@@ -109,11 +109,16 @@ namespace HomeScreenCompanion
                 {
                     if (edge.Id <= 0 || edge.Type != "ANIME") continue;
                     var relation = (edge.Relation ?? "").Trim().ToUpperInvariant();
-                    if (relation == "SPIN_OFF" || relation == "SIDE_STORY" || relation == "PARENT" ||
-                        relation == "ALTERNATIVE" || relation == "ALTERNATIVE_VERSION")
+                    if (relation == "ALTERNATIVE" || relation == "ALTERNATIVE_VERSION")
                     {
-                        // Disabled SPIN_OFF edges still reveal a branch; excluding an edge
-                        // from connectivity does not establish strict mainline membership.
+                        branchIds.Add(record.Id);
+                        branchIds.Add(edge.Id);
+                    }
+                    else if (!includeSpinOffs &&
+                        (relation == "SPIN_OFF" || relation == "SIDE_STORY" || relation == "PARENT"))
+                    {
+                        // With spin-offs disabled these edges are not joined, but still signal
+                        // that membership is ambiguous until an exact rule confirms it.
                         branchIds.Add(record.Id);
                         branchIds.Add(edge.Id);
                     }
@@ -134,13 +139,43 @@ namespace HomeScreenCompanion
                 foreach (var edge in fork) branchIds.Add(edge.From);
             }
             var branchRoots = new HashSet<int>(branchIds.Select(uf.Find));
+
+            // Anchor = min AniList ID over library ∪ relation-graph nodes in the component
+            // (not library-only), so adding an earlier season already present in the graph
+            // does not silently change the collection Key.
+            var idsByRoot = new Dictionary<int, HashSet<int>>();
+            void Track(int id)
+            {
+                if (id <= 0) return;
+                int root = uf.Find(id);
+                if (!idsByRoot.TryGetValue(root, out var set))
+                    idsByRoot[root] = set = new HashSet<int>();
+                set.Add(id);
+            }
+            foreach (var item in local)
+                foreach (var id in item.AniListIds) Track(id);
+            foreach (var record in records)
+            {
+                Track(record.Id);
+                foreach (var edge in record.Relations)
+                    if (edge.Id > 0 && edge.Type == "ANIME") Track(edge.Id);
+            }
+
             var components = local.SelectMany(i => i.AniListIds.Select(id => new { id, item = i }))
                 .Where(x => x.id > 0)
                 .GroupBy(x => uf.Find(x.id))
-                .Select(g => new
+                .Select(g =>
                 {
-                    Anchor = g.Select(x => x.id).Min(),
-                    Items = g.Select(x => x.item).GroupBy(x => x.EmbyId).Select(x => x.First()).ToList()
+                    int root = g.Key;
+                    var localIds = g.Select(x => x.id);
+                    int anchor = idsByRoot.TryGetValue(root, out var known) && known.Count > 0
+                        ? known.Min()
+                        : localIds.Min();
+                    return new
+                    {
+                        Anchor = anchor,
+                        Items = g.Select(x => x.item).GroupBy(x => x.EmbyId).Select(x => x.First()).ToList()
+                    };
                 })
                 .Where(g => g.Items.Count >= 2)
                 .OrderBy(g => g.Anchor).ToList();

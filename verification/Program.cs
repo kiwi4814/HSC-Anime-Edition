@@ -19,6 +19,7 @@ static partial class Program
             if (args.SequenceEqual(new[] { "--preview-demo" })) { PrintPreviewDemo(); return 0; }
             TestMappings();
             TestGroups();
+            TestAnchorGraphMinAndSticky();
             TestOwnership();
             TestGraphExpansion().GetAwaiter().GetResult();
             TestDuplicates();
@@ -103,6 +104,7 @@ static partial class Program
         Assert(main[0].ReviewRequired, "Disabled branch still requires explicit member review");
         var expanded = AnimeGroupPlanner.Plan(items, records, true);
         Assert(expanded.Count == 1 && expanded[0].EmbyIds.SequenceEqual(new long[] { 101, 102, 103 }), "Optional spin-off connects confirmed media");
+        Assert(!expanded[0].ReviewRequired, "Included spin-off alone does not force member-rule review");
         foreach (var kind in new[] { "OTHER", "ADAPTATION", "CHARACTER", "ALTERNATIVE", "ALTERNATIVE_VERSION", "SUMMARY", "COMPILATION", "UNKNOWN" })
             Assert(AnimeGroupPlanner.Plan(new[] { items[0], items[3] }, new[] { Relation(A, D, kind) }, true).Count == 0, kind + " cannot connect collections");
         var manga = Relation(A, D); manga.Relations[0].Type = "MANGA";
@@ -113,6 +115,45 @@ static partial class Program
         Assert(unique.Count == 1 && unique[0].EmbyIds.SequenceEqual(new long[] { 101, 103 }), "Multi-entry series and repeated local IDs deduplicate members");
         var fork = AnimeGroupPlanner.Plan(items, new[] { Relation(A, B), Relation(A, C) }, false);
         Assert(fork.Single().ReviewRequired, "Generic sequel fork requires review without title or ID exceptions");
+    }
+
+    static void TestAnchorGraphMinAndSticky()
+    {
+        // Local library only has B+C; relation graph also knows earlier A → Anchor is A (graph min).
+        var localOnlyLater = new[]
+        {
+            Item(102, "星桥纪事 续篇", true, B, "tmdb_show:1900000202"),
+            Item(103, "星桥纪事 支线", true, C, "tmdb_show:1900000203")
+        };
+        var planned = AnimeGroupPlanner.Plan(localOnlyLater, BranchRelations(), true);
+        Assert(planned.Count == 1 && planned[0].Anchor == A && planned[0].Key == Key,
+            "Anchor uses min ID over library ∪ relation-graph nodes");
+        Assert(!planned[0].ReviewRequired, "Spin-off included without sequel fork does not require review");
+
+        var drifting = new AnimeGroup { Anchor = B, Name = "漂移", EmbyIds = new() { 101, 102 } };
+        Assert(drifting.Key == "anilist:" + B, "Precondition: drifting key follows planned anchor");
+        var owned = new[] { new AnimeManagedCollection { CollectionId = 901, Anchor = A, ManagedItemIds = new() { 101, 102 } } };
+        AnimeCollectionPolicy.ApplyOwnershipSticky(new List<AnimeGroup> { drifting }, owned);
+        Assert(drifting.Anchor == A && drifting.Key == Key, "Ownership sticky restores prior Anchor/Key");
+
+        var policy = AnimeCollectionPolicy.Parse("", Key, "");
+        Assert(policy.ExplainWriteBlock(new AnimeGroup { Anchor = A, EmbyIds = new() { 101 } }) == "成员不足两部。", "Explain: too few members");
+        Assert(policy.ExplainWriteBlock(new AnimeGroup { Anchor = D, EmbyIds = new() { 101, 102 } }) == "未在批准名单中。", "Explain: not approved");
+        var branchMsg = policy.ExplainWriteBlock(new AnimeGroup { Anchor = A, EmbyIds = new() { 101, 102 }, ReviewRequired = true });
+        Assert(branchMsg != null && branchMsg.Contains("分支"), "Explain: branch needs rule");
+        var ok = new AnimeGroup { Anchor = A, EmbyIds = new() { 101, 102 } };
+        Assert(policy.ExplainWriteBlock(ok) == null && policy.CanWrite(ok, false), "Explain null when writable");
+
+        // Alternative still forces review even with spin-offs included.
+        var alt = AnimeGroupPlanner.Plan(
+            new[] { Item(101, "星桥纪事", true, A), Item(104, "雾港来信", false, D) },
+            new[] { Relation(A, D, "ALTERNATIVE") }, true);
+        Assert(alt.Count == 0, "ALTERNATIVE does not connect; separate from branch marking");
+        var altConnected = AnimeGroupPlanner.Plan(
+            new[] { Item(101, "甲", true, A), Item(102, "乙", true, B) },
+            new[] { Relation(A, B, "SEQUEL"), Relation(A, B, "ALTERNATIVE") }, true);
+        // SEQUEL connects; ALTERNATIVE marks branch
+        Assert(altConnected.Count == 1 && altConnected[0].ReviewRequired, "ALTERNATIVE marks review even when spin-offs included");
     }
 
     static async Task TestGraphExpansion()
@@ -172,7 +213,11 @@ static partial class Program
         {
             var automatic = AnimeGroupPlanner.Plan(items, BranchRelations(), spinOff);
             var approvalOnly = AnimeCollectionPolicy.Parse("", Key, "");
-            Assert(!approvalOnly.CanWrite(approvalOnly.Apply(automatic, items).Single(), false), "Whitelist cannot bypass generic branch review");
+            var approvedGroup = approvalOnly.Apply(automatic, items).Single();
+            if (spinOff)
+                Assert(approvalOnly.CanWrite(approvedGroup, false), "Approved mainline+spin-off may write without JSON when spin-offs included");
+            else
+                Assert(!approvalOnly.CanWrite(approvedGroup, false), "Whitelist cannot bypass generic branch review");
             var policy = AnimeCollectionPolicy.Parse(Rules, Key, ""); var selected = policy.Apply(automatic, items);
             Assert(selected.Single().EmbyIds.SequenceEqual(new long[] { 101, 102 }), "Exact IncludeIds membership with ExcludeIds precedence");
             Assert(selected[0].HasExplicitRule && policy.CanWrite(selected[0], false), "Explicit approved exact selection may write");

@@ -107,7 +107,8 @@ namespace HomeScreenCompanion
                 var seeds = local.SelectMany(x => x.AniListIds).Distinct().ToArray();
                 foreach (var duplicate in AnimeCollectionPolicy.FindDuplicates(local))
                     { log.Warn($"疑似重复媒体：{duplicate.Identifier}（{duplicate.EmbyIds.Count} 个项目）。仅提示，不会处理。"); log.Debug($"  重复媒体 {duplicate.Identifier} 的 Emby ID：{string.Join(", ", duplicate.EmbyIds)}"); }
-                log.Info($"扫描 {local.Count} 个电影/剧集项目，匹配 {seeds.Length} 条 AniList 记录。");
+                int recognized = local.Count(x => x.AniListIds.Count > 0);
+                log.Info($"扫描 {local.Count} 个电影/剧集项目，已识别动漫 {recognized} 部，匹配 {seeds.Length} 条 AniList 记录。");
                 progress?.Report(30);
                 var client = new AnimeAniListClient(_json, dataDir);
                 int requestBudget = Math.Max(1, Math.Min(600, config.AnimeMaxRequestsPerRun));
@@ -136,7 +137,19 @@ namespace HomeScreenCompanion
                 }
                 progress?.Report(60);
 
-                var groups = policy.Apply(AnimeGroupPlanner.Plan(local, graph.Records, config.AnimeIncludeSpinOffs), local);
+                var planned = AnimeGroupPlanner.Plan(local, graph.Records, config.AnimeIncludeSpinOffs);
+                string ownershipPath = Path.Combine(dataDir, "owned-collections.json");
+                if (File.Exists(ownershipPath))
+                {
+                    try
+                    {
+                        var prior = _json.DeserializeFromFile<AnimeCollectionState>(ownershipPath);
+                        if (prior?.Collections != null)
+                            AnimeCollectionPolicy.ApplyOwnershipSticky(planned, prior.Collections, msg => log.Info(msg));
+                    }
+                    catch { /* Invalid ownership is rejected later in SyncCollectionsAsync. */ }
+                }
+                var groups = policy.Apply(planned, local);
                 log.Info($"找到 {groups.Count} 个候选合集。");
                 if (groups.Count == 0)
                 {
@@ -145,7 +158,9 @@ namespace HomeScreenCompanion
                     await AnalyzeCollectionsAsync(config, local, graph.Records, groups, dataDir, cancellationToken, log);
                     return;
                 }
-                await SyncCollectionsAsync(groups, policy, dataDir, config, dryRun, cancellationToken, log, progress);
+                var nameById = local.Where(x => x.EmbyId > 0)
+                    .GroupBy(x => x.EmbyId).ToDictionary(g => g.Key, g => g.First().Name ?? "");
+                await SyncCollectionsAsync(groups, policy, dataDir, config, dryRun, cancellationToken, log, progress, nameById);
                 await AnalyzeCollectionsAsync(config, local, graph.Records, groups, dataDir, cancellationToken, log);
                 int writable = groups.Count(g => policy.CanWrite(g, dryRun));
                 LastStatus = dryRun ? $"仅预览：{groups.Count} 个候选" : $"已完成：{writable} 个已批准合集";
@@ -267,7 +282,7 @@ namespace HomeScreenCompanion
 
         private async Task SyncCollectionsAsync(List<AnimeGroup> groups, AnimeCollectionPolicy policy,
             string dataDir, PluginConfiguration config, bool dryRun, CancellationToken token,
-            RunLog log, IProgress<double>? progress)
+            RunLog log, IProgress<double>? progress, IReadOnlyDictionary<long, string> nameById)
         {
             string stateFile = Path.Combine(dataDir, "owned-collections.json");
             var state = File.Exists(stateFile)
@@ -278,6 +293,7 @@ namespace HomeScreenCompanion
                 state.Collections.GroupBy(c => c.CollectionId).Any(g => g.Count() > 1) ||
                 state.Collections.GroupBy(c => c.Anchor).Any(g => g.Count() > 1))
                 throw new InvalidDataException("合集归属记录中有无效或重复的条目，已停止写入。");
+
             var existing = _libraryManager.GetItemList(new InternalItemsQuery
             {
                 IncludeItemTypes = new[] { "BoxSet" }, Recursive = true
@@ -292,10 +308,11 @@ namespace HomeScreenCompanion
             {
                 token.ThrowIfCancellationRequested();
                 var group = groups[i];
-                if (!policy.CanWrite(group, false))
+                var block = policy.ExplainWriteBlock(group);
+                if (block != null)
                 {
-                    log.Skip($"已跳过 [{group.Key}] {group.Name}：未在批准名单中、少于两部作品，或有分支尚未用成员规则确认。");
-                    log.Debug($"  [{group.Key}] 成员 Emby ID：{string.Join(", ", group.EmbyIds)}");
+                    log.Skip($"已跳过 [{group.Key}] {group.Name}：{block}");
+                    LogMemberTitles(log, group, nameById);
                     blocked++;
                     continue;
                 }
@@ -305,6 +322,7 @@ namespace HomeScreenCompanion
                 if (matches.Count > 1)
                 {
                     log.Warn($"已跳过 [{group.Key}] {group.Name}：与多个由插件创建的合集重叠，请人工检查。");
+                    LogMemberTitles(log, group, nameById);
                     collisions++;
                     continue;
                 }
@@ -312,6 +330,7 @@ namespace HomeScreenCompanion
                 if (owned != null && (splitIds.Contains(owned.CollectionId) || !visitedOwned.Add(owned.CollectionId)))
                 {
                     log.Warn($"已跳过 [{group.Key}] {group.Name}：原合集已拆分成多个分组，请人工检查。");
+                    LogMemberTitles(log, group, nameById);
                     collisions++;
                     continue;
                 }
@@ -319,15 +338,30 @@ namespace HomeScreenCompanion
                 var name = (config.AnimeCollectionPrefix ?? "动漫 · ") + group.Name;
                 var nameMatches = existing.Where(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase))
                     .Select(x => x.InternalId).ToList();
+
+                // Ownership points at a collection that no longer exists: drop the row and allow recreate.
+                if (owned != null && box == null)
+                {
+                    log.Warn($"归属记录中的合集（ID {owned.CollectionId} / anilist:{owned.Anchor}）已不存在，已清除记录。若 Key 仍在批准名单中，将按新建处理。");
+                    state.Collections.Remove(owned);
+                    SaveState(stateFile, state);
+                    owned = null;
+                }
+
                 if (!AnimeCollectionPolicy.CanUseIdentity(owned?.CollectionId, box?.InternalId, nameMatches))
                 {
-                    log.Warn($"已跳过 [{group.Key}] {name}：原合集已不存在，或名称与其他合集重复。手工创建的合集不会被改动。");
+                    if (owned == null && nameMatches.Count > 0)
+                        log.Warn($"已跳过 [{group.Key}] {name}：存在同名合集且无有效归属，已跳过以免改动手工合集。若确认为旧插件合集，请先在 Emby 中重命名或删除后再运行。");
+                    else
+                        log.Warn($"已跳过 [{group.Key}] {name}：原合集已不存在，或名称与其他合集重复。手工创建的合集不会被改动。");
+                    LogMemberTitles(log, group, nameById);
                     collisions++;
                     continue;
                 }
                 if (owned == null)
                 {
                     log.Info($"{(mayWrite ? "创建" : "预计创建")} [{group.Key}]“{name}”（{desired.Count} 部）。");
+                    LogMemberTitles(log, group, nameById);
                     if (mayWrite)
                     {
                         var created = await _collections.CreateCollection(new CollectionCreationOptions
@@ -361,12 +395,14 @@ namespace HomeScreenCompanion
                     if (toRemove.Length > 0 && !(box is BoxSet))
                     {
                         log.Warn($"已跳过 [{group.Key}]：无法从此合集移除成员。");
+                        LogMemberTitles(log, group, nameById);
                         collisions++;
                         continue;
                     }
                     if (toAdd.Length > 0 || toRemove.Length > 0)
                     {
                         log.Info($"{(mayWrite ? "更新" : "预计更新")} [{group.Key}]“{box.Name}”：+{toAdd.Length}，-{toRemove.Length}。");
+                        LogMemberTitles(log, group, nameById);
                         if (mayWrite)
                         {
                             if (toAdd.Length > 0) await _collections.AddToCollection(box.InternalId, toAdd);
@@ -374,6 +410,8 @@ namespace HomeScreenCompanion
                         }
                         updated++;
                     }
+                    else
+                        LogMemberTitles(log, group, nameById);
                     if (mayWrite)
                     {
                         owned.Anchor = group.Anchor;
@@ -385,6 +423,24 @@ namespace HomeScreenCompanion
             }
             log.Ok($"{(dryRun ? "仅预览" : "已完成")}：新建 {made} 个，更新 {updated} 个，冲突 {collisions} 个，跳过 {blocked} 个。");
             log.Debug("不会删除合集，也不会移除手工添加的成员。");
+        }
+
+        private static void LogMemberTitles(RunLog log, AnimeGroup group, IReadOnlyDictionary<long, string> nameById)
+        {
+            var titles = new List<string>();
+            foreach (var id in group.EmbyIds)
+            {
+                if (nameById != null && nameById.TryGetValue(id, out var n) && !string.IsNullOrWhiteSpace(n))
+                    titles.Add(n.Trim());
+                else
+                    titles.Add("未命名项目");
+            }
+            const int cap = 20;
+            string line = titles.Count <= cap
+                ? string.Join("、", titles)
+                : string.Join("、", titles.Take(cap)) + "… 另有 " + (titles.Count - cap) + " 部";
+            log.Detail("成员：" + line);
+            log.Debug($"  [{group.Key}] 成员 Emby ID：{string.Join(", ", group.EmbyIds)}");
         }
 
         private void SaveState(string path, AnimeCollectionState state)

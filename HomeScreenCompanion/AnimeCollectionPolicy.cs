@@ -135,6 +135,45 @@ namespace HomeScreenCompanion
             !dryRun && group.EmbyIds.Count >= 2 && _approved.Contains(group.Key) &&
             (!group.ReviewRequired || group.HasExplicitRule);
 
+        /// <summary>
+        /// Human-readable reason this group cannot be written (ignores dry-run).
+        /// Null when the policy gates would allow a non-dry-run write.
+        /// </summary>
+        internal string? ExplainWriteBlock(AnimeGroup group)
+        {
+            if (group.EmbyIds == null || group.EmbyIds.Count < 2)
+                return "成员不足两部。";
+            if (!_approved.Contains(group.Key))
+                return "未在批准名单中。";
+            if (group.ReviewRequired && !group.HasExplicitRule)
+                return "系列存在分支（多续作/替代版本等），请用明确成员规则确认后再写入。";
+            return null;
+        }
+
+        /// <summary>
+        /// When ownership overlaps members but the planned Anchor differs, stick to the
+        /// owned Anchor so existing approval keys keep working.
+        /// </summary>
+        internal static void ApplyOwnershipSticky(IList<AnimeGroup> groups,
+            IEnumerable<AnimeManagedCollection> owned, Action<string>? logInfo = null)
+        {
+            var priors = (owned ?? Array.Empty<AnimeManagedCollection>())
+                .Where(c => c != null && c.Anchor > 0 && c.ManagedItemIds != null).ToList();
+            if (priors.Count == 0) return;
+            foreach (var group in groups)
+            {
+                if (group.HasExplicitRule || group.EmbyIds == null || group.EmbyIds.Count == 0) continue;
+                var desired = new HashSet<long>(group.EmbyIds);
+                var match = priors.FirstOrDefault(c =>
+                    c.Anchor == group.Anchor || c.ManagedItemIds.Any(desired.Contains));
+                if (match == null || match.Anchor == group.Anchor) continue;
+                int planned = group.Anchor;
+                group.Anchor = match.Anchor;
+                group.Key = "anilist:" + match.Anchor.ToString(CultureInfo.InvariantCulture);
+                logInfo?.Invoke($"合集 Key 沿用归属记录 anilist:{match.Anchor}（当前图规划为 anilist:{planned}），批准名单无需修改。");
+            }
+        }
+
         internal static bool CanUseIdentity(long? ownedCollectionId, long? existingCollectionId,
             IEnumerable<long> nameMatches)
         {
