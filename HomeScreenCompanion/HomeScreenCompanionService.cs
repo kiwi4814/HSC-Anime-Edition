@@ -264,6 +264,50 @@ namespace HomeScreenCompanion
         public AnimeLastRunSummary Summary { get; set; } = new AnimeLastRunSummary();
     }
 
+
+    [Route("/HomeScreenCompanionAnime/Anime/CollectionGraph", "GET")]
+    [Authenticated(Roles = "Admin")]
+    public class GetAnimeCollectionGraphRequest : IReturn<AnimeCollectionGraphResponse>
+    {
+        public string Key { get; set; } = "";
+    }
+
+    public class AnimeCollectionGraphNode
+    {
+        public int AniListId { get; set; }
+        public string IncludeId { get; set; } = "";
+        public string Title { get; set; } = "";
+        public bool InLibrary { get; set; }
+        public bool InCollection { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
+    }
+
+    public class AnimeCollectionGraphEdge
+    {
+        public int From { get; set; }
+        public int To { get; set; }
+        public string Label { get; set; } = "";
+    }
+
+    public class AnimeCollectionGraphResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = "";
+        public string Key { get; set; } = "";
+        public bool Truncated { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public List<AnimeCollectionGraphNode> Nodes { get; set; } = new List<AnimeCollectionGraphNode>();
+        public List<AnimeCollectionGraphEdge> Edges { get; set; } = new List<AnimeCollectionGraphEdge>();
+        public List<AnimeCollectionGraphLegendItem> Legend { get; set; } = new List<AnimeCollectionGraphLegendItem>();
+    }
+
+    public class AnimeCollectionGraphLegendItem
+    {
+        public string Label { get; set; } = "";
+    }
+
     [Route("/HomeScreenCompanionAnime/TopList/Status", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetTopListStatusRequest : IReturn<TopListStatusResponse> { }
@@ -1196,6 +1240,144 @@ public class HomeScreenCompanionService : IService
             catch (Exception ex)
             {
                 return new AnimeCollectionEditorResponse { Success = false, Message = "无法打开编辑：" + ex.Message };
+            }
+        }
+
+
+        public object Get(GetAnimeCollectionGraphRequest request)
+        {
+            try
+            {
+                string key = (request?.Key ?? "").Trim();
+                if (string.IsNullOrEmpty(key) || !AnimeCollectionPolicy.IsIdentifier(key) ||
+                    !key.StartsWith("anilist:", StringComparison.Ordinal))
+                    return new AnimeCollectionGraphResponse { Success = false, Message = "缺少合集编号。" };
+
+                int seed = 0;
+                if (key.Length > 8)
+                    int.TryParse(key.Substring(8), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out seed);
+                if (seed <= 0)
+                    return new AnimeCollectionGraphResponse { Success = false, Message = "缺少合集编号。" };
+
+                var config = Plugin.Instance?.Configuration;
+                if (config == null)
+                    return new AnimeCollectionGraphResponse { Success = false, Message = "插件配置不可用。" };
+
+                bool includeSpinOffs = config.AnimeIncludeSpinOffs;
+                var records = LoadRelationCacheRecords();
+                if (records.Count == 0)
+                {
+                    return new AnimeCollectionGraphResponse
+                    {
+                        Success = true,
+                        Key = key,
+                        Message = "还没有关系数据。请先同步一次，再回来看关系图。",
+                        Legend = DefaultGraphLegend()
+                    };
+                }
+
+                // Seed membership the same way the editor does, so InCollection matches the list.
+                var editor = Get(new GetAnimeCollectionEditorRequest { Key = key }) as AnimeCollectionEditorResponse;
+                var memberIncludeIds = editor?.Members?.Where(m => m != null && m.Selected && !string.IsNullOrEmpty(m.IncludeId))
+                    .Select(m => m.IncludeId) ?? Enumerable.Empty<string>();
+                var collectionIds = new HashSet<int>(AnimeCollectionGraphSupport.ParseAniListIds(memberIncludeIds));
+                collectionIds.Add(seed);
+
+                // First pass: titles unknown; Build collects node ids then we resolve library hits.
+                var emptyLib = new Dictionary<int, string>();
+                var draft = AnimeCollectionGraphSupport.Build(seed, records, emptyLib, collectionIds, includeSpinOffs);
+
+                var libraryTitles = new Dictionary<int, string>();
+                foreach (var node in draft.Nodes)
+                {
+                    if (node == null || node.AniListId <= 0) continue;
+                    var hit = FindLibraryByIncludeId(node.IncludeId);
+                    if (hit != null && !string.IsNullOrWhiteSpace(hit.Name))
+                        libraryTitles[node.AniListId] = hit.Name.Trim();
+                }
+
+                // Also mark member titles from editor when AniList id is known but library scan missed.
+                if (editor?.Members != null)
+                {
+                    foreach (var m in editor.Members)
+                    {
+                        if (m == null || string.IsNullOrEmpty(m.IncludeId)) continue;
+                        var ids = AnimeCollectionGraphSupport.ParseAniListIds(new[] { m.IncludeId });
+                        if (ids.Count == 0) continue;
+                        int aid = ids[0];
+                        if (!libraryTitles.ContainsKey(aid) && m.InLibrary && !string.IsNullOrWhiteSpace(m.Title))
+                            libraryTitles[aid] = m.Title.Trim();
+                    }
+                }
+
+                var graph = AnimeCollectionGraphSupport.Build(seed, records, libraryTitles, collectionIds, includeSpinOffs);
+                if (graph.Nodes.Count == 0)
+                {
+                    return new AnimeCollectionGraphResponse
+                    {
+                        Success = true,
+                        Key = key,
+                        Message = "这个合集暂时画不出关系。可先同步一次，或从成员列表勾选作品。",
+                        Legend = DefaultGraphLegend()
+                    };
+                }
+
+                return new AnimeCollectionGraphResponse
+                {
+                    Success = true,
+                    Key = key,
+                    Message = graph.Truncated ? "作品较多，只显示一部分关系，方便查看。" : "",
+                    Truncated = graph.Truncated,
+                    Width = graph.Width,
+                    Height = graph.Height,
+                    Nodes = graph.Nodes.Select(n => new AnimeCollectionGraphNode
+                    {
+                        AniListId = n.AniListId,
+                        IncludeId = n.IncludeId,
+                        Title = n.Title,
+                        InLibrary = n.InLibrary,
+                        InCollection = n.InCollection,
+                        X = n.X,
+                        Y = n.Y
+                    }).ToList(),
+                    Edges = graph.Edges.Select(e => new AnimeCollectionGraphEdge
+                    {
+                        From = e.From,
+                        To = e.To,
+                        Label = e.Label
+                    }).ToList(),
+                    Legend = DefaultGraphLegend()
+                };
+            }
+            catch (Exception ex)
+            {
+                return new AnimeCollectionGraphResponse { Success = false, Message = "无法加载关系图：" + ex.Message };
+            }
+        }
+
+        private static List<AnimeCollectionGraphLegendItem> DefaultGraphLegend() =>
+            new List<AnimeCollectionGraphLegendItem>
+            {
+                new AnimeCollectionGraphLegendItem { Label = "前传" },
+                new AnimeCollectionGraphLegendItem { Label = "续作" },
+                new AnimeCollectionGraphLegendItem { Label = "外传" },
+                new AnimeCollectionGraphLegendItem { Label = "母作品" },
+                new AnimeCollectionGraphLegendItem { Label = "衍生" },
+                new AnimeCollectionGraphLegendItem { Label = "另一版本" }
+            };
+
+        private List<AnimeRelationRecord> LoadRelationCacheRecords()
+        {
+            try
+            {
+                var path = Path.Combine(Plugin.Instance!.DataFolderPath, "anime", "anime-anilist-relations.json");
+                if (!File.Exists(path)) return new List<AnimeRelationRecord>();
+                var cache = _jsonSerializer.DeserializeFromFile<AnimeRelationCache>(path);
+                return (cache?.Entries ?? new List<AnimeRelationRecord>()).Where(e => e != null && e.Id > 0).ToList();
+            }
+            catch
+            {
+                return new List<AnimeRelationRecord>();
             }
         }
 

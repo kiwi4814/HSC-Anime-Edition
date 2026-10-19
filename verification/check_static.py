@@ -129,4 +129,17 @@ assert 'focusAnimeReminderTarget' in js
 assert 'openAnimeCollectionEditor(view' in js.split('function focusAnimeReminderTarget', 1)[1].split('function ', 1)[0]
 print('PASS: P2 collection visual editor wiring')
 
+assert 'id="animeEditorGraphSection"' in html
+assert 'animeGraphSvg' in html and 'loadAnimeCollectionGraph' in js
+assert 'CollectionGraph' in service
+assert 'AnimeCollectionGraphSupport' in (SRC / 'AnimeCollectionGraphSupport.cs').read_text(encoding='utf-8')
+assert '关系图' in html
+assert '库中没有' in js
+# Graph section stays jargon-free.
+graph = html.split('id="animeEditorGraphSection"', 1)[1].split('id="btnAnimeEditorSave"', 1)[0]
+for banned in ('批准名单', '成员规则', 'Key', 'Anchor', 'JSON', 'Dry Run', 'Provider', 'Token', 'SEQUEL', 'PREQUEL', 'SPIN_OFF', '赋能', '闭环'):
+    assert banned not in graph, 'banned on graph section: ' + banned
+print('PASS: P3 collection relation graph wiring')
+
+
 print('NOT_TESTED by this script: C# build/smoke, runtime authentication/backup HTTP, browser rendering, real AI providers or Emby runtime; consult separate logs')

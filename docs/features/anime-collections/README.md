@@ -98,6 +98,17 @@ anilist:1900000104
 
 API（Admin）：`GET .../Anime/CollectionEditor`、`GET .../Anime/MediaSearch`、`POST .../Anime/CollectionEditor/Save`、`POST .../Anime/CollectionEditor/ClearRule`。
 
+### 合集关系图（P3）
+
+编辑合集子视图内提供只读 **关系图**：
+
+- 数据来自 `anime/anime-anilist-relations.json`（同步时写入的关系缓存）+ 本地库命中标题 + 当前编辑成员选中态。
+- 只读 API：`GET .../Anime/CollectionGraph?Key=anilist:…`，返回节点（含是否在库/是否在合集、简单坐标）与边（**人话标签**：前传/续作/外传/母作品/衍生/另一版本）。
+- 布局为按故事线分层的静态摆放，不做力导向动画；节点过多时截断并提示。
+- 编辑模式下点选节点 → 与成员列表勾选联动；**保存仍走 P2** `CollectionEditor/Save`。
+- 库中没有的节点灰显并标注「库中没有」，仍可点选记入成员（等有片源后再对上）。
+
+
 ### 合集 Key 稳定性与归属恢复
 
 - 合集 Key 仍为 `anilist:{Anchor}`。`Anchor` 取连通分量中**本地媒体 ∪ 关系图节点**的最小 AniList ID（不再仅取库内最小 ID），避免补更早一季后 Key 悄悄变化。
@@ -130,6 +141,7 @@ Anime Edition 身份与官方插件不同；后续保持既有 Fork GUID、程�
 - [AnimeCollectionTask.cs](../../../HomeScreenCompanion/AnimeCollectionTask.cs)：扫描、映射下载、规划与 Emby 写入协调。
 - [AnimeMappingIndex.cs](../../../HomeScreenCompanion/AnimeMappingIndex.cs)、[AnimeAniListClient.cs](../../../HomeScreenCompanion/AnimeAniListClient.cs)、[AnimeGraphExpansion.cs](../../../HomeScreenCompanion/AnimeGraphExpansion.cs)：身份与关系数据。
 - [AnimeRelations.cs](../../../HomeScreenCompanion/AnimeRelations.cs)、[AnimeCollectionPolicy.cs](../../../HomeScreenCompanion/AnimeCollectionPolicy.cs)、[AnimeCollectionMembership.cs](../../../HomeScreenCompanion/AnimeCollectionMembership.cs)：确定性规划及安全策略。
+- [AnimeCollectionEditorSupport.cs](../../../HomeScreenCompanion/AnimeCollectionEditorSupport.cs)、[AnimeCollectionGraphSupport.cs](../../../HomeScreenCompanion/AnimeCollectionGraphSupport.cs)：可视编辑改写与关系子图（P2/P3）。
 - [PluginConfiguration.cs](../../../HomeScreenCompanion/PluginConfiguration.cs)：真实默认值；[Program.cs](../../../verification/Program.cs)：映射、关系、规则、归属、配置兼容与预览。
 
 ## Operations and troubleshooting

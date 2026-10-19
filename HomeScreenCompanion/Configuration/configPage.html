@@ -669,6 +669,59 @@
         }
         .anime-editor-hint { font-size: 0.88em; opacity: 0.8; margin-top: 10px; line-height: 1.55; }
 
+        .anime-graph-section { margin-top: 22px; }
+        .anime-graph-heading {
+            display: flex; align-items: baseline; justify-content: space-between;
+            gap: 12px; flex-wrap: wrap; margin-bottom: 8px;
+        }
+        .anime-graph-heading .inputLabel { margin: 0; }
+        .anime-graph-hint { font-size: 0.85em; opacity: 0.8; line-height: 1.5; margin: 0 0 10px; }
+        .anime-graph-legend {
+            display: flex; flex-wrap: wrap; gap: 10px 14px;
+            font-size: 0.82em; opacity: 0.85; margin-bottom: 10px;
+        }
+        .anime-graph-legend span::before {
+            content: ''; display: inline-block; width: 18px; height: 2px;
+            background: rgba(150,160,180,0.85); vertical-align: middle; margin-right: 6px;
+        }
+        .anime-graph-scroll {
+            overflow: auto; max-height: 420px;
+            border: 1px solid var(--line-color); border-radius: 10px;
+            background: var(--theme-background-level2); padding: 8px;
+        }
+        .anime-graph-svg { display: block; min-width: 280px; }
+        .anime-graph-edge { stroke: rgba(140,150,170,0.75); stroke-width: 1.6; fill: none; }
+        .anime-graph-edge-label {
+            font-size: 11px; fill: currentColor; opacity: 0.72;
+            pointer-events: none;
+        }
+        .anime-graph-node {
+            cursor: pointer;
+        }
+        .anime-graph-node rect {
+            stroke-width: 1.5; rx: 8; ry: 8;
+        }
+        .anime-graph-node.in-collection rect {
+            fill: rgba(82,181,75,0.22); stroke: rgba(82,181,75,0.9);
+        }
+        .anime-graph-node.in-library:not(.in-collection) rect {
+            fill: rgba(74,163,223,0.14); stroke: rgba(74,163,223,0.75);
+        }
+        .anime-graph-node.missing rect {
+            fill: rgba(120,120,120,0.12); stroke: rgba(140,140,140,0.55);
+        }
+        .anime-graph-node text.title {
+            font-size: 12px; font-weight: 650; fill: currentColor;
+            pointer-events: none;
+        }
+        .anime-graph-node text.meta {
+            font-size: 10px; fill: currentColor; opacity: 0.7;
+            pointer-events: none;
+        }
+        .anime-graph-empty {
+            font-size: 0.88em; opacity: 0.75; padding: 16px 8px; line-height: 1.55;
+        }
+
         /* Home Screen tab */
         .hsc-card {
             background: var(--theme-background-level2);
@@ -1676,6 +1729,18 @@
                     <div class="inputContainer anime-editor-search-wrap" style="margin-top:8px;">
                         <input is="emby-input" type="text" id="txtAnimeEditorSearch" label="从媒体库添加" placeholder="输入片名搜索…" autocomplete="off" />
                         <div id="animeEditorSearchResults" class="anime-editor-search-results"></div>
+                    </div>
+                    <div class="anime-graph-section" id="animeEditorGraphSection">
+                        <div class="anime-graph-heading">
+                            <div class="inputLabel">关系图</div>
+                            <span class="fieldDescription" id="animeGraphStatus" style="margin:0;"></span>
+                        </div>
+                        <p class="anime-graph-hint" id="animeGraphHint">点选作品可加入或移出本合集，与上方成员列表同步。灰色表示库里暂时没有。</p>
+                        <div class="anime-graph-legend" id="animeGraphLegend"></div>
+                        <div class="anime-graph-scroll" id="animeGraphScroll">
+                            <div class="anime-graph-empty" id="animeGraphEmpty">正在加载关系图…</div>
+                            <svg class="anime-graph-svg" id="animeGraphSvg" style="display:none;" role="img" aria-label="合集关系图"></svg>
+                        </div>
                     </div>
                     <div class="anime-editor-actions">
                         <button type="button" is="emby-button" class="raised button-submit" id="btnAnimeEditorSave">保存</button>

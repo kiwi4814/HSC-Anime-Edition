@@ -14,6 +14,7 @@
     <Compile Include="../HomeScreenCompanion/AnimeCollectionMembership.cs" Link="AnimeCollectionMembership.cs" />
     <Compile Include="../HomeScreenCompanion/AnimeCollectionPolicy.cs" Link="AnimeCollectionPolicy.cs" />
     <Compile Include="../HomeScreenCompanion/AnimeCollectionEditorSupport.cs" Link="AnimeCollectionEditorSupport.cs" />
+    <Compile Include="../HomeScreenCompanion/AnimeCollectionGraphSupport.cs" Link="AnimeCollectionGraphSupport.cs" />
     <Compile Include="../HomeScreenCompanion/PluginConfiguration.cs" Link="PluginConfiguration.cs" />
     <Compile Include="../HomeScreenCompanion/AiRequestClient.cs" Link="AiRequestClient.cs" />
     <Compile Include="../HomeScreenCompanion/AiResponseDtos.cs" Link="AiResponseDtos.cs" />

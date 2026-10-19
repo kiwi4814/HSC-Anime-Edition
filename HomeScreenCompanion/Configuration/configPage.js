@@ -3212,6 +3212,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         if (search) search.value = '';
         var results = view.querySelector('#animeEditorSearchResults');
         if (results) { results.innerHTML = ''; results.style.display = 'none'; }
+        resetAnimeCollectionGraph(view);
 
         window.ApiClient.getJSON(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/CollectionEditor', { Key: key }))
             .then(function (data) {
@@ -3239,6 +3240,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                         ? '当前按你保存的成员名单同步。可改名、勾选成员后保存；也可改回自动归类。'
                         : '当前仍跟自动分组。保存后会记住你勾选的成员；显示名称会记下来供新建合集使用。';
                 }
+                loadAnimeCollectionGraph(view);
             })
             .catch(function (err) {
                 if (hint) hint.textContent = '加载失败。';
@@ -3269,6 +3271,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             chk.checked = !!m.Selected;
             chk.addEventListener('change', function () {
                 m.Selected = !!chk.checked;
+                syncAnimeGraphSelection(view);
             });
             var text = document.createElement('div');
             var title = document.createElement('div');
@@ -3286,6 +3289,237 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             row.appendChild(label);
             box.appendChild(row);
         });
+        syncAnimeGraphSelection(view);
+    }
+
+
+    function resetAnimeCollectionGraph(view) {
+        view._animeGraph = null;
+        var status = view.querySelector('#animeGraphStatus');
+        if (status) status.textContent = '';
+        var empty = view.querySelector('#animeGraphEmpty');
+        if (empty) {
+            empty.style.display = '';
+            empty.textContent = '正在加载关系图…';
+        }
+        var svg = view.querySelector('#animeGraphSvg');
+        if (svg) {
+            svg.innerHTML = '';
+            svg.style.display = 'none';
+            svg.removeAttribute('width');
+            svg.removeAttribute('height');
+            svg.removeAttribute('viewBox');
+        }
+        var legend = view.querySelector('#animeGraphLegend');
+        if (legend) legend.innerHTML = '';
+    }
+
+    function loadAnimeCollectionGraph(view) {
+        var state = view._animeEditor;
+        if (!state || !state.key) return;
+        var status = view.querySelector('#animeGraphStatus');
+        var empty = view.querySelector('#animeGraphEmpty');
+        var svg = view.querySelector('#animeGraphSvg');
+        if (status) status.textContent = '加载中…';
+        if (empty) {
+            empty.style.display = '';
+            empty.textContent = '正在加载关系图…';
+        }
+        if (svg) { svg.style.display = 'none'; svg.innerHTML = ''; }
+        var reqId = (view._animeGraphReqId = (view._animeGraphReqId || 0) + 1);
+        window.ApiClient.getJSON(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/CollectionGraph', { Key: state.key }))
+            .then(function (data) {
+                if (reqId !== view._animeGraphReqId) return;
+                if (!data || !data.Success) {
+                    view._animeGraph = null;
+                    if (status) status.textContent = '';
+                    if (empty) {
+                        empty.style.display = '';
+                        empty.textContent = (data && data.Message) || '暂时无法显示关系图。';
+                    }
+                    return;
+                }
+                view._animeGraph = data;
+                renderAnimeCollectionGraph(view);
+            })
+            .catch(function () {
+                if (reqId !== view._animeGraphReqId) return;
+                view._animeGraph = null;
+                if (status) status.textContent = '';
+                if (empty) {
+                    empty.style.display = '';
+                    empty.textContent = '关系图加载失败。可稍后重试，或先同步一次。';
+                }
+            });
+    }
+
+    function animeGraphSelectedIncludeIds(view) {
+        var state = view._animeEditor || { members: [] };
+        var set = {};
+        (state.members || []).forEach(function (m) {
+            if (m && m.Selected && m.IncludeId) set[m.IncludeId] = true;
+        });
+        return set;
+    }
+
+    function truncateAnimeGraphTitle(title, maxChars) {
+        title = (title || '未命名作品').trim();
+        maxChars = maxChars || 14;
+        if (title.length <= maxChars) return title;
+        return title.slice(0, maxChars - 1) + '…';
+    }
+
+    function renderAnimeCollectionGraph(view) {
+        var data = view._animeGraph;
+        var empty = view.querySelector('#animeGraphEmpty');
+        var svg = view.querySelector('#animeGraphSvg');
+        var status = view.querySelector('#animeGraphStatus');
+        var legend = view.querySelector('#animeGraphLegend');
+        if (!svg) return;
+
+        if (!data || !(data.Nodes || []).length) {
+            svg.style.display = 'none';
+            svg.innerHTML = '';
+            if (empty) {
+                empty.style.display = '';
+                empty.textContent = (data && data.Message) || '这个合集暂时没有可显示的关系。';
+            }
+            if (status) status.textContent = '';
+            if (legend) legend.innerHTML = '';
+            return;
+        }
+
+        if (empty) empty.style.display = 'none';
+        if (status) {
+            status.textContent = data.Truncated
+                ? '已截取部分节点'
+                : ((data.Nodes || []).length + ' 部相关作品');
+        }
+        if (legend) {
+            legend.innerHTML = '';
+            (data.Legend || []).forEach(function (item) {
+                var span = document.createElement('span');
+                span.textContent = (item && item.Label) || '';
+                if (span.textContent) legend.appendChild(span);
+            });
+        }
+
+        var selected = animeGraphSelectedIncludeIds(view);
+        var width = Math.max(320, data.Width || 640);
+        var height = Math.max(120, data.Height || 240);
+        var nodeW = 148;
+        var nodeH = 48;
+        svg.setAttribute('width', String(width));
+        svg.setAttribute('height', String(height));
+        svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+        svg.style.display = 'block';
+        svg.innerHTML = '';
+
+        var positions = {};
+        (data.Nodes || []).forEach(function (n) {
+            positions[n.AniListId] = { x: n.X || 0, y: n.Y || 0, node: n };
+        });
+
+        // Edges first
+        (data.Edges || []).forEach(function (e) {
+            var a = positions[e.From];
+            var b = positions[e.To];
+            if (!a || !b) return;
+            var x1 = a.x + nodeW;
+            var y1 = a.y + nodeH / 2;
+            var x2 = b.x;
+            var y2 = b.y + nodeH / 2;
+            if (a.x > b.x) {
+                x1 = a.x;
+                x2 = b.x + nodeW;
+            }
+            var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', String(x1));
+            line.setAttribute('y1', String(y1));
+            line.setAttribute('x2', String(x2));
+            line.setAttribute('y2', String(y2));
+            line.setAttribute('class', 'anime-graph-edge');
+            svg.appendChild(line);
+            var mx = (x1 + x2) / 2;
+            var my = (y1 + y2) / 2 - 4;
+            var label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('x', String(mx));
+            label.setAttribute('y', String(my));
+            label.setAttribute('text-anchor', 'middle');
+            label.setAttribute('class', 'anime-graph-edge-label');
+            label.textContent = e.Label || '';
+            svg.appendChild(label);
+        });
+
+        (data.Nodes || []).forEach(function (n) {
+            var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            var inColl = !!(n.IncludeId && selected[n.IncludeId]);
+            var cls = 'anime-graph-node';
+            if (inColl) cls += ' in-collection';
+            else if (n.InLibrary) cls += ' in-library';
+            else cls += ' missing';
+            g.setAttribute('class', cls);
+            g.setAttribute('data-include-id', n.IncludeId || '');
+            g.setAttribute('data-anilist-id', String(n.AniListId || ''));
+            g.setAttribute('transform', 'translate(' + (n.X || 0) + ',' + (n.Y || 0) + ')');
+
+            var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('width', String(nodeW));
+            rect.setAttribute('height', String(nodeH));
+            g.appendChild(rect);
+
+            var title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            title.setAttribute('x', '10');
+            title.setAttribute('y', n.InLibrary ? '20' : '18');
+            title.setAttribute('class', 'title');
+            title.textContent = truncateAnimeGraphTitle(n.Title, 12);
+            g.appendChild(title);
+
+            var meta = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            meta.setAttribute('x', '10');
+            meta.setAttribute('y', '36');
+            meta.setAttribute('class', 'meta');
+            if (!n.InLibrary) meta.textContent = '库中没有';
+            else if (inColl) meta.textContent = '已在合集 · 再点移出';
+            else meta.textContent = '在库中 · 点选加入';
+            g.appendChild(meta);
+
+            g.addEventListener('click', function () {
+                toggleAnimeGraphNode(view, n);
+            });
+            svg.appendChild(g);
+        });
+    }
+
+    function syncAnimeGraphSelection(view) {
+        if (!view._animeGraph || !(view._animeGraph.Nodes || []).length) return;
+        // Re-render is cheap for the capped node set and keeps labels accurate.
+        renderAnimeCollectionGraph(view);
+    }
+
+    function toggleAnimeGraphNode(view, node) {
+        if (!view._animeEditor || !node) return;
+        var includeId = node.IncludeId || '';
+        if (!includeId) return;
+        var members = view._animeEditor.members || [];
+        var found = null;
+        for (var i = 0; i < members.length; i++) {
+            if (members[i].IncludeId === includeId) { found = members[i]; break; }
+        }
+        if (found) {
+            found.Selected = !found.Selected;
+            if (node.Title) found.Title = found.Title || node.Title;
+            if (node.InLibrary) found.InLibrary = true;
+        } else {
+            members.push({
+                IncludeId: includeId,
+                Title: node.Title || '未命名作品',
+                InLibrary: !!node.InLibrary,
+                Selected: true
+            });
+            view._animeEditor.members = members;
+        }
+        renderAnimeEditorMembers(view);
     }
 
     function animeEditorAddMember(view, hit) {
