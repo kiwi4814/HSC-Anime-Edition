@@ -1132,7 +1132,7 @@ public class HomeScreenCompanionService : IService
                         if (o != null) o.HasReminder = !string.IsNullOrWhiteSpace(o.Name) && openNames.Contains(o.Name.Trim());
                 }
                 summary.Reminders = summary.ReminderItems.Count(r => r != null && !r.Handled);
-                // Refresh 「提醒 N」 in StatusText without rewriting the whole sync phrase.
+                // Strip legacy reminder count from StatusText (main path no longer shows it).
                 summary.StatusText = RefreshReminderCountInStatus(summary.StatusText, summary.Reminders);
 
                 Directory.CreateDirectory(dataDir);
@@ -1824,11 +1824,13 @@ public class HomeScreenCompanionService : IService
         private static string RefreshReminderCountInStatus(string? statusText, int openReminders)
         {
             string baseText = statusText ?? "";
-            // Strip a trailing 「 · 提醒 N」 segment then re-append when needed.
+            // Strip legacy 「 · 提醒 N」; main path no longer shows reminder counts.
             int idx = baseText.LastIndexOf(" · 提醒 ", StringComparison.Ordinal);
             if (idx >= 0) baseText = baseText.Substring(0, idx).TrimEnd();
-            if (openReminders > 0)
-                return string.IsNullOrEmpty(baseText) ? ("提醒 " + openReminders) : (baseText + " · 提醒 " + openReminders);
+            if (string.Equals(baseText.Trim(), "提醒 " + openReminders, StringComparison.Ordinal))
+                return "";
+            if (baseText.StartsWith("提醒 ", StringComparison.Ordinal) && baseText.Length < 16)
+                return "";
             return baseText;
         }
 

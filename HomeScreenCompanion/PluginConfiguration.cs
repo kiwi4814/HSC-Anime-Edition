@@ -30,21 +30,23 @@ namespace HomeScreenCompanion
             "\"type\" (\"movie\" or \"show\"). " +
             "Return exactly the items requested. Do not add any commentary. " +
             "Use only verified identifiers; when uncertain leave the identifier null.";
-        // Anime Edition is opt-in; once enabled, collections write unless AnimeDryRun or global DryRunMode is on.
+        // Anime Edition is opt-in; once enabled, collections write unless global DryRunMode is on.
         public bool AnimeEnabled { get; set; } = false;
+        /// <summary>Deprecated: ignored. Timed runs write by default; manual sync uses preview→confirm.</summary>
         public bool AnimeDryRun { get; set; } = false;
         public bool AnimeIncludeSpinOffs { get; set; } = true;
         public bool AnimeAiReviewOtherEdges { get; set; } = false;
         public string AnimeAiProvider { get; set; } = "OpenAICompatible";
         public bool AnimeAiNamingEnabled { get; set; } = false;
         public bool AnimeAiCollectionReviewEnabled { get; set; } = false;
-        /// <summary>When true, collections with open reminders are not written (default off).</summary>
+        /// <summary>Deprecated: ignored. Reminder UI removed from main path; kept for backup readability.</summary>
         public bool AnimeSkipWriteWhenReminders { get; set; } = false;
         public int AnimeAiMaxCallsPerRun { get; set; } = 15;
         public int AnimeAiMaxTokensPerCall { get; set; } = 800;
         public int AnimeAiMaxTokensPerRun { get; set; } = 4000;
         public string AnimeCollectionPrefix { get; set; } = "动漫 · ";
         public string AnimeCollectionRulesJson { get; set; } = "";
+        /// <summary>Deprecated write gate: parsed for backup only, never blocks sync writes.</summary>
         public string AnimeApprovedCollectionKeys { get; set; } = "";
         public string AnimeCollectionAliasesJson { get; set; } = "";
         /// <summary>Newline-separated collection Keys the user discarded (never propose again). Internal only.</summary>

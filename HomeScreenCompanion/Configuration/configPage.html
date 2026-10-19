@@ -550,7 +550,6 @@
             display: flex; flex-direction: column; gap: 8px; min-height: 120px;
             position: relative; transition: box-shadow 0.2s ease, border-color 0.2s ease;
         }
-        .anime-card.has-reminder { border-color: rgba(232,168,56,0.65); }
         .anime-card-focus {
             box-shadow: 0 0 0 2px rgba(232,168,56,0.85);
             border-color: #e8a838;
@@ -559,11 +558,6 @@
             display: flex; align-items: flex-start; gap: 8px;
         }
         .anime-card-title { font-weight: 700; font-size: 1.02em; line-height: 1.35; flex: 1; }
-        .anime-card-dot {
-            width: 10px; height: 10px; border-radius: 50%;
-            background: #e8a838; flex-shrink: 0; margin-top: 5px;
-            box-shadow: 0 0 0 3px rgba(232,168,56,0.25);
-        }
         .anime-card-status {
             display: inline-flex; align-items: center; gap: 6px;
             font-size: 0.78em; font-weight: 700; letter-spacing: 0.3px;
@@ -580,39 +574,7 @@
             border: 1px dashed var(--line-color); border-radius: 10px;
         }
         .anime-summary-line { font-size: 0.92em; opacity: 0.85; margin: 4px 0 0; }
-        .anime-reminders-section { margin-top: 28px; }
-        .anime-reminders-toolbar {
-            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
-            margin: 8px 0 12px;
-        }
-        .anime-reminders-filter {
-            display: inline-flex; gap: 0; border: 1px solid var(--line-color);
-            border-radius: 8px; overflow: hidden;
-        }
-        .anime-reminders-filter button {
-            margin: 0; padding: 6px 12px; cursor: pointer; font-size: 0.85em; font-weight: 600;
-            background: transparent; border: none; border-right: 1px solid var(--line-color);
-            color: inherit;
-        }
-        .anime-reminders-filter button:last-child { border-right: none; }
-        .anime-reminders-filter button.active {
-            background: rgba(232,168,56,0.22); color: #e8a838;
-        }
-        .anime-reminder-list { display: flex; flex-direction: column; gap: 10px; }
-        .anime-reminder-row {
-            border: 1px solid var(--line-color); border-radius: 10px;
-            background: var(--theme-background-level2); padding: 12px 14px;
-            display: flex; flex-direction: column; gap: 6px;
-        }
-        .anime-reminder-row.handled { opacity: 0.62; }
-        .anime-reminder-type {
-            display: inline-block; font-size: 0.78em; font-weight: 700;
-            color: #e8a838; letter-spacing: 0.2px;
-        }
-        .anime-reminder-name { font-weight: 650; font-size: 0.98em; }
-        .anime-reminder-reason { font-size: 0.88em; line-height: 1.55; opacity: 0.9; }
-        .anime-reminder-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-        .anime-reminders-empty {
+        .anime-empty-hint {
             padding: 18px 14px; text-align: center; opacity: 0.65; font-size: 0.92em;
             border: 1px dashed var(--line-color); border-radius: 10px;
         }
@@ -664,10 +626,16 @@
         }
         .anime-confirm-overlay.open { display: flex; }
         .anime-confirm-panel {
-            background: var(--theme-body-bg, var(--theme-background, #1c1c1c));
+            background: var(--theme-background-level1, var(--theme-background-level2, var(--theme-body-bg, transparent)));
             color: inherit; border-radius: 12px; width: min(920px, 96vw);
             max-height: min(88vh, 900px); display: flex; flex-direction: column;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.45); border: 1px solid var(--line-color);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.28); border: 1px solid var(--line-color);
+        }
+        html:not(.darkTheme) .anime-confirm-panel {
+            background: var(--theme-background-level1, var(--theme-background-level2, #ffffff));
+        }
+        .darkTheme .anime-confirm-panel {
+            background: var(--theme-background-level1, var(--theme-background-level2, transparent));
         }
         .anime-confirm-header {
             padding: 16px 20px 10px; border-bottom: 1px solid var(--line-color);
@@ -691,7 +659,7 @@
         .anime-confirm-item {
             border: 1px solid var(--line-color); border-radius: 10px;
             padding: 12px 14px; margin-bottom: 10px;
-            background: var(--theme-background-level2);
+            background: var(--theme-background-level2, var(--theme-background-level1, transparent));
         }
         .anime-confirm-item.discarded { opacity: 0.55; }
         .anime-confirm-item-top {
@@ -1248,17 +1216,12 @@
                     </div>
                     <div class="advanced-body settings-panel-body" style="display:none;">
                         <div class="fieldDescription" style="margin-bottom:14px;line-height:1.7;">
-                            启用、前缀、同步方式和立即同步已移到顶栏的 <strong>动漫合集</strong> 页。
+                            启用、前缀和立即同步已移到顶栏的 <strong>动漫合集</strong> 页。
                             <button type="button" is="emby-button" class="raised btn-neutral" id="btnAnimeGoToStudio" style="margin-left:8px;">去动漫合集页</button>
                         </div>
                         <div role="status" style="margin-bottom:14px;padding:10px 12px;border:1px solid rgba(232,168,56,0.45);border-radius:6px;background:rgba(232,168,56,0.08);line-height:1.7;font-size:0.92em;">
                             <strong>请勿与官方 Home Screen Companion 同时启用。</strong>
                             本版与官方插件的计划任务名称相同，两边同时装开时，运行菜单可能点到错误的任务。迁移建议：先导出本插件备份 → 卸官方插件 → 安装本版 → 再导入备份。
-                        </div>
-
-                        <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:8px;">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeSkipWriteWhenReminders" /><span>有提醒的合集先不写入</span></label>
-                            <div class="fieldDescription">默认关闭。开启后，本次同步里带提醒的合集会跳过写入，其它合集照常处理。处理完提醒或关掉此选项后再同步即可写入。</div>
                         </div>
 
                         <div style="font-size:0.75em;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;opacity:0.45;margin:18px 0 8px;">可选：改名与审查建议</div>
@@ -1318,11 +1281,6 @@
                                 <div class="inputContainer" style="margin-top:8px;">
                                     <label class="inputLabel" for="txtAnimeCollectionRulesJson">成员规则（JSON，可选）</label>
                                     <textarea is="emby-textarea" id="txtAnimeCollectionRulesJson" rows="7" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='[{"Key":"anilist:&lt;作品ID&gt;","IncludeIds":["anilist:&lt;作品ID&gt;","tmdb_movie:&lt;作品ID&gt;"],"ExcludeIds":["tvdb_show:&lt;另一作品ID&gt;"]}]'></textarea>
-                                </div>
-                                <div class="inputContainer" style="margin-top:16px;">
-                                    <label class="inputLabel" for="txtAnimeApprovedCollectionKeys">批准名单（每行一个合集 Key）</label>
-                                    <textarea is="emby-textarea" id="txtAnimeApprovedCollectionKeys" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder="anilist:&lt;作品ID&gt;&#10;anilist:&lt;另一作品ID&gt;"></textarea>
-                                    <div class="fieldDescription">留空则自动处理全部候选；填写后只处理列出的项。</div>
                                 </div>
                                 <div class="inputContainer" style="margin-top:16px;">
                                     <label class="inputLabel" for="txtAnimeCollectionAliasesJson">合集别名（JSON）</label>
@@ -1634,7 +1592,7 @@
                 <hr style="border-color: var(--line-color); margin: 25px 0;" />
 
                 <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1.05em; color: #52B54B; text-transform: uppercase; letter-spacing: 1px;">备份与恢复</h3>
-                <p class="textMuted" style="font-size:0.9em; margin-bottom:15px;">将所选配置（设置、API 密钥、标签与合集组、已保存的筛选器、榜单、主屏幕同步、动漫提醒状态）导出为 JSON 文件，或从备份恢复。不包含标签、合集、播放列表、榜单文件及图片等生成的数据 &ndash; 插件会在下次同步时重新创建这些数据。</p>
+                <p class="textMuted" style="font-size:0.9em; margin-bottom:15px;">将所选配置（设置、API 密钥、标签与合集组、已保存的筛选器、榜单、主屏幕同步等）导出为 JSON 文件，或从备份恢复。不包含标签、合集、播放列表、榜单文件及图片等生成的数据 &ndash; 插件会在下次同步时重新创建这些数据。</p>
                 <div style="display:flex; gap:10px;">
                     <button is="emby-button" type="button" id="btnBackupConfig" class="raised btn-neutral">
                         <i class="md-icon" style="margin-right:5px;">download</i>下载备份
@@ -1667,7 +1625,7 @@
 
             <div id="tabAnimeCollections" class="page-tab-content" style="display:none;">
                 <div class="anime-studio-wrap" id="animeStudioMain">
-                    <p class="anime-studio-lead">打开后点同步，会按作品系列自动生成合集。吃不准的会标提醒，其它合集照常处理。</p>
+                    <p class="anime-studio-lead">打开后点同步，会按作品系列自动生成合集。手动同步会先弹出确认，再一键创建；计划任务默认直接写入。</p>
 
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label><input is="emby-checkbox" type="checkbox" id="chkAnimeEnabled" /><span>启用动漫合集</span></label>
@@ -1679,12 +1637,7 @@
                         <div class="fieldDescription">建议用独特前缀，避免与手工合集重名。</div>
                     </div>
 
-                    <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:14px;">
-                        <label><input is="emby-checkbox" type="checkbox" id="chkAnimeScheduledWrite" /><span>定时自动写入</span></label>
-                        <div class="fieldDescription">打开后，计划任务会直接创建或更新合集。关闭则计划任务也只记预览摘要。点「立即同步」会先算出预览，再在确认框里一键创建。</div>
-                        <input is="emby-checkbox" type="checkbox" id="chkAnimeDryRun" style="display:none;" tabindex="-1" aria-hidden="true" />
-                        <div class="anime-global-dry-hint" id="animeGlobalDryHint">设置里的「仅预览」总开关仍开着，确认创建时也无法写入。可到设置里关闭后再同步。</div>
-                    </div>
+                    <div class="anime-global-dry-hint" id="animeGlobalDryHint" style="margin-top:10px;">设置里的「仅预览」总开关仍开着，确认创建时也无法写入。可到设置里关闭后再同步。</div>
 
                     <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:14px;">
                         <label><input is="emby-checkbox" type="checkbox" id="chkAnimeIncludeSpinOffs" /><span>包含衍生作品</span></label>
@@ -1710,21 +1663,6 @@
                         <div id="animeCardEmpty" class="anime-card-empty" style="display:none;margin-top:12px;">还没有合集结果。先打开「启用动漫合集」，再点「立即同步」。同步后会先弹出确认创建。</div>
                     </div>
 
-                    <div id="animeRemindersSection" class="anime-reminders-section">
-                        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                            <h2 class="sectionTitle" style="margin:0;font-size:1.1em;">提醒</h2>
-                            <span class="fieldDescription" id="animeRemindersHint" style="margin:0;"></span>
-                        </div>
-                        <div class="anime-reminders-toolbar">
-                            <div class="anime-reminders-filter" id="animeRemindersFilter" role="group" aria-label="提醒筛选">
-                                <button type="button" data-filter="open" class="active">未处理</button>
-                                <button type="button" data-filter="handled">已处理</button>
-                                <button type="button" data-filter="all">全部</button>
-                            </div>
-                        </div>
-                        <div id="animeReminderList" class="anime-reminder-list"></div>
-                        <div id="animeRemindersEmpty" class="anime-reminders-empty" style="display:none;">暂无提醒。同步时吃不准的合集会出现在这里。</div>
-                    </div>
                 </div>
 
                 <div class="anime-editor-panel" id="animeEditorPanel" style="display:none;">
@@ -1739,7 +1677,7 @@
                     <div style="margin-top:16px;">
                         <div class="inputLabel" style="margin-bottom:6px;">成员</div>
                         <div id="animeEditorMembers" class="anime-editor-members"></div>
-                        <div id="animeEditorMembersEmpty" class="anime-reminders-empty" style="display:none;">还没有成员。可在下方搜索媒体库添加。</div>
+                        <div id="animeEditorMembersEmpty" class="anime-empty-hint" style="display:none;">还没有成员。可在下方搜索媒体库添加。</div>
                     </div>
                     <div class="inputContainer anime-editor-search-wrap" style="margin-top:8px;">
                         <input is="emby-input" type="text" id="txtAnimeEditorSearch" label="从媒体库添加" placeholder="输入片名搜索…" autocomplete="off" />

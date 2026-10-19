@@ -35,7 +35,7 @@ namespace HomeScreenCompanion
         public int Updated { get; set; }
         public int Skipped { get; set; }
         public int Unchanged { get; set; }
-        /// <summary>Unhandled reminder count (for summary line 「提醒 N」).</summary>
+        /// <summary>Unhandled reminder count (persisted; not shown on main UI path).</summary>
         public int Reminders { get; set; }
         public List<AnimeRunCard> Cards { get; set; } = new List<AnimeRunCard>();
         public List<AnimeOwnedCard> Owned { get; set; } = new List<AnimeOwnedCard>();
@@ -122,7 +122,7 @@ namespace HomeScreenCompanion
             lock (ManualRunLock) { _manualRunMode = 1; }
         }
 
-        /// <summary>Next Execute will write despite AnimeDryRun (manual「一键创建」).</summary>
+        /// <summary>Next Execute will write (manual「一键创建」), unless global DryRunMode.</summary>
         internal static void RequestManualConfirmWrite()
         {
             lock (ManualRunLock) { _manualRunMode = 2; }
@@ -193,8 +193,10 @@ namespace HomeScreenCompanion
                 var policy = AnimeCollectionPolicy.Parse(config.AnimeCollectionRulesJson,
                     config.AnimeApprovedCollectionKeys, config.AnimeCollectionAliasesJson);
                 int manualMode = ConsumeManualRunMode();
-                // Global DryRunMode always blocks writes. Manual preview forces dry; confirm write ignores AnimeDryRun.
-                bool dryRun = config.DryRunMode || (manualMode == 2 ? false : (manualMode == 1 || config.AnimeDryRun));
+                // Global DryRunMode always blocks writes. Manual preview forces dry; scheduled/confirm write.
+                // AnimeDryRun is deprecated (ignored); timed runs write by default.
+                bool dryRun = config.DryRunMode || manualMode == 1;
+                if (manualMode == 2 && !config.DryRunMode) dryRun = false;
                 if (manualMode == 1) log.Info("手动同步：仅预览，等待确认后再写入。");
                 else if (manualMode == 2 && !config.DryRunMode) log.Info("确认创建：按本趟决定写入合集。");
                 if (dryRun) log.Warn("仅预览 — 不会修改任何合集。");
@@ -282,10 +284,9 @@ namespace HomeScreenCompanion
                 EnrichRemindersFromAiAnalysis(dataDir, syncResult.Reminders, groups);
                 SaveLastRunSummary(dataDir, config, syncResult);
                 int writable = groups.Count(g => policy.CanWrite(g, dryRun));
-                int openReminders = syncResult.Reminders.Count(r => r != null && !r.Handled);
                 LastStatus = dryRun
-                    ? $"仅预览：{groups.Count} 个候选" + (openReminders > 0 ? $"，提醒 {openReminders}" : "")
-                    : $"已完成：{writable} 个合集" + (openReminders > 0 ? $"，提醒 {openReminders}" : "");
+                    ? $"仅预览：{groups.Count} 个候选"
+                    : $"已完成：{writable} 个合集";
                 log.Ok(LastStatus);
                 progress?.Report(100);
             }
@@ -317,11 +318,31 @@ namespace HomeScreenCompanion
                 Recursive = true,
                 IsVirtualItem = false
             });
+            // Emby merges multi-version movies under one UI row; alternate children still appear
+            // in GetItemList — skip IDs listed by GetAlternateVersionIds on any Video.
+            var alternateIds = new HashSet<long>();
+            foreach (var media in all)
+            {
+                if (media is Video video)
+                {
+                    try
+                    {
+                        var linked = video.GetAlternateVersionIds();
+                        if (linked == null) continue;
+                        foreach (var id in linked)
+                            if (id > 0) alternateIds.Add(id);
+                    }
+                    catch { /* Alternate API is best-effort; provider collapse still runs. */ }
+                }
+            }
+            if (alternateIds.Count > 0)
+                log.Debug($"Emby 已合并片源：跳过 {alternateIds.Count} 个附属版本条目。");
             var output = new List<AnimeLocalItem>();
             string topDir = Path.Combine(Plugin.Instance!.DataFolderPath, "toplists") + Path.DirectorySeparatorChar;
             foreach (var media in all)
             {
                 if (media == null || media.InternalId <= 0 || media.IsVirtualItem ||
+                    alternateIds.Contains(media.InternalId) ||
                     TopListCollectionMirror.IsTopListItem(media) ||
                     (!string.IsNullOrEmpty(media.Path) && media.Path.StartsWith(topDir, StringComparison.OrdinalIgnoreCase)))
                     continue;
@@ -366,6 +387,10 @@ namespace HomeScreenCompanion
                 if (ids.Count > 0)
                     log.Debug($"  {media.Name}（Emby {media.InternalId}）→ AniList {string.Join("、", ids.OrderBy(id => id))}");
             }
+            int beforeCollapse = output.Count;
+            output = AnimeCollectionPolicy.CollapseProviderDuplicates(output);
+            if (output.Count < beforeCollapse)
+                log.Debug($"按片源标识合并重复条目：{beforeCollapse} → {output.Count}。");
             return output;
         }
 
@@ -446,7 +471,7 @@ namespace HomeScreenCompanion
             var cards = new List<AnimeRunCard>();
             var reminders = new List<AnimeReminder>();
             var raisedUtc = DateTime.UtcNow.ToString("o");
-            var duplicateByEmby = BuildDuplicateLookup(duplicates);
+            _ = duplicates; // retained for API shape; provider dups collapsed at scan
             var confirmedReassignments = new HashSet<long>(groups.Where(g => policy.CanWrite(g, false)).SelectMany(g => g.EmbyIds));
             // Detect splits against ALL candidates, including denied and review-blocked groups.
             // Filtering to the approved writer set first could strip a denied sibling's members.
@@ -460,7 +485,8 @@ namespace HomeScreenCompanion
                 var block = policy.ExplainWriteBlock(group);
                 if (block != null)
                 {
-                    log.Skip($"已跳过 [{group.Key}] {group.Name}：{block}");
+                    log.Skip($"已跳过「{group.Name}」：{block}");
+                    log.Debug($"跳过合集 {group.Key}");
                     LogMemberTitles(log, group, nameById);
                     var skipReason = HumanizeSkipReason(block);
                     cards.Add(MakeRunCard(group, displayName, "skipped", skipReason, nameById, localById));
@@ -474,14 +500,15 @@ namespace HomeScreenCompanion
                     reminders.Add(MakeReminder("branch", group.Key, displayName,
                         "这个系列有多条续作线，自动归类可能偏宽，建议之后核对成员。", raisedUtc));
                 }
-                AddDuplicateReminders(reminders, group, displayName, duplicateByEmby, raisedUtc);
+                // Provider duplicates are collapsed at scan time; no user-facing duplicate reminders.
                 bool mayWrite = policy.CanWrite(group, dryRun);
                 var desired = new HashSet<long>(group.EmbyIds);
                 var matches = state.Collections.Where(c => c.Anchor == group.Anchor || c.ManagedItemIds.Any(desired.Contains)).ToList();
                 if (matches.Count > 1)
                 {
                     string reason = "与多个由插件管理的合集重叠，请人工检查。";
-                    log.Warn($"已跳过 [{group.Key}] {group.Name}：{reason}");
+                    log.Warn($"已跳过「{group.Name}」：{reason}");
+                    log.Debug($"跳过合集 {group.Key}");
                     LogMemberTitles(log, group, nameById);
                     cards.Add(MakeRunCard(group, displayName, "skipped", reason, nameById, localById));
                     reminders.Add(MakeReminder("cannot_write", group.Key, displayName, reason, raisedUtc));
@@ -492,7 +519,8 @@ namespace HomeScreenCompanion
                 if (owned != null && (splitIds.Contains(owned.CollectionId) || !visitedOwned.Add(owned.CollectionId)))
                 {
                     string reason = "原合集已拆分成多个分组，请人工检查。";
-                    log.Warn($"已跳过 [{group.Key}] {group.Name}：{reason}");
+                    log.Warn($"已跳过「{group.Name}」：{reason}");
+                    log.Debug($"跳过合集 {group.Key}");
                     LogMemberTitles(log, group, nameById);
                     cards.Add(MakeRunCard(group, displayName, "skipped", reason, nameById, localById));
                     reminders.Add(MakeReminder("cannot_write", group.Key, displayName, reason, raisedUtc));
@@ -507,7 +535,7 @@ namespace HomeScreenCompanion
                 // Ownership points at a collection that no longer exists: drop the row and allow recreate.
                 if (owned != null && box == null)
                 {
-                    log.Warn($"归属记录中的合集（ID {owned.CollectionId} / anilist:{owned.Anchor}）已不存在，已清除记录。符合写入条件时将按新建处理。");
+                    log.Warn($"归属记录中的合集（ID {owned.CollectionId} / 作品编号 {owned.Anchor}）已不存在，已清除记录。符合写入条件时将按新建处理。");
                     state.Collections.Remove(owned);
                     SaveState(stateFile, state);
                     owned = null;
@@ -519,30 +547,25 @@ namespace HomeScreenCompanion
                         ? "和已有合集重名，为避免改动手工合集已跳过。可先在 Emby 中重命名或删除后再同步。"
                         : "原合集已不存在，或名称与其他合集重复。手工合集不会被改动。";
                     if (owned == null && nameMatches.Count > 0)
-                        log.Warn($"已跳过 [{group.Key}] {name}：存在同名合集且无有效归属，已跳过以免改动手工合集。若确认为旧插件合集，请先在 Emby 中重命名或删除后再运行。");
+                    {
+                        log.Warn($"已跳过「{name}」：存在同名合集且无有效归属，已跳过以免改动手工合集。若确认为旧插件合集，请先在 Emby 中重命名或删除后再运行。");
+                        log.Debug($"跳过合集 {group.Key}");
+                    }
                     else
-                        log.Warn($"已跳过 [{group.Key}] {name}：原合集已不存在，或名称与其他合集重复。手工创建的合集不会被改动。");
+                    {
+                        log.Warn($"已跳过「{name}」：原合集已不存在，或名称与其他合集重复。手工创建的合集不会被改动。");
+                        log.Debug($"跳过合集 {group.Key}");
+                    }
                     LogMemberTitles(log, group, nameById);
                     cards.Add(MakeRunCard(group, name, "skipped", reason, nameById, localById));
                     reminders.Add(MakeReminder("cannot_write", group.Key, name, reason, raisedUtc));
                     collisions++;
                     continue;
                 }
-                bool hasReminderForGroup = reminders.Any(r => r != null
-                        && string.Equals(r.CollectionKey, group.Key, StringComparison.Ordinal)
-                        && !r.Handled);
-                if (config.AnimeSkipWriteWhenReminders && hasReminderForGroup)
-                {
-                    string skipReason = "按设置：有提醒的合集先不写入。处理完提醒后再同步，或到设置里关掉该选项。";
-                    log.Skip($"已跳过 [{group.Key}] {name}：{skipReason}");
-                    LogMemberTitles(log, group, nameById);
-                    cards.Add(MakeRunCard(group, name, "skipped", skipReason, nameById, localById));
-                    blocked++;
-                    continue;
-                }
                 if (owned == null)
                 {
-                    log.Info($"{(mayWrite ? "创建" : "预计创建")} [{group.Key}]“{name}”（{desired.Count} 部）。");
+                    log.Info($"{(mayWrite ? "创建" : "预计创建")}「{name}」（{desired.Count} 部）。");
+                    log.Debug($"合集 {group.Key}");
                     LogMemberTitles(log, group, nameById);
                     if (mayWrite)
                     {
@@ -566,7 +589,10 @@ namespace HomeScreenCompanion
                 {
                     var cardName = box!.Name ?? name;
                     if (!string.Equals(box!.Name, name, StringComparison.Ordinal))
-                        log.Info($"[{group.Key}] 保留现有合集名称“{box.Name}”；别名“{name}”只在新建合集时使用。");
+                    {
+                        log.Info($"保留现有合集名称「{box.Name}」；别名「{name}」只在新建合集时使用。");
+                        log.Debug($"合集 {group.Key}");
+                    }
                     var current = new HashSet<long>(_libraryManager.GetItemList(new InternalItemsQuery
                     {
                         CollectionIds = new[] { box.InternalId }, Recursive = true, IsVirtualItem = false
@@ -579,7 +605,8 @@ namespace HomeScreenCompanion
                     if (toRemove.Length > 0 && !(box is BoxSet))
                     {
                         string reason = "无法从此合集移除成员。";
-                        log.Warn($"已跳过 [{group.Key}]：{reason}");
+                        log.Warn($"已跳过「{cardName}」：{reason}");
+                        log.Debug($"跳过合集 {group.Key}");
                         LogMemberTitles(log, group, nameById);
                         cards.Add(MakeRunCard(group, cardName, "skipped", reason, nameById, localById));
                         reminders.Add(MakeReminder("cannot_write", group.Key, cardName, reason, raisedUtc));
@@ -588,7 +615,8 @@ namespace HomeScreenCompanion
                     }
                     if (toAdd.Length > 0 || toRemove.Length > 0)
                     {
-                        log.Info($"{(mayWrite ? "更新" : "预计更新")} [{group.Key}]“{box.Name}”：+{toAdd.Length}，-{toRemove.Length}。");
+                        log.Info($"{(mayWrite ? "更新" : "预计更新")}「{box.Name}」：+{toAdd.Length}，-{toRemove.Length}。");
+                        log.Debug($"合集 {group.Key}");
                         LogMemberTitles(log, group, nameById);
                         if (mayWrite)
                         {
@@ -646,7 +674,7 @@ namespace HomeScreenCompanion
                     DryRun = dryRun,
                     GlobalDryRun = config.DryRunMode,
                     FinishedUtc = DateTime.UtcNow.ToString("o"),
-                    StatusText = open > 0 ? (statusText ?? "") + " · 提醒 " + open : (statusText ?? ""),
+                    StatusText = statusText ?? "",
                     Reminders = open,
                     Owned = owned,
                     ReminderItems = reminders
@@ -671,7 +699,6 @@ namespace HomeScreenCompanion
             string baseStatus = run.DryRun
                 ? $"预览：将新建 {run.Made} · 将更新 {run.Updated} · 跳过 {run.Skipped}"
                 : $"完成：新建 {run.Made} · 更新 {run.Updated} · 跳过 {run.Skipped}";
-            if (open > 0) baseStatus += " · 提醒 " + open;
             var summary = new AnimeLastRunSummary
             {
                 DryRun = run.DryRun,
@@ -1015,8 +1042,6 @@ namespace HomeScreenCompanion
         private static string HumanizeSkipReason(string? reason)
         {
             if (string.IsNullOrWhiteSpace(reason)) return "";
-            if (reason.IndexOf("批准名单", StringComparison.Ordinal) >= 0)
-                return "当前设置未允许同步此合集。";
             if (reason.IndexOf("成员不足", StringComparison.Ordinal) >= 0)
                 return "成员不足两部。";
             return reason.Trim();

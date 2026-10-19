@@ -141,7 +141,7 @@ static partial class Program
 
         var policy = AnimeCollectionPolicy.Parse("", Key, "");
         Assert(policy.ExplainWriteBlock(new AnimeGroup { Anchor = A, EmbyIds = new() { 101 } }) == "成员不足两部。", "Explain: too few members");
-        Assert(policy.ExplainWriteBlock(new AnimeGroup { Anchor = D, EmbyIds = new() { 101, 102 } }) == "未在批准名单中。", "Explain: not approved");
+        Assert(policy.ExplainWriteBlock(new AnimeGroup { Anchor = D, EmbyIds = new() { 101, 102 } }) == null, "Explain: approval list no longer blocks writes");
         var branchMsg = policy.ExplainWriteBlock(new AnimeGroup { Anchor = A, EmbyIds = new() { 101, 102 }, ReviewRequired = true });
         Assert(branchMsg == null, "Explain: branch flag alone does not block write");
         Assert(AnimeCollectionPolicy.Parse("", "", "").ExplainWriteBlock(new AnimeGroup { Anchor = A, EmbyIds = new() { 101, 102 }, ReviewRequired = true }) == null,
@@ -209,6 +209,20 @@ static partial class Program
         Assert(JsonSerializer.Serialize(items) == before, "Duplicate diagnostics never mutate local media");
         Assert(!AnimeCollectionPolicy.FindDuplicates(new[] { Item(5, "重复元数据", false, 0, "tmdb_movie:1900000301", " TMDB_MOVIE:1900000301 ") }).Any(), "Repeated provider on one item is not duplicate media");
         Assert(!AnimeCollectionPolicy.FindDuplicates(new[] { Item(6, "聚合季", true, A, "tmdb_show:1900000302"), Item(7, "聚合电影", false, A, "tmdb_movie:1900000303") }).Any(), "Shared AniList identity is not duplicate provider media");
+        var multiSource = new[]
+        {
+            Item(10, "团子大家族", false, A, "tmdb_movie:1900000401", "imdb_movie:tt1900000401"),
+            Item(11, "团子大家族", false, A, "tmdb_movie:1900000401", "imdb_movie:tt1900000401")
+        };
+        var collapsed = AnimeCollectionPolicy.CollapseProviderDuplicates(multiSource);
+        Assert(collapsed.Count == 1 && collapsed[0].EmbyId == 10, "Same-provider multi-source movie collapses to one EmbyId");
+        Assert(collapsed[0].ProviderIds.Contains("tmdb_movie:1900000401") && collapsed[0].AniListIds.SequenceEqual(new[] { A }), "Collapse keeps provider and AniList ids");
+        var mixed = AnimeCollectionPolicy.CollapseProviderDuplicates(new[]
+        {
+            Item(20, "甲", false, A, "tmdb_movie:1900000402"),
+            Item(21, "乙", false, B, "tmdb_movie:1900000403")
+        });
+        Assert(mixed.Count == 2, "Distinct providers stay separate");
     }
 
     static void TestExactMembership()
@@ -247,10 +261,10 @@ static partial class Program
         Assert(defaults.All(g => empty.CanWrite(g, false)), "Empty approval list auto-allows all candidate writes");
         var approved = AnimeCollectionPolicy.Parse("", " \r\n " + Key + " \r\n", """{"anilist:1900000101":"用户纸月"}""");
         var groups = approved.Apply(automatic, items); var first = groups.Single(g => g.Key == Key);
-        Assert(first.Name == "用户纸月" && approved.CanWrite(first, false), "User-only alias and trimmed exact approval work");
-        Assert(!approved.CanWrite(groups.Single(g => g.Anchor == C), false), "Approval never spreads to another key");
-        Assert(!approved.CanWrite(new AnimeGroup { Anchor = D, Name = "用户纸月", EmbyIds = new() { 8, 9 } }, false), "Same display name grants no permission");
-        Assert(!approved.CanWrite(first, true), "DryRun overrides approved alias");
+        Assert(first.Name == "用户纸月" && approved.CanWrite(first, false), "User-only alias still applies; approval list no longer gates writes");
+        Assert(approved.CanWrite(groups.Single(g => g.Anchor == C), false), "Approval list ignored: other keys still writable");
+        Assert(approved.CanWrite(new AnimeGroup { Anchor = D, Name = "用户纸月", EmbyIds = new() { 8, 9 } }, false), "Approval list ignored for unlisted keys with enough members");
+        Assert(!approved.CanWrite(first, true), "DryRun still overrides writes");
     }
 
     static void TestCollectionEditorRewrite()
@@ -364,7 +378,7 @@ static partial class Program
         var stateAgain = JsonSerializer.Deserialize<AnimeCollectionState>(JsonSerializer.Serialize(state))!;
         Assert(stateAgain.Collections.Single().CollectionId == 901 && stateAgain.Collections[0].Anchor == A && stateAgain.Collections[0].ManagedItemIds.SequenceEqual(new long[] { 101, 102 }), "Legacy owned identity, anchor and membership survive schema round-trip");
         Assert(AnimeCollectionPolicy.Parse("", "", "").CanWrite(new AnimeGroup { Anchor = A, EmbyIds = new() { 101, 102 } }, false), "Empty approval list allows write regardless of ownership records");
-        Assert(!AnimeCollectionPolicy.Parse("", "anilist:1900000103", "").CanWrite(new AnimeGroup { Anchor = A, EmbyIds = new() { 101, 102 } }, false), "Non-empty approval list still restricts to listed keys");
+        Assert(AnimeCollectionPolicy.Parse("", "anilist:1900000103", "").CanWrite(new AnimeGroup { Anchor = A, EmbyIds = new() { 101, 102 } }, false), "Non-empty approval list no longer restricts writes");
     }
 
     static void TestConfigurationCompatibility()
@@ -408,7 +422,10 @@ static partial class Program
         var policy = AnimeCollectionPolicy.Parse(Rules, Key, ""); var groups = policy.Apply(AnimeGroupPlanner.Plan(items, PreviewRelations(), false), items);
         Assert(groups.Single(g => g.Anchor == 1900000402).EmbyIds.SequenceEqual(new long[] { 203, 204, 205 }), "Duplicate diagnostics do not drop planned movie members");
         Assert(groups.Single(g => g.Key == Key).EmbyIds.SequenceEqual(new long[] { 101, 102 }), "Unrelated sequel pair never leaks into exact branch selection");
-        Assert(!policy.CanWrite(groups.Single(g => g.Anchor == D), false), "Unapproved unrelated sequel remains separate and read-only");
+        Assert(policy.CanWrite(groups.Single(g => g.Anchor == D), false), "Unrelated sequel remains separate; approval list no longer blocks write");
+        var collapsedPreview = AnimeCollectionPolicy.CollapseProviderDuplicates(items);
+        Assert(collapsedPreview.Count(i => i.EmbyId == 201 || i.EmbyId == 202) == 1, "Preview multi-source series collapses to one row");
+        Assert(collapsedPreview.Count(i => i.EmbyId == 203 || i.EmbyId == 204) == 1, "Preview multi-source movie collapses to one row");
         Assert(groups.All(g => !policy.CanWrite(g, true)) && JsonSerializer.Serialize(items) == before, "CLI DryRun denies every write and preserves fixture inputs");
     }
 

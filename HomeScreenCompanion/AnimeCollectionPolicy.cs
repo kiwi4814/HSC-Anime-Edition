@@ -75,7 +75,7 @@ namespace HomeScreenCompanion
                 var key = raw.Trim();
                 if (key.Length == 0) continue;
                 ValidateKey(key);
-                if (!policy._approved.Add(key)) throw Invalid("批准名单 Key 重复：" + key);
+                if (!policy._approved.Add(key)) throw Invalid("合集编号重复：" + key);
             }
             if (!string.IsNullOrWhiteSpace(aliasesJson))
             {
@@ -139,11 +139,10 @@ namespace HomeScreenCompanion
             return result.OrderBy(g => g.Anchor).ToList();
         }
 
-        // Empty approval list = auto-allow every candidate; non-empty = optional whitelist.
-        // ReviewRequired is informational only and never blocks writes.
+        // Full-auto write is the product default. Approval list is parsed for backup
+        // compatibility only and never gates writes. ReviewRequired is informational only.
         internal bool CanWrite(AnimeGroup group, bool dryRun) =>
-            !dryRun && group.EmbyIds.Count >= 2 &&
-            (_approved.Count == 0 || _approved.Contains(group.Key));
+            !dryRun && group.EmbyIds != null && group.EmbyIds.Count >= 2;
 
         /// <summary>
         /// Human-readable reason this group cannot be written (ignores dry-run).
@@ -153,8 +152,6 @@ namespace HomeScreenCompanion
         {
             if (group.EmbyIds == null || group.EmbyIds.Count < 2)
                 return "成员不足两部。";
-            if (_approved.Count > 0 && !_approved.Contains(group.Key))
-                return "未在批准名单中。";
             return null;
         }
 
@@ -193,7 +190,7 @@ namespace HomeScreenCompanion
 
         /// <summary>
         /// When ownership overlaps members but the planned Anchor differs, stick to the
-        /// owned Anchor so existing approval keys keep working.
+        /// owned Anchor so existing managed collections stay stable.
         /// </summary>
         internal static void ApplyOwnershipSticky(IList<AnimeGroup> groups,
             IEnumerable<AnimeManagedCollection> owned, Action<string>? logInfo = null)
@@ -211,7 +208,7 @@ namespace HomeScreenCompanion
                 int planned = group.Anchor;
                 group.Anchor = match.Anchor;
                 group.Key = "anilist:" + match.Anchor.ToString(CultureInfo.InvariantCulture);
-                logInfo?.Invoke($"合集 Key 沿用归属记录 anilist:{match.Anchor}（当前图规划为 anilist:{planned}），批准名单无需修改。");
+                logInfo?.Invoke($"合集沿用已有归属（作品编号 {match.Anchor}，原规划 {planned}）。");
             }
         }
 
@@ -249,6 +246,60 @@ namespace HomeScreenCompanion
                 .GroupBy(x => x.Id, StringComparer.Ordinal)
                 .Select(g => new AnimeDuplicate { Identifier = g.Key, EmbyIds = g.Select(x => x.EmbyId).Distinct().OrderBy(id => id).ToList() })
                 .Where(g => g.EmbyIds.Count > 1).OrderBy(g => g.Identifier, StringComparer.Ordinal).ToList();
+
+        /// <summary>
+        /// Merge library rows that share a non-AniList provider id into one EmbyId
+        /// (smallest id wins). Use after skipping Emby alternate-version children so
+        /// multi-source movies appear once, matching what users see in Emby.
+        /// </summary>
+        internal static List<AnimeLocalItem> CollapseProviderDuplicates(IEnumerable<AnimeLocalItem> source)
+        {
+            var items = (source ?? Array.Empty<AnimeLocalItem>()).Where(i => i != null && i.EmbyId > 0).ToList();
+            if (items.Count <= 1) return items;
+            var parent = new Dictionary<long, long>();
+            foreach (var item in items) parent[item.EmbyId] = item.EmbyId;
+            long Find(long x)
+            {
+                while (parent[x] != x) x = parent[x] = parent[parent[x]];
+                return x;
+            }
+            void Union(long a, long b)
+            {
+                a = Find(a); b = Find(b);
+                if (a == b) return;
+                if (a < b) parent[b] = a; else parent[a] = b;
+            }
+            var byProvider = new Dictionary<string, long>(StringComparer.Ordinal);
+            foreach (var item in items)
+            {
+                foreach (var raw in item.ProviderIds ?? new List<string>())
+                {
+                    var id = (raw ?? "").Trim().ToLowerInvariant();
+                    if (!IsIdentifier(id) || id.StartsWith("anilist:", StringComparison.Ordinal)) continue;
+                    if (byProvider.TryGetValue(id, out var other)) Union(item.EmbyId, other);
+                    else byProvider[id] = item.EmbyId;
+                }
+            }
+            var result = new List<AnimeLocalItem>();
+            foreach (var group in items.GroupBy(i => Find(i.EmbyId)))
+            {
+                var ordered = group.OrderBy(i => i.EmbyId).ToList();
+                var primary = ordered[0];
+                if (ordered.Count == 1) { result.Add(primary); continue; }
+                result.Add(new AnimeLocalItem
+                {
+                    EmbyId = primary.EmbyId,
+                    Name = primary.Name ?? "",
+                    IsSeries = primary.IsSeries,
+                    AniListIds = ordered.SelectMany(i => i.AniListIds ?? new List<int>()).Where(id => id > 0)
+                        .Distinct().OrderBy(id => id).ToList(),
+                    ProviderIds = ordered.SelectMany(i => i.ProviderIds ?? new List<string>())
+                        .Select(id => (id ?? "").Trim().ToLowerInvariant()).Where(IsIdentifier)
+                        .Distinct(StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToList()
+                });
+            }
+            return result.OrderBy(i => i.EmbyId).ToList();
+        }
 
         private static HashSet<string> Identifiers(AnimeLocalItem item)
         {
