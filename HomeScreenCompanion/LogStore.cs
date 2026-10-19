@@ -28,6 +28,7 @@ namespace HomeScreenCompanion
         internal const string Sync = "sync";
         internal const string HomeScreen = "hsc";
         internal const string TopLists = "toplists";
+        internal const string Anime = "anime";
 
         // Status saved while a run was in progress (the server stopped mid-run).
         internal const string InterruptedStatus = "Interrupted (server restarted)";
@@ -88,7 +89,13 @@ namespace HomeScreenCompanion
         }
 
         // Status to show after a restart: a run that never finished is reported as interrupted.
-        internal static string RestoredStatus(string status) =>
-            string.Equals(status, "Running...", StringComparison.Ordinal) ? InterruptedStatus : status;
+        internal static string RestoredStatus(string status)
+        {
+            if (string.Equals(status, "Running...", StringComparison.Ordinal) ||
+                string.Equals(status, "正在运行…", StringComparison.Ordinal) ||
+                string.Equals(status, "正在运行...", StringComparison.Ordinal))
+                return InterruptedStatus;
+            return status;
+        }
     }
 }

@@ -31,3 +31,11 @@
 - 含中文的字符串统一使用全角标点：`: `/`： `→`：`，`, `→`，`，中文括注改为（）。日志符号 ✔⚠✖–、`结果`/`汇总` 标题和 `StartsWith("播放列表")` 依赖保持不变；输入示例中作为分隔符的英文逗号保留。
 - 日志查看器标题正则增加 `动漫合集同步 `，使动漫任务的标题行与其他任务一致高亮。
 - 漏改的“令牌”（AI 预算说明）改为 Token。
+
+## 批次 5（Batch 1 功能）：动漫任务日志可见 + AniList 配额/重试
+
+- 设置页日志弹窗增加「动漫」选项卡；轮询 `GET /HomeScreenCompanionAnime/Anime/Status`；`LogStore.Anime` + `RestoreLog`；运行菜单可启动 `HscAnimeEditionCollections`。
+- 动漫面板显示上次运行状态（中文原文，不经英文 `displayRunStatus`）；「查看动漫日志」打开对应 Tab。
+- 默认 AniList 请求配额 100→300，UI 上限 300→600；关系图节点硬上限 2400→8000；缓存 TTL 14 天不变。
+- AniList 429/5xx/超时最多 3 次尝试，退避 5s→15s→45s（尊 Retry-After≤120s）；配额用尽与节点触顶使用不同 `LastStatus`。
+

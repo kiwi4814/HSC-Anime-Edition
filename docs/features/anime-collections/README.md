@@ -69,7 +69,15 @@ anilist:1900000104
 | `owned-collections.json` | 已管理 CollectionId/Anchor/Name/ManagedItemIds |
 | `ai-analysis.json` | 可选的 AI 建议报告，详见 [AI 分析](../ai-analysis/README.md) |
 
-任务日志还通过现有 LogStore 持久化。旧 `anime-ai-decisions.json` 不是当前 AI 分析服务的活动报告；兼容 DTO/离线哨兵仍存在，不把旧文件名当成新缓存格式。
+任务日志通过 LogStore（key=`anime`）持久化，设置页「日志」弹窗的「动漫」选项卡与 `/HomeScreenCompanionAnime/Anime/Status` 可读。旧 `anime-ai-decisions.json` 不是当前 AI 分析服务的活动报告；兼容 DTO/离线哨兵仍存在，不把旧文件名当成新缓存格式。
+
+### AniList 配额与上限
+
+- 默认每次最多新增 **300** 次 AniList 请求（设置页可调 10–600）；请求间隔约 2.1 秒。
+- 关系图节点硬上限 **8000**；触顶时状态为「失败：作品关系超过上限」，不会写入合集。
+- 配额用尽时状态为「等待：AniList 请求配额已用完，请再次运行」，可再次运行继续灌缓存。
+- 关系缓存新鲜度仍为 **14 天**（本批未改）。
+- 对 AniList 的 429/5xx/超时最多重试 3 次（退避 5s→15s→45s，尊重 Retry-After，上限约 120s）。
 
 Anime Edition 身份与官方插件不同；后续保持既有 Fork GUID、程序集、页面名和接口边界，详见 [差异台账](../../fork/delta.md)。旧 Anime Edition 配置缺少三项策略时按空值加载，不自动批准。
 

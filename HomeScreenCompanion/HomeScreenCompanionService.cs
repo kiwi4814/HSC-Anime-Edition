@@ -166,6 +166,10 @@ namespace HomeScreenCompanion
     public class DeleteManagedCollectionRequest : IReturn<DeleteManagedCollectionResponse> { public string CollectionId { get; set; } = ""; }
     public class DeleteManagedCollectionResponse { public bool Success { get; set; } public string Message { get; set; } = ""; }
 
+    [Route("/HomeScreenCompanionAnime/Anime/Status", "GET")]
+    [Authenticated(Roles = "Admin")]
+    public class GetAnimeTaskStatusRequest : IReturn<StatusResponse> { }
+
     [Route("/HomeScreenCompanionAnime/TopList/Status", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetTopListStatusRequest : IReturn<TopListStatusResponse> { }
@@ -906,6 +910,19 @@ public class HomeScreenCompanionService : IService
                 LastRunStatus = TopListSyncTask.LastRunStatus,
                 Logs = logs,
                 StartedUtc = TopListSyncTask.LastStartedUtc?.ToString("o") ?? ""
+            };
+        }
+
+        public object Get(GetAnimeTaskStatusRequest request)
+        {
+            List<string> logs;
+            lock (AnimeCollectionTask.ExecutionLog) { logs = AnimeCollectionTask.ExecutionLog.ToList(); }
+            return new StatusResponse
+            {
+                LastRunStatus = AnimeCollectionTask.LastStatus,
+                Logs = logs,
+                IsRunning = AnimeCollectionTask.IsRunning,
+                StartedUtc = AnimeCollectionTask.LastStartedUtc?.ToString("o") ?? ""
             };
         }
 
@@ -2890,7 +2907,7 @@ public class HomeScreenCompanionService : IService
                         config.AnimeAiReviewOtherEdges = s.AnimeAiReviewOtherEdges;
                         config.AnimeAiProvider        = s.AnimeAiProvider ?? "OpenAI";
                         config.AnimeCollectionPrefix  = s.AnimeCollectionPrefix ?? "动漫 · ";
-                        config.AnimeMaxRequestsPerRun = s.AnimeMaxRequestsPerRun <= 0 ? 100 : s.AnimeMaxRequestsPerRun;
+                        config.AnimeMaxRequestsPerRun = s.AnimeMaxRequestsPerRun <= 0 ? 300 : s.AnimeMaxRequestsPerRun;
                         if (s.CompatibleAiBaseUrl != null) config.CompatibleAiBaseUrl = s.CompatibleAiBaseUrl;
                         if (s.CompatibleAiModel != null) config.CompatibleAiModel = s.CompatibleAiModel;
                         if (s.AnimeAiNamingEnabled.HasValue) config.AnimeAiNamingEnabled = s.AnimeAiNamingEnabled.Value;

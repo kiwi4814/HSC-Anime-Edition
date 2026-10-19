@@ -38,6 +38,20 @@ namespace HomeScreenCompanion
         public static DateTime? LastStartedUtc { get; private set; }
         public static bool IsRunning { get; private set; }
 
+        internal static void RestoreLog()
+        {
+            var saved = LogStore.Load(LogStore.Anime);
+            if (saved == null || IsRunning) return;
+            lock (ExecutionLog)
+            {
+                if (ExecutionLog.Count > 0) return;
+                ExecutionLog.AddRange(saved.Lines ?? new List<string>());
+            }
+            var status = LogStore.RestoredStatus(saved.Status);
+            LastStatus = status == LogStore.InterruptedStatus ? "已中断（服务器已重启）" : status;
+            LastStartedUtc = saved.StartedUtc;
+        }
+
         public AnimeCollectionTask(ILibraryManager libraryManager, ICollectionManager collectionManager,
             IHttpClient httpClient, IJsonSerializer jsonSerializer, ILogManager logManager)
         {
@@ -96,15 +110,28 @@ namespace HomeScreenCompanion
                 log.Info($"扫描 {local.Count} 个电影/剧集项目，匹配 {seeds.Length} 条 AniList 记录。");
                 progress?.Report(30);
                 var client = new AnimeAniListClient(_json, dataDir);
+                int requestBudget = Math.Max(1, Math.Min(600, config.AnimeMaxRequestsPerRun));
+                const int graphNodeLimit = 8000;
                 var graph = await client.ExpandAsync(seeds,
-                    Math.Max(1, Math.Min(300, config.AnimeMaxRequestsPerRun)),
-                    2400, 14, config.AnimeIncludeSpinOffs,
-                    cancellationToken, log.Warn);
+                    requestBudget, graphNodeLimit, 14, config.AnimeIncludeSpinOffs,
+                    cancellationToken, msg =>
+                    {
+                        if (msg.IndexOf("上限", StringComparison.Ordinal) >= 0) log.Warn(msg);
+                        else log.Info(msg);
+                    });
                 log.Info($"AniList：{graph.NetworkRequests} 次请求，{graph.Records.Count} 条关系记录。");
                 if (!graph.Complete)
                 {
-                    LastStatus = "等待：AniList 缓存预热";
-                    log.Warn("AniList 关系数据尚未获取完整，本次不修改合集。请稍后再次运行。");
+                    if (graph.IncompleteReason == "node_limit")
+                    {
+                        LastStatus = "失败：作品关系超过上限（" + graphNodeLimit + "）";
+                        log.Warn("作品关系节点数超过上限（" + graphNodeLimit + "），本次未修改合集。调高每次请求数也无法突破此上限；可缩小扫描范围，或等待后续版本。");
+                    }
+                    else
+                    {
+                        LastStatus = "等待：AniList 请求配额已用完，请再次运行";
+                        log.Warn("AniList 关系数据尚未获取完整（本次新请求 " + graph.NetworkRequests + "/" + requestBudget + "），本次不修改合集。请再次运行任务以继续获取。");
+                    }
                     return;
                 }
                 progress?.Report(60);
@@ -141,7 +168,7 @@ namespace HomeScreenCompanion
             finally
             {
                 IsRunning = false;
-                LogStore.Save("anime", ExecutionLog, LastStatus, LastStartedUtc);
+                LogStore.Save(LogStore.Anime, ExecutionLog, LastStatus, LastStartedUtc);
             }
         }
 

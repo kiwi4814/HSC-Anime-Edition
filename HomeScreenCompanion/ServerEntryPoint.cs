@@ -60,6 +60,7 @@ namespace HomeScreenCompanion
             HomeScreenCompanionTask.RestoreLog();
             HomeSectionSyncTask.RestoreLog();
             TopListSyncTask.RestoreLog();
+            AnimeCollectionTask.RestoreLog();
 
             _libraryManager.ItemAdded += OnItemChanged;
             _libraryManager.ItemUpdated += OnItemChanged;

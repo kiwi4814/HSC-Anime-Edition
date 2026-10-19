@@ -11,6 +11,8 @@ namespace HomeScreenCompanion
         public List<AnimeRelationRecord> Records { get; set; } = new List<AnimeRelationRecord>();
         public int NetworkRequests { get; set; }
         public bool Complete { get; set; }
+        /// <summary>"" when complete; "budget" when request quota exhausted; "node_limit" when hard cap hit.</summary>
+        public string IncompleteReason { get; set; } = "";
     }
 
     // The traversal is independent of HTTP/Emby so its write-safety gate can be tested offline.
@@ -36,7 +38,8 @@ namespace HomeScreenCompanion
                     cancellationToken.ThrowIfCancellationRequested();
                     if (queued.Count > graphNodeLimit)
                     {
-                        onProgress("作品关系数量已达上限，本次未修改任何合集。");
+                        result.IncompleteReason = "node_limit";
+                        onProgress("作品关系数量已达上限（" + graphNodeLimit + "），本次未修改任何合集。");
                         break;
                     }
                     var node = toVisit.Dequeue();
@@ -45,7 +48,8 @@ namespace HomeScreenCompanion
                     {
                         if (result.NetworkRequests >= requestBudget)
                         {
-                            onProgress("已达到本次 AniList 请求上限，请再次运行任务以继续获取。");
+                            result.IncompleteReason = "budget";
+                            onProgress("已达到本次 AniList 请求上限（" + requestBudget + "），请再次运行任务以继续获取。");
                             // The dequeued node is still unresolved, even if it was the last
                             // queued node. Never let an empty queue turn this into Complete.
                             return result;
@@ -69,7 +73,7 @@ namespace HomeScreenCompanion
                             queued.Add(edge.Id))
                             toVisit.Enqueue((edge.Id, node.Depth + 1));
                 }
-                result.Complete = toVisit.Count == 0;
+                result.Complete = toVisit.Count == 0 && result.IncompleteReason.Length == 0;
                 return result;
             }
             finally

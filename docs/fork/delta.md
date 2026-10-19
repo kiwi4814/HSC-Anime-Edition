@@ -29,7 +29,7 @@
 | `HomeScreenCompanion/AnimeAniListClient.cs` | AniList GraphQL 与关系缓存 | 请求/身份校验；真实服务未由离线测试验收 |
 | `HomeScreenCompanion/AnimeCollectionPolicy.cs` | 精确成员、批准、别名、身份和重复诊断 | 排除优先、完整替代、无默认作品规则、写入门槛 |
 | `HomeScreenCompanion/AnimeCollectionMembership.cs` | 维护已管理成员集合 | 只追踪插件管理成员，保留人工成员 |
-| `HomeScreenCompanion/AnimeCollectionTask.cs` | 扫描、映射、规划、审批后调用 Emby 合集 API | 动漫独立开关/Dry Run、归属保护、失败不清空合集 |
+| `HomeScreenCompanion/AnimeCollectionTask.cs` | 扫描、映射、规划、审批后调用 Emby 合集 API；RestoreLog/LogStore.Anime、节点上限 8000、配额状态区分 | 动漫独立开关/Dry Run、归属保护、失败不清空合集 |
 | `HomeScreenCompanion/AiRequestClient.cs` | 五种 provider 共用 HTTP 传输 | 超时/取消、体积边界、禁重定向、脱敏错误 |
 | `HomeScreenCompanion/AiResponseDtos.cs` | 统一 provider 响应 DTO | 是响应模型单一归属；不要在旧 DTO 文件重建重复类 |
 | `HomeScreenCompanion/AiSecretPolicy.cs` | 密钥导出清空、空导入保留 | 覆盖实际导出/导入调用点，而非只保留 helper |
@@ -46,7 +46,7 @@
 | `HomeScreenCompanion/PluginConfiguration.cs` | Compatible AI 与动漫配置、空默认策略、独立预算 | 新装默认与已有配置/旧备份分别处理 |
 | `HomeScreenCompanion/Configuration/configPage.html` | 新动漫/AI 控件、独立 controller、广泛汉化 | ID、控件绑定及技术标识；页面仍有指向官方 Issues 的链接 |
 | `HomeScreenCompanion/Configuration/configPage.js` | Fork GUID/请求路径、动漫加载保存与校验、AI 测试/建议展示、版本查询替代更新器及汉化 | 大面积字符串差异中夹有逻辑；不能整文件取上游 |
-| `HomeScreenCompanion/HomeScreenCompanionService.cs` | 大部分路由隔离、AI Admin 接口、备份 v3/密钥语义与汉化 | 路由、DTO、处理器、配置往返必须一起审查 |
+| `HomeScreenCompanion/HomeScreenCompanionService.cs` | 大部分路由隔离、AI Admin 接口、备份 v3/密钥语义与汉化；新增 `Anime/Status` | 路由、DTO、处理器、配置往返必须一起审查 |
 | `HomeScreenCompanion/DTOs.cs` | 删除重复 provider 响应类，转由新增文件持有 | 部分旧路由仍在；见下方已知缺口 |
 | `HomeScreenCompanion/ListFetcher.cs` | 移除各 provider 的重复 HTTP helper，改用共享客户端 | 既有列表选择仍沿用；共同超时/令牌上限改变旧路径语义 |
 | `HomeScreenCompanion/ServerEntryPoint.cs` | 禁止调用旧 AutoTag 自动迁移，另有日志汉化 | 防止迁移/删除其他插件数据；保留现有监听及镜像逻辑 |
@@ -97,11 +97,12 @@
 
 ## 5. 已知缺口与验证边界
 
-1. **设置备份漏三项合集策略**：当前结果与迁移风险见 [动漫合集：备份限制](../features/anime-collections/README.md#备份限制)。本次不修业务代码。
-2. **部分前端/DTO 路由前缀不一致**：`DTOs.cs` 的 `Hsc/UserSections` GET/POST、`Hsc/ApplyTagHomeSections`、`TestAiSource` 仍声明 `/HomeScreenCompanion/...`，而 `configPage.js` 请求 `/HomeScreenCompanionAnime/...`。这是源码核对发现，不宣称已实测 404；需要真实路由验证与一致性修复。`Hsc/SectionSchema`、`Hsc/DebugMethods` 声明同样保留旧前缀，集成时一并核对。
-3. **反馈目标未随开发工作流迁移**：设置页中的 Issues 链接仍指官方仓库。本地 Markdown 是开发任务跟踪选择，不会自动重定向产品 UI；不把 Fork 特有问题直接归给官方。
-4. **旧 AI 列表语义变化**：共享请求客户端统一超时与上限；未验证所有真实 provider，不宣称与旧 Ollama 等路径完全等价。
-5. **编译与运行证据有边界**：源码基线曾重建成功，296 条离线断言通过，但插件有 107 条编译警告。无本轮 Emby 加载、配置 HTTP、真实写入、持久化、浏览器或真实 AI 供应商验收。具体命令及当时结果见 `TEST_REPORT.md`；本次文档审计不重新制造生产证据。
+1. **（已部分缓解）动漫任务日志曾无法在设置页查看**：现已提供 `Anime/Status` 与日志 Tab；中大型库仍受 8000 节点硬上限与 14 天缓存新鲜度约束。
+2. **设置备份漏三项合集策略**：当前结果与迁移风险见 [动漫合集：备份限制](../features/anime-collections/README.md#备份限制)。本次不修业务代码。
+3. **部分前端/DTO 路由前缀不一致**：`DTOs.cs` 的 `Hsc/UserSections` GET/POST、`Hsc/ApplyTagHomeSections`、`TestAiSource` 仍声明 `/HomeScreenCompanion/...`，而 `configPage.js` 请求 `/HomeScreenCompanionAnime/...`。这是源码核对发现，不宣称已实测 404；需要真实路由验证与一致性修复。`Hsc/SectionSchema`、`Hsc/DebugMethods` 声明同样保留旧前缀，集成时一并核对。
+4. **反馈目标未随开发工作流迁移**：设置页中的 Issues 链接仍指官方仓库。本地 Markdown 是开发任务跟踪选择，不会自动重定向产品 UI；不把 Fork 特有问题直接归给官方。
+5. **旧 AI 列表语义变化**：共享请求客户端统一超时与上限；未验证所有真实 provider，不宣称与旧 Ollama 等路径完全等价。
+6. **编译与运行证据有边界**：源码基线曾重建成功，296 条离线断言通过，但插件有 107 条编译警告。无本轮 Emby 加载、配置 HTTP、真实写入、持久化、浏览器或真实 AI 供应商验收。具体命令及当时结果见 `TEST_REPORT.md`；本次文档审计不重新制造生产证据。
 
 ## 6. 何时更新本文件
 

@@ -1049,7 +1049,13 @@
                     <div class="advanced-body settings-panel-body" style="display:none;">
                         <div class="fieldDescription" style="margin-bottom:14px;line-height:1.7;">
                             按作品系列把动画剧集、OVA 和剧场版整理成 Emby 合集。作品关系来自 AniList，只读取媒体已有的外部 ID，不改动媒体文件。
-                            启用后，在 Emby 控制台 &rarr; 计划任务中运行 <strong>动漫合集同步</strong>，先查看预览结果。
+                            启用后，用页面右下角 <strong>运行</strong> → <strong>动漫合集同步</strong> 先做预览，或在 Emby 控制台的计划任务中运行。预览日志在本页「日志」弹窗的「动漫」选项卡中查看，从中复制合集 Key 填入批准名单。
+                        </div>
+                        <div id="animeRunStatusBar" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px;padding:10px 12px;border:1px solid rgba(82,181,75,0.35);border-radius:6px;background:rgba(82,181,75,0.06);">
+                            <span style="font-size:0.85em;opacity:0.7;">上次运行：</span>
+                            <span class="status-dot" id="animeDotStatus"></span>
+                            <span id="animeLastRunStatusLabel" style="font-size:0.9em;">尚未运行</span>
+                            <button type="button" is="emby-button" class="raised btn-neutral" id="btnAnimeOpenLogs" style="margin-left:auto;">查看动漫日志</button>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label><input is="emby-checkbox" type="checkbox" id="chkAnimeEnabled" /><span>启用动漫合集</span></label>
@@ -1068,8 +1074,8 @@
                             <div class="fieldDescription">建议使用独特前缀，避免与手工创建的 Emby 合集重名。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
-                            <input is="emby-input" type="number" min="10" max="300" id="txtAnimeApiBudget" label="每次同步最多新增 AniList 请求数" />
-                            <div class="fieldDescription">AniList 有请求频率限制，首次同步可能需要运行几次才能获取全部作品关系。</div>
+                            <input is="emby-input" type="number" min="10" max="600" id="txtAnimeApiBudget" label="每次同步最多新增 AniList 请求数" />
+                            <div class="fieldDescription">默认 300（约 10 分钟）。AniList 有频率限制；首次同步可能需要运行几次。单次最多 600。作品关系节点上限为 8000，触顶时日志会说明，调高本值无法突破。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:16px;">
                             <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiOther" /><span>用 AI 复核关系不明确的作品</span></label>
@@ -1482,6 +1488,9 @@
                         <button type="button" class="run-dial-item" id="btnDialTagsCollections">
                             <i class="md-icon">local_offer</i><span>同步标签和合集</span>
                         </button>
+                        <button type="button" class="run-dial-item" id="btnDialAnimeCollections">
+                            <i class="md-icon">movie_filter</i><span>动漫合集同步</span>
+                        </button>
                     </div>
                     <button is="emby-button" type="button" id="btnRunSync" class="raised button-submit fab-btn btn-run">
                         <i class="md-icon" style="margin-right:5px;">play_arrow</i>
@@ -1582,6 +1591,7 @@
                 <button type="button" class="log-tab" data-log="sync"><span class="status-dot"></span>同步<span class="log-tab-time"></span></button>
                 <button type="button" class="log-tab" data-log="hsc"><span class="status-dot"></span>主屏幕<span class="log-tab-time"></span></button>
                 <button type="button" class="log-tab" data-log="tl"><span class="status-dot"></span>榜单<span class="log-tab-time"></span></button>
+                <button type="button" class="log-tab" data-log="anime"><span class="status-dot"></span>动漫<span class="log-tab-time"></span></button>
             </div>
             <div class="modal-body-scroll" style="background: #0a0a0a; color: #ececec; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.85em; padding: 20px; border-top: 1px solid #333;" id="logContent">
             </div>

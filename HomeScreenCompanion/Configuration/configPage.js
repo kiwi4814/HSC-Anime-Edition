@@ -2878,7 +2878,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var tabs = view.querySelectorAll('#logTabs .log-tab');
         if (!content) return;
 
-        var keys = ['sync', 'hsc', 'tl'];
+        var keys = ['sync', 'hsc', 'tl', 'anime'];
         function startedMs(k) { var s = _lastStatus[k]; var t = s && s.StartedUtc ? Date.parse(s.StartedUtc) : NaN; return isNaN(t) ? 0 : t; }
         function running(k) { return !!(_lastStatus[k] && _lastStatus[k].IsRunning); }
         function logs(k) { return (_lastStatus[k] && _lastStatus[k].Logs) || []; }
@@ -2916,14 +2916,15 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         Promise.all([
             window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanionAnime/Status")),
             window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanionAnime/Hsc/Status")).catch(function () { return null; }),
-            window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanionAnime/TopList/Status")).catch(function () { return null; })
+            window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanionAnime/TopList/Status")).catch(function () { return null; }),
+            window.ApiClient.getJSON(window.ApiClient.getUrl("HomeScreenCompanionAnime/Anime/Status")).catch(function () { return null; })
         ]).then(function (results) {
             if (myId !== statusRequestId) return;
-            var result = results[0], hscResult = results[1], tlResult = results[2];
+            var result = results[0], hscResult = results[1], tlResult = results[2], animeResult = results[3];
             var label = view.querySelector('#lastRunStatusLabel'), dot = view.querySelector('#dotStatus'), content = view.querySelector('#logContent');
             var btnSave = view.querySelector('.btn-save'), btnRun = view.querySelector('#btnRunSync');
 
-            var eitherRunning = result.IsRunning || (hscResult && hscResult.IsRunning);
+            var eitherRunning = result.IsRunning || (hscResult && hscResult.IsRunning) || (animeResult && animeResult.IsRunning);
             if (eitherRunning) {
                 if (btnSave) { btnSave.disabled = true; btnSave.style.opacity = "0.5"; btnSave.querySelector('span').textContent = "正在同步..."; }
                 if (btnRun) btnRun.disabled = true;
@@ -2944,7 +2945,20 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 else if (/warning/i.test(st)) dot.classList.add("warn");
             }
 
-            _lastStatus = { sync: result, hsc: hscResult, tl: tlResult };
+            _lastStatus = { sync: result, hsc: hscResult, tl: tlResult, anime: animeResult };
+            var animeLabel = view.querySelector('#animeLastRunStatusLabel');
+            var animeDot = view.querySelector('#animeDotStatus');
+            if (animeLabel && animeResult) {
+                // Anime LastStatus is already Chinese — do not run English displayRunStatus regex.
+                animeLabel.textContent = animeResult.LastRunStatus || '尚未运行';
+            }
+            if (animeDot && animeResult) {
+                animeDot.className = 'status-dot';
+                var ast = animeResult.LastRunStatus || '';
+                if (animeResult.IsRunning || /正在运行/.test(ast)) animeDot.classList.add('running');
+                else if (/失败|错误/.test(ast)) animeDot.classList.add('failed');
+                else if (/等待|警告/.test(ast)) animeDot.classList.add('warn');
+            }
             if (content) renderLogModal(view);
         }).catch(function () {
             if (myId !== statusRequestId) return;
@@ -3802,7 +3816,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             AnimeAiProvider: selectedAnimeAiProvider(view),
             AnimeCollectionPrefix: view.querySelector('#txtAnimePrefix').value || '动漫 · ',
             AnimeMappingRefreshDays: 7,
-            AnimeMaxRequestsPerRun: Math.min(300, Math.max(10, parseInt(view.querySelector('#txtAnimeApiBudget').value, 10) || 100)),
+            AnimeMaxRequestsPerRun: Math.min(600, Math.max(10, parseInt(view.querySelector('#txtAnimeApiBudget').value, 10) || 300)),
             AnimeCollectionRulesJson: view.querySelector('#txtAnimeCollectionRulesJson').value,
             AnimeApprovedCollectionKeys: view.querySelector('#txtAnimeApprovedCollectionKeys').value,
             AnimeCollectionAliasesJson: view.querySelector('#txtAnimeCollectionAliasesJson').value,
@@ -7201,6 +7215,13 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 var bugOverlay = view.querySelector('#bugReportModalOverlay');
 
                 view.querySelector('#btnOpenLogs').addEventListener('click', e => { e.preventDefault(); _logTab = null; renderLogModal(view); logOverlay.classList.add('modal-visible'); });
+                var animeLogBtn = view.querySelector('#btnAnimeOpenLogs');
+                if (animeLogBtn) animeLogBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    _logTab = 'anime';
+                    renderLogModal(view);
+                    logOverlay.classList.add('modal-visible');
+                });
                 view.querySelector('#btnCloseLogs').addEventListener('click', () => { _logTab = null; logOverlay.classList.remove('modal-visible'); });
                 logOverlay.addEventListener('click', e => { if (e.target === logOverlay) { _logTab = null; logOverlay.classList.remove('modal-visible'); } });
                 view.querySelectorAll('#logTabs .log-tab').forEach(function (tab) {
@@ -7590,6 +7611,11 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             runTask('HomeScreenCompanionSyncTask', '标签同步');
         });
 
+        var animeDial = view.querySelector('#btnDialAnimeCollections');
+        if (animeDial) animeDial.addEventListener('click', function () {
+            runTask('HscAnimeEditionCollections', '动漫合集同步');
+        });
+
         view.querySelector('#btnDialHomeScreen').addEventListener('click', function () {
             runTask('HomeSectionSyncTask', '主屏幕同步');
         });
@@ -7674,7 +7700,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 updateAiHttpWarning(view);
                 loadAnimeAiAnalysis(view);
                 view.querySelector('#txtAnimePrefix').value = config.AnimeCollectionPrefix || '动漫 · ';
-                view.querySelector('#txtAnimeApiBudget').value = config.AnimeMaxRequestsPerRun || 100;
+                view.querySelector('#txtAnimeApiBudget').value = config.AnimeMaxRequestsPerRun || 300;
                 view.querySelector('#txtAnimeCollectionRulesJson').value = config.AnimeCollectionRulesJson || '';
                 view.querySelector('#txtAnimeApprovedCollectionKeys').value = config.AnimeApprovedCollectionKeys || '';
                 view.querySelector('#txtAnimeCollectionAliasesJson').value = config.AnimeCollectionAliasesJson || '';

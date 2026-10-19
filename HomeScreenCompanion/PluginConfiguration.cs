@@ -46,7 +46,7 @@ namespace HomeScreenCompanion
         public string AnimeApprovedCollectionKeys { get; set; } = "";
         public string AnimeCollectionAliasesJson { get; set; } = "";
         public int AnimeMappingRefreshDays { get; set; } = 7;
-        public int AnimeMaxRequestsPerRun { get; set; } = 100;
+        public int AnimeMaxRequestsPerRun { get; set; } = 300;
 
         public bool ExtendedConsoleOutput { get; set; } = false;
         public bool LogMissingItems { get; set; } = false;
