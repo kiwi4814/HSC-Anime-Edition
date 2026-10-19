@@ -8154,6 +8154,35 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                     result.textContent = '连接测试失败：' + (error.message || '网络或响应异常。');
                 }).then(function () { button.disabled = false; });
             }, { signal: _signal });
+            var btnTestCompAi = view.querySelector('#btnTestCompatibleAi');
+            if (btnTestCompAi) {
+                btnTestCompAi.addEventListener('click', function () {
+                    var button = this;
+                    var result = view.querySelector('#compatibleAiTestResult');
+                    button.disabled = true;
+                    if (result) {
+                        result.textContent = '正在测试连接…';
+                        result.style.color = 'var(--theme-text-secondary, #888)';
+                    }
+                    Promise.resolve().then(function () {
+                        var cfg = getUiConfig(view, false);
+                        cfg.AnimeAiProvider = 'OpenAICompatible';
+                        return animeAiRequest('TestConnection', cfg);
+                    }).then(function (response) {
+                        if (result) {
+                            result.style.color = response.Success ? '#52B54B' : '#cc3333';
+                            result.textContent = (response.Success ? '连接成功：' : '连接失败：') +
+                                (response.Message || (response.Success ? '服务响应正常。' : '请检查配置。')) +
+                                (response.Warning ? '\n' + response.Warning : '');
+                        }
+                    }).catch(function (error) {
+                        if (result) {
+                            result.style.color = '#cc3333';
+                            result.textContent = '连接测试失败：' + (error.message || '网络或响应异常。');
+                        }
+                    }).then(function () { button.disabled = false; });
+                }, { signal: _signal });
+            }
 
             var spTa = view.querySelector('#txtAiSystemPrompt');
             var resetBtn = view.querySelector('#btnResetAiSystemPrompt');
@@ -8842,6 +8871,8 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                     view._animeSummaryLoaded = false;
                     loadAnimeLastRunSummary(view).then(function () { view._animeSummaryLoaded = true; });
                     updateAnimeGlobalDryHint(view);
+                } else if (target === 'Settings') {
+                    setTimeout(checkFormState, 0);
                 }
             });
         });
@@ -8868,6 +8899,9 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                             try { loadAnimeDiscardedList(view); } catch (e) { }
                         }
                     }
+                        if (!isOpen) {
+                            setTimeout(checkFormState, 0);
+                        }
                 }
                 return;
             }

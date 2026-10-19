@@ -1555,6 +1555,12 @@
                                     </label>
                                 </div>
                                 <div id="compatibleAiHttpWarning" role="status" style="display:none;color:#e8a838;margin:12px 0;">未加密连接会明文传输内容和密钥。请只在本机或可信局域网中使用。</div>
+                                <div style="margin-top:14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                    <button is="emby-button" type="button" id="btnTestCompatibleAi" class="raised btn-neutral">
+                                        <i class="md-icon" style="margin-right:5px;">science</i>测试连接
+                                    </button>
+                                    <span id="compatibleAiTestResult" role="status" aria-live="polite" style="font-size:0.9em; opacity:0.85; white-space:pre-wrap; overflow-wrap:anywhere;"></span>
+                                </div>
                             </div>
                         </div>
 
