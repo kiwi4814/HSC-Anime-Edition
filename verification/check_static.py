@@ -110,4 +110,23 @@ for banned in ('批准名单', '成员规则', 'Dry Run', '赋能', '闭环'):
 print('PASS: P0 anime studio tab + last-run summary wiring')
 print('PASS: P1 reminders in last-run-summary + yellow-dot + reminders UI')
 
+assert 'id="animeEditorPanel"' in html
+assert 'txtAnimeEditorName' in html and '#txtAnimeEditorName' in js
+assert 'btnAnimeEditorSave' in html and 'saveAnimeCollectionEditor' in js
+assert 'btnAnimeEditorAuto' in html and 'clearAnimeCollectionEditorRule' in js
+assert 'openAnimeCollectionEditor' in js
+assert 'CollectionEditor/Save' in service
+assert 'CollectionEditor/ClearRule' in service
+assert 'Anime/MediaSearch' in service
+assert 'AnimeCollectionEditorSupport' in (SRC / 'AnimeCollectionEditorSupport.cs').read_text(encoding='utf-8')
+assert '改回自动归类' in html
+# Editor panel must stay jargon-free on the main path.
+editor = html.split('id="animeEditorPanel"', 1)[1].split('id="tabCleanup"', 1)[0]
+for banned in ('批准名单', '成员规则', 'Key', 'Anchor', 'JSON', 'Dry Run', 'Provider', 'Token', '赋能', '闭环'):
+    assert banned not in editor, 'banned on editor panel: ' + banned
+# 去处理 must open editor, not only highlight.
+assert 'focusAnimeReminderTarget' in js
+assert 'openAnimeCollectionEditor(view' in js.split('function focusAnimeReminderTarget', 1)[1].split('function ', 1)[0]
+print('PASS: P2 collection visual editor wiring')
+
 print('NOT_TESTED by this script: C# build/smoke, runtime authentication/backup HTTP, browser rendering, real AI providers or Emby runtime; consult separate logs')

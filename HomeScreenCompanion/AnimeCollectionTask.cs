@@ -66,6 +66,8 @@ namespace HomeScreenCompanion
         public string Reason { get; set; } = "";
         public int MemberCount { get; set; }
         public List<string> MemberTitles { get; set; } = new List<string>();
+        /// <summary>Primary include ids aligned with MemberTitles (for P2 editor).</summary>
+        public List<string> MemberIncludeIds { get; set; } = new List<string>();
         public int MoreCount { get; set; }
         public bool HasReminder { get; set; }
     }
@@ -73,6 +75,7 @@ namespace HomeScreenCompanion
     public sealed class AnimeOwnedCard
     {
         public long CollectionId { get; set; }
+        public string Key { get; set; } = "";
         public string Name { get; set; } = "";
         public int MemberCount { get; set; }
         public bool HasReminder { get; set; }
@@ -231,8 +234,10 @@ namespace HomeScreenCompanion
                 }
                 var nameById = local.Where(x => x.EmbyId > 0)
                     .GroupBy(x => x.EmbyId).ToDictionary(g => g.Key, g => g.First().Name ?? "");
+                var localById = local.Where(x => x.EmbyId > 0)
+                    .GroupBy(x => x.EmbyId).ToDictionary(g => g.Key, g => g.First());
                 var syncResult = await SyncCollectionsAsync(groups, policy, dataDir, config, dryRun,
-                    cancellationToken, log, progress, nameById, duplicates);
+                    cancellationToken, log, progress, nameById, duplicates, localById);
                 await AnalyzeCollectionsAsync(config, local, graph.Records, groups, dataDir, cancellationToken, log);
                 EnrichRemindersFromAiAnalysis(dataDir, syncResult.Reminders, groups);
                 SaveLastRunSummary(dataDir, config, syncResult);
@@ -381,7 +386,7 @@ namespace HomeScreenCompanion
         private async Task<AnimeSyncRunResult> SyncCollectionsAsync(List<AnimeGroup> groups, AnimeCollectionPolicy policy,
             string dataDir, PluginConfiguration config, bool dryRun, CancellationToken token,
             RunLog log, IProgress<double>? progress, IReadOnlyDictionary<long, string> nameById,
-            List<AnimeDuplicate> duplicates)
+            List<AnimeDuplicate> duplicates, IReadOnlyDictionary<long, AnimeLocalItem>? localById = null)
         {
             string stateFile = Path.Combine(dataDir, "owned-collections.json");
             var state = File.Exists(stateFile)
@@ -418,7 +423,7 @@ namespace HomeScreenCompanion
                     log.Skip($"已跳过 [{group.Key}] {group.Name}：{block}");
                     LogMemberTitles(log, group, nameById);
                     var skipReason = HumanizeSkipReason(block);
-                    cards.Add(MakeRunCard(group, displayName, "skipped", skipReason, nameById));
+                    cards.Add(MakeRunCard(group, displayName, "skipped", skipReason, nameById, localById));
                     reminders.Add(MakeReminder("cannot_write", group.Key, displayName, skipReason, raisedUtc));
                     blocked++;
                     continue;
@@ -438,7 +443,7 @@ namespace HomeScreenCompanion
                     string reason = "与多个由插件管理的合集重叠，请人工检查。";
                     log.Warn($"已跳过 [{group.Key}] {group.Name}：{reason}");
                     LogMemberTitles(log, group, nameById);
-                    cards.Add(MakeRunCard(group, displayName, "skipped", reason, nameById));
+                    cards.Add(MakeRunCard(group, displayName, "skipped", reason, nameById, localById));
                     reminders.Add(MakeReminder("cannot_write", group.Key, displayName, reason, raisedUtc));
                     collisions++;
                     continue;
@@ -449,7 +454,7 @@ namespace HomeScreenCompanion
                     string reason = "原合集已拆分成多个分组，请人工检查。";
                     log.Warn($"已跳过 [{group.Key}] {group.Name}：{reason}");
                     LogMemberTitles(log, group, nameById);
-                    cards.Add(MakeRunCard(group, displayName, "skipped", reason, nameById));
+                    cards.Add(MakeRunCard(group, displayName, "skipped", reason, nameById, localById));
                     reminders.Add(MakeReminder("cannot_write", group.Key, displayName, reason, raisedUtc));
                     collisions++;
                     continue;
@@ -478,7 +483,7 @@ namespace HomeScreenCompanion
                     else
                         log.Warn($"已跳过 [{group.Key}] {name}：原合集已不存在，或名称与其他合集重复。手工创建的合集不会被改动。");
                     LogMemberTitles(log, group, nameById);
-                    cards.Add(MakeRunCard(group, name, "skipped", reason, nameById));
+                    cards.Add(MakeRunCard(group, name, "skipped", reason, nameById, localById));
                     reminders.Add(MakeReminder("cannot_write", group.Key, name, reason, raisedUtc));
                     collisions++;
                     continue;
@@ -502,7 +507,7 @@ namespace HomeScreenCompanion
                         });
                         SaveState(stateFile, state);
                     }
-                    cards.Add(MakeRunCard(group, name, mayWrite ? "created" : "will_create", "", nameById));
+                    cards.Add(MakeRunCard(group, name, mayWrite ? "created" : "will_create", "", nameById, localById));
                     made++;
                 }
                 else
@@ -524,7 +529,7 @@ namespace HomeScreenCompanion
                         string reason = "无法从此合集移除成员。";
                         log.Warn($"已跳过 [{group.Key}]：{reason}");
                         LogMemberTitles(log, group, nameById);
-                        cards.Add(MakeRunCard(group, cardName, "skipped", reason, nameById));
+                        cards.Add(MakeRunCard(group, cardName, "skipped", reason, nameById, localById));
                         reminders.Add(MakeReminder("cannot_write", group.Key, cardName, reason, raisedUtc));
                         collisions++;
                         continue;
@@ -538,13 +543,13 @@ namespace HomeScreenCompanion
                             if (toAdd.Length > 0) await _collections.AddToCollection(box.InternalId, toAdd);
                             if (toRemove.Length > 0) _collections.RemoveFromCollection((BoxSet)box, toRemove);
                         }
-                        cards.Add(MakeRunCard(group, cardName, mayWrite ? "updated" : "will_update", "", nameById));
+                        cards.Add(MakeRunCard(group, cardName, mayWrite ? "updated" : "will_update", "", nameById, localById));
                         updated++;
                     }
                     else
                     {
                         LogMemberTitles(log, group, nameById);
-                        cards.Add(MakeRunCard(group, cardName, "unchanged", "", nameById));
+                        cards.Add(MakeRunCard(group, cardName, "unchanged", "", nameById, localById));
                         unchanged++;
                     }
                     if (mayWrite)
@@ -670,6 +675,7 @@ namespace HomeScreenCompanion
                 ownedCards.Add(new AnimeOwnedCard
                 {
                     CollectionId = c.CollectionId,
+                    Key = c.Anchor > 0 ? ("anilist:" + c.Anchor.ToString(System.Globalization.CultureInfo.InvariantCulture)) : "",
                     Name = box?.Name ?? c.Name ?? "",
                     MemberCount = c.ManagedItemIds?.Count ?? 0
                 });
@@ -896,10 +902,12 @@ namespace HomeScreenCompanion
         }
 
         private static AnimeRunCard MakeRunCard(AnimeGroup group, string displayName, string status,
-            string reason, IReadOnlyDictionary<long, string> nameById)
+            string reason, IReadOnlyDictionary<long, string> nameById,
+            IReadOnlyDictionary<long, AnimeLocalItem>? localById = null)
         {
             const int previewCap = 6;
             var titles = MemberTitleList(group, nameById);
+            var includeIds = MemberIncludeIdList(group, localById);
             return new AnimeRunCard
             {
                 Key = group.Key,
@@ -908,8 +916,27 @@ namespace HomeScreenCompanion
                 Reason = reason ?? "",
                 MemberCount = titles.Count,
                 MemberTitles = titles.Take(previewCap).ToList(),
+                MemberIncludeIds = includeIds.Take(previewCap).ToList(),
                 MoreCount = Math.Max(0, titles.Count - previewCap)
             };
+        }
+
+        private static List<string> MemberIncludeIdList(AnimeGroup group,
+            IReadOnlyDictionary<long, AnimeLocalItem>? localById)
+        {
+            var ids = new List<string>();
+            if (group?.EmbyIds == null) return ids;
+            foreach (var embyId in group.EmbyIds)
+            {
+                if (localById != null && localById.TryGetValue(embyId, out var item))
+                {
+                    var primary = AnimeCollectionEditorSupport.PrimaryIncludeId(item);
+                    if (!string.IsNullOrEmpty(primary)) ids.Add(primary);
+                    else ids.Add("");
+                }
+                else ids.Add("");
+            }
+            return ids;
         }
 
         private static List<string> MemberTitleList(AnimeGroup group, IReadOnlyDictionary<long, string> nameById)

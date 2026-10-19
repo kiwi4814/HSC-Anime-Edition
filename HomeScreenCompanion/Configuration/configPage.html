@@ -629,6 +629,45 @@
             padding: 18px 14px; text-align: center; opacity: 0.65; font-size: 0.92em;
             border: 1px dashed var(--line-color); border-radius: 10px;
         }
+        .anime-card { cursor: pointer; }
+        .anime-card:hover { border-color: rgba(82,181,75,0.55); }
+        .anime-editor-panel { margin-top: 4px; }
+        .anime-editor-toolbar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 16px;
+        }
+        .anime-editor-title { font-size: 1.15em; font-weight: 700; margin: 0; }
+        .anime-editor-members {
+            display: flex; flex-direction: column; gap: 8px; margin: 12px 0;
+            max-height: 360px; overflow: auto; padding-right: 4px;
+        }
+        .anime-editor-member {
+            display: flex; align-items: flex-start; gap: 10px;
+            border: 1px solid var(--line-color); border-radius: 8px;
+            background: var(--theme-background-level2); padding: 10px 12px;
+        }
+        .anime-editor-member label {
+            display: flex; align-items: flex-start; gap: 10px; margin: 0; cursor: pointer; width: 100%;
+        }
+        .anime-editor-member .title { font-weight: 600; line-height: 1.4; }
+        .anime-editor-member .meta { font-size: 0.82em; opacity: 0.7; margin-top: 2px; }
+        .anime-editor-search-wrap { position: relative; margin-top: 8px; }
+        .anime-editor-search-results {
+            display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 20;
+            border: 1px solid var(--line-color); border-radius: 8px;
+            background: var(--theme-background-level2); max-height: 240px; overflow: auto;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+        }
+        .anime-editor-search-hit {
+            display: block; width: 100%; text-align: left; padding: 8px 12px;
+            border: none; border-bottom: 1px solid var(--line-color);
+            background: transparent; color: inherit; cursor: pointer; font-size: 0.92em;
+        }
+        .anime-editor-search-hit:last-child { border-bottom: none; }
+        .anime-editor-search-hit:hover { background: rgba(82,181,75,0.12); }
+        .anime-editor-actions {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; align-items: center;
+        }
+        .anime-editor-hint { font-size: 0.88em; opacity: 0.8; margin-top: 10px; line-height: 1.55; }
 
         /* Home Screen tab */
         .hsc-card {
@@ -1555,7 +1594,7 @@
 
 
             <div id="tabAnimeCollections" class="page-tab-content" style="display:none;">
-                <div class="anime-studio-wrap">
+                <div class="anime-studio-wrap" id="animeStudioMain">
                     <p class="anime-studio-lead">打开后点同步，会按作品系列自动生成合集。吃不准的会标提醒，其它合集照常处理。</p>
 
                     <div class="checkboxContainer checkboxContainer-withDescription">
@@ -1618,6 +1657,31 @@
                         <div id="animeReminderList" class="anime-reminder-list"></div>
                         <div id="animeRemindersEmpty" class="anime-reminders-empty" style="display:none;">暂无提醒。同步时吃不准的合集会出现在这里。</div>
                     </div>
+                </div>
+
+                <div class="anime-editor-panel" id="animeEditorPanel" style="display:none;">
+                    <div class="anime-editor-toolbar">
+                        <button type="button" is="emby-button" class="raised btn-neutral" id="btnAnimeEditorBack">返回</button>
+                        <h2 class="anime-editor-title" id="animeEditorHeading">编辑合集</h2>
+                    </div>
+                    <p class="fieldDescription" style="margin-top:0;">勾选要留在合集里的作品，可改显示名称。保存后下次同步会按你的选择更新。</p>
+                    <div class="inputContainer" style="margin-top:12px;">
+                        <input is="emby-input" type="text" id="txtAnimeEditorName" label="显示名称" />
+                    </div>
+                    <div style="margin-top:16px;">
+                        <div class="inputLabel" style="margin-bottom:6px;">成员</div>
+                        <div id="animeEditorMembers" class="anime-editor-members"></div>
+                        <div id="animeEditorMembersEmpty" class="anime-reminders-empty" style="display:none;">还没有成员。可在下方搜索媒体库添加。</div>
+                    </div>
+                    <div class="inputContainer anime-editor-search-wrap" style="margin-top:8px;">
+                        <input is="emby-input" type="text" id="txtAnimeEditorSearch" label="从媒体库添加" placeholder="输入片名搜索…" autocomplete="off" />
+                        <div id="animeEditorSearchResults" class="anime-editor-search-results"></div>
+                    </div>
+                    <div class="anime-editor-actions">
+                        <button type="button" is="emby-button" class="raised button-submit" id="btnAnimeEditorSave">保存</button>
+                        <button type="button" is="emby-button" class="raised btn-neutral" id="btnAnimeEditorAuto">改回自动归类</button>
+                    </div>
+                    <p class="anime-editor-hint" id="animeEditorHint"></p>
                 </div>
             </div>
 

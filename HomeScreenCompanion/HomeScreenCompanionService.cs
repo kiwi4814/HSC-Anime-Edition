@@ -189,6 +189,81 @@ namespace HomeScreenCompanion
         public AnimeLastRunSummary Summary { get; set; } = new AnimeLastRunSummary();
     }
 
+    [Route("/HomeScreenCompanionAnime/Anime/CollectionEditor", "GET")]
+    [Authenticated(Roles = "Admin")]
+    public class GetAnimeCollectionEditorRequest : IReturn<AnimeCollectionEditorResponse>
+    {
+        public string Key { get; set; } = "";
+    }
+
+    public class AnimeCollectionEditorMember
+    {
+        public string IncludeId { get; set; } = "";
+        public string Title { get; set; } = "";
+        public bool InLibrary { get; set; }
+        public bool Selected { get; set; } = true;
+    }
+
+    public class AnimeCollectionEditorResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = "";
+        public string Key { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public bool HasManualMembers { get; set; }
+        public List<AnimeCollectionEditorMember> Members { get; set; } = new List<AnimeCollectionEditorMember>();
+    }
+
+    [Route("/HomeScreenCompanionAnime/Anime/MediaSearch", "GET")]
+    [Authenticated(Roles = "Admin")]
+    public class GetAnimeMediaSearchRequest : IReturn<AnimeMediaSearchResponse>
+    {
+        public string Q { get; set; } = "";
+    }
+
+    public class AnimeMediaSearchHit
+    {
+        public string Title { get; set; } = "";
+        public int? Year { get; set; }
+        public string IncludeId { get; set; } = "";
+        public string Kind { get; set; } = "";
+    }
+
+    public class AnimeMediaSearchResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = "";
+        public List<AnimeMediaSearchHit> Items { get; set; } = new List<AnimeMediaSearchHit>();
+    }
+
+    [Route("/HomeScreenCompanionAnime/Anime/CollectionEditor/Save", "POST")]
+    [Authenticated(Roles = "Admin")]
+    public class SaveAnimeCollectionEditorRequest : IReturn<AnimeCollectionEditorSaveResponse>
+    {
+        public string Key { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public List<string> IncludeIds { get; set; } = new List<string>();
+        public bool MarkRemindersHandled { get; set; } = true;
+    }
+
+    [Route("/HomeScreenCompanionAnime/Anime/CollectionEditor/ClearRule", "POST")]
+    [Authenticated(Roles = "Admin")]
+    public class ClearAnimeCollectionRuleRequest : IReturn<AnimeCollectionEditorSaveResponse>
+    {
+        public string Key { get; set; } = "";
+        public bool MarkRemindersHandled { get; set; } = true;
+    }
+
+    public class AnimeCollectionEditorSaveResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = "";
+        public string AnimeCollectionRulesJson { get; set; } = "";
+        public string AnimeCollectionAliasesJson { get; set; } = "";
+        public string AnimeApprovedCollectionKeys { get; set; } = "";
+        public AnimeLastRunSummary Summary { get; set; } = new AnimeLastRunSummary();
+    }
+
     [Route("/HomeScreenCompanionAnime/TopList/Status", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetTopListStatusRequest : IReturn<TopListStatusResponse> { }
@@ -1014,6 +1089,401 @@ public class HomeScreenCompanionService : IService
                 return new SetAnimeReminderHandledResponse { Success = false, Message = "保存失败：" + ex.Message };
             }
         }
+
+
+        public object Get(GetAnimeCollectionEditorRequest request)
+        {
+            try
+            {
+                string key = (request?.Key ?? "").Trim();
+                if (string.IsNullOrEmpty(key) || !AnimeCollectionPolicy.IsIdentifier(key) ||
+                    !key.StartsWith("anilist:", StringComparison.Ordinal))
+                    return new AnimeCollectionEditorResponse { Success = false, Message = "缺少合集编号。" };
+
+                var config = Plugin.Instance?.Configuration;
+                if (config == null)
+                    return new AnimeCollectionEditorResponse { Success = false, Message = "插件配置不可用。" };
+
+                AnimeCollectionPolicy policy;
+                try { policy = AnimeCollectionPolicy.Parse(config.AnimeCollectionRulesJson, config.AnimeApprovedCollectionKeys, config.AnimeCollectionAliasesJson); }
+                catch (Exception ex) { return new AnimeCollectionEditorResponse { Success = false, Message = "当前高级设置无法读取：" + ex.Message }; }
+
+                string displayName = "";
+                if (policy.TryGetAlias(key, out var alias)) displayName = alias;
+
+                var summary = LoadAnimeLastRunSummary() ?? new AnimeLastRunSummary();
+                var card = summary.Cards?.FirstOrDefault(c => c != null && string.Equals(c.Key, key, StringComparison.Ordinal));
+                var owned = summary.Owned?.FirstOrDefault(o => o != null && string.Equals(o.Key, key, StringComparison.Ordinal));
+                if (string.IsNullOrWhiteSpace(displayName))
+                    displayName = (card?.Name ?? owned?.Name ?? "").Trim();
+
+                var members = new List<AnimeCollectionEditorMember>();
+                bool hasManual = policy.HasExactRule(key);
+                if (hasManual)
+                {
+                    foreach (var includeId in policy.ExactIncludeIds(key))
+                    {
+                        var hit = FindLibraryByIncludeId(includeId);
+                        members.Add(new AnimeCollectionEditorMember
+                        {
+                            IncludeId = includeId,
+                            Title = hit?.Name?.Trim() ?? "（库中暂未找到）",
+                            InLibrary = hit != null,
+                            Selected = true
+                        });
+                    }
+                }
+                else
+                {
+                    // Prefer live owned membership, then last-run card include ids.
+                    var ownedState = LoadOwnedState();
+                    int anchor = 0;
+                    if (key.Length > 8) int.TryParse(key.Substring(8), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out anchor);
+                    var managed = ownedState?.Collections?.FirstOrDefault(c => c != null && c.Anchor == anchor);
+                    if (managed?.ManagedItemIds != null && managed.ManagedItemIds.Count > 0)
+                    {
+                        foreach (var embyId in managed.ManagedItemIds)
+                        {
+                            var item = _libraryManager.GetItemById(embyId);
+                            if (item == null) continue;
+                            var includeId = PrimaryIncludeIdFromItem(item);
+                            if (string.IsNullOrEmpty(includeId)) continue;
+                            members.Add(new AnimeCollectionEditorMember
+                            {
+                                IncludeId = includeId,
+                                Title = (item.Name ?? "").Trim(),
+                                InLibrary = true,
+                                Selected = true
+                            });
+                        }
+                    }
+                    else if (card?.MemberIncludeIds != null && card.MemberIncludeIds.Count > 0)
+                    {
+                        int n = Math.Max(card.MemberIncludeIds.Count, card.MemberTitles?.Count ?? 0);
+                        for (int i = 0; i < n; i++)
+                        {
+                            string includeId = i < card.MemberIncludeIds.Count ? (card.MemberIncludeIds[i] ?? "") : "";
+                            string title = (card.MemberTitles != null && i < card.MemberTitles.Count) ? (card.MemberTitles[i] ?? "") : "";
+                            if (string.IsNullOrEmpty(includeId)) continue;
+                            var hit = FindLibraryByIncludeId(includeId);
+                            members.Add(new AnimeCollectionEditorMember
+                            {
+                                IncludeId = includeId,
+                                Title = !string.IsNullOrWhiteSpace(title) ? title.Trim() : (hit?.Name?.Trim() ?? "（库中暂未找到）"),
+                                InLibrary = hit != null,
+                                Selected = true
+                            });
+                        }
+                    }
+                }
+
+                // De-dupe by IncludeId
+                var seen = new HashSet<string>(StringComparer.Ordinal);
+                members = members.Where(m => m != null && !string.IsNullOrEmpty(m.IncludeId) && seen.Add(m.IncludeId)).ToList();
+
+                if (string.IsNullOrWhiteSpace(displayName))
+                    displayName = members.Select(m => m.Title).FirstOrDefault(t => !string.IsNullOrWhiteSpace(t) && t.IndexOf('（') < 0) ?? "未命名合集";
+
+                return new AnimeCollectionEditorResponse
+                {
+                    Success = true,
+                    Key = key,
+                    DisplayName = displayName,
+                    HasManualMembers = hasManual,
+                    Members = members
+                };
+            }
+            catch (Exception ex)
+            {
+                return new AnimeCollectionEditorResponse { Success = false, Message = "无法打开编辑：" + ex.Message };
+            }
+        }
+
+        public object Get(GetAnimeMediaSearchRequest request)
+        {
+            try
+            {
+                string q = (request?.Q ?? "").Trim();
+                if (q.Length < 1)
+                    return new AnimeMediaSearchResponse { Success = true, Items = new List<AnimeMediaSearchHit>() };
+
+                var topDir = Path.Combine(Plugin.Instance!.DataFolderPath, "toplists") + Path.DirectorySeparatorChar;
+                var all = _libraryManager.GetItemList(new InternalItemsQuery
+                {
+                    IncludeItemTypes = new[] { "Movie", "Series" },
+                    Recursive = true,
+                    IsVirtualItem = false
+                });
+                var hits = new List<AnimeMediaSearchHit>();
+                var seen = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var media in all)
+                {
+                    if (media == null || media.InternalId <= 0 || media.IsVirtualItem) continue;
+                    if (!string.IsNullOrEmpty(media.Path) && media.Path.StartsWith(topDir, StringComparison.OrdinalIgnoreCase)) continue;
+                    var name = media.Name ?? "";
+                    if (name.IndexOf(q, StringComparison.OrdinalIgnoreCase) < 0) continue;
+                    var includeId = PrimaryIncludeIdFromItem(media);
+                    if (string.IsNullOrEmpty(includeId) || !seen.Add(includeId)) continue;
+                    hits.Add(new AnimeMediaSearchHit
+                    {
+                        Title = name.Trim(),
+                        Year = media.ProductionYear,
+                        IncludeId = includeId,
+                        Kind = media.GetType().Name == "Series" ? "剧集" : "电影"
+                    });
+                    if (hits.Count >= 25) break;
+                }
+                hits = hits.OrderBy(h => h.Title, StringComparer.OrdinalIgnoreCase).ThenBy(h => h.Year ?? 0).ToList();
+                return new AnimeMediaSearchResponse { Success = true, Items = hits };
+            }
+            catch (Exception ex)
+            {
+                return new AnimeMediaSearchResponse { Success = false, Message = "搜索失败：" + ex.Message };
+            }
+        }
+
+        public object Post(SaveAnimeCollectionEditorRequest request)
+        {
+            try
+            {
+                string key = (request?.Key ?? "").Trim();
+                if (string.IsNullOrEmpty(key) || !AnimeCollectionPolicy.IsIdentifier(key) ||
+                    !key.StartsWith("anilist:", StringComparison.Ordinal))
+                    return new AnimeCollectionEditorSaveResponse { Success = false, Message = "缺少合集编号。" };
+
+                var includeIds = request.IncludeIds ?? new List<string>();
+                if (includeIds.Count == 0)
+                    return new AnimeCollectionEditorSaveResponse { Success = false, Message = "请至少保留一部作品。" };
+
+                var config = Plugin.Instance?.Configuration;
+                if (config == null)
+                    return new AnimeCollectionEditorSaveResponse { Success = false, Message = "插件配置不可用。" };
+
+                string rules = AnimeCollectionEditorSupport.UpsertExactRule(config.AnimeCollectionRulesJson, key, includeIds);
+                string aliases = AnimeCollectionEditorSupport.UpsertAlias(config.AnimeCollectionAliasesJson, key, request.DisplayName ?? "");
+                string approved = AnimeCollectionEditorSupport.EnsureApprovedKey(config.AnimeApprovedCollectionKeys, key);
+                // Validate combined policy.
+                AnimeCollectionPolicy.Parse(rules, approved, aliases);
+
+                config.AnimeCollectionRulesJson = rules;
+                config.AnimeCollectionAliasesJson = aliases;
+                config.AnimeApprovedCollectionKeys = approved;
+                Plugin.Instance!.SaveConfiguration();
+
+                var summary = LoadAnimeLastRunSummary() ?? new AnimeLastRunSummary();
+                if (request.MarkRemindersHandled)
+                    summary = MarkRemindersHandledForKey(summary, key);
+
+                return new AnimeCollectionEditorSaveResponse
+                {
+                    Success = true,
+                    Message = includeIds.Count < 2
+                        ? "已记住你的选择。成员不足两部时，下次同步不会写入这个合集。"
+                        : "已记住你的选择。下次同步会按你勾选的成员更新。",
+                    AnimeCollectionRulesJson = rules,
+                    AnimeCollectionAliasesJson = aliases,
+                    AnimeApprovedCollectionKeys = approved,
+                    Summary = summary
+                };
+            }
+            catch (Exception ex)
+            {
+                return new AnimeCollectionEditorSaveResponse { Success = false, Message = "保存失败：" + ex.Message };
+            }
+        }
+
+        public object Post(ClearAnimeCollectionRuleRequest request)
+        {
+            try
+            {
+                string key = (request?.Key ?? "").Trim();
+                if (string.IsNullOrEmpty(key) || !AnimeCollectionPolicy.IsIdentifier(key) ||
+                    !key.StartsWith("anilist:", StringComparison.Ordinal))
+                    return new AnimeCollectionEditorSaveResponse { Success = false, Message = "缺少合集编号。" };
+
+                var config = Plugin.Instance?.Configuration;
+                if (config == null)
+                    return new AnimeCollectionEditorSaveResponse { Success = false, Message = "插件配置不可用。" };
+
+                string rules = AnimeCollectionEditorSupport.RemoveExactRule(config.AnimeCollectionRulesJson, key);
+                AnimeCollectionPolicy.Parse(rules, config.AnimeApprovedCollectionKeys ?? "", config.AnimeCollectionAliasesJson ?? "");
+                config.AnimeCollectionRulesJson = rules;
+                Plugin.Instance!.SaveConfiguration();
+
+                var summary = LoadAnimeLastRunSummary() ?? new AnimeLastRunSummary();
+                if (request.MarkRemindersHandled)
+                    summary = MarkRemindersHandledForKey(summary, key);
+
+                return new AnimeCollectionEditorSaveResponse
+                {
+                    Success = true,
+                    Message = "已改回自动归类。下次同步会按作品关系重新分组。",
+                    AnimeCollectionRulesJson = rules,
+                    AnimeCollectionAliasesJson = config.AnimeCollectionAliasesJson ?? "",
+                    AnimeApprovedCollectionKeys = config.AnimeApprovedCollectionKeys ?? "",
+                    Summary = summary
+                };
+            }
+            catch (Exception ex)
+            {
+                return new AnimeCollectionEditorSaveResponse { Success = false, Message = "操作失败：" + ex.Message };
+            }
+        }
+
+        private BaseItem? FindLibraryByIncludeId(string includeId)
+        {
+            if (string.IsNullOrEmpty(includeId)) return null;
+            var topDir = Path.Combine(Plugin.Instance!.DataFolderPath, "toplists") + Path.DirectorySeparatorChar;
+            var all = _libraryManager.GetItemList(new InternalItemsQuery
+            {
+                IncludeItemTypes = new[] { "Movie", "Series" },
+                Recursive = true,
+                IsVirtualItem = false
+            });
+            foreach (var media in all)
+            {
+                if (media == null || media.InternalId <= 0 || media.IsVirtualItem) continue;
+                if (!string.IsNullOrEmpty(media.Path) && media.Path.StartsWith(topDir, StringComparison.OrdinalIgnoreCase)) continue;
+                if (ItemMatchesIncludeId(media, includeId)) return media;
+            }
+            return null;
+        }
+
+        private AnimeCollectionState? LoadOwnedState()
+        {
+            try
+            {
+                var path = Path.Combine(Plugin.Instance!.DataFolderPath, "anime", "owned-collections.json");
+                if (!File.Exists(path)) return null;
+                return _jsonSerializer.DeserializeFromFile<AnimeCollectionState>(path);
+            }
+            catch { return null; }
+        }
+
+        private AnimeLastRunSummary MarkRemindersHandledForKey(AnimeLastRunSummary summary, string key)
+        {
+            if (summary == null) summary = new AnimeLastRunSummary();
+            if (summary.ReminderItems == null) summary.ReminderItems = new List<AnimeReminder>();
+            bool changed = false;
+            foreach (var item in summary.ReminderItems)
+            {
+                if (item == null || item.Handled) continue;
+                if (!string.Equals(item.CollectionKey, key, StringComparison.Ordinal)) continue;
+                item.Handled = true;
+                changed = true;
+            }
+            if (!changed) return summary;
+
+            var openKeys = new HashSet<string>(
+                summary.ReminderItems.Where(r => r != null && !r.Handled && !string.IsNullOrEmpty(r.CollectionKey))
+                    .Select(r => r.CollectionKey),
+                StringComparer.Ordinal);
+            if (summary.Cards != null)
+            {
+                foreach (var card in summary.Cards)
+                    if (card != null) card.HasReminder = openKeys.Contains(card.Key ?? "");
+            }
+            if (summary.Owned != null)
+            {
+                var openNames = new HashSet<string>(
+                    summary.ReminderItems.Where(r => r != null && !r.Handled && !string.IsNullOrWhiteSpace(r.CollectionName))
+                        .Select(r => r.CollectionName.Trim()),
+                    StringComparer.OrdinalIgnoreCase);
+                foreach (var o in summary.Owned)
+                    if (o != null) o.HasReminder = !string.IsNullOrWhiteSpace(o.Name) && openNames.Contains(o.Name.Trim());
+            }
+            summary.Reminders = summary.ReminderItems.Count(r => r != null && !r.Handled);
+            summary.StatusText = RefreshReminderCountInStatus(summary.StatusText, summary.Reminders);
+
+            try
+            {
+                var dataDir = Path.Combine(Plugin.Instance!.DataFolderPath, "anime");
+                var pathFile = Path.Combine(dataDir, "last-run-summary.json");
+                Directory.CreateDirectory(dataDir);
+                var tmp = pathFile + ".tmp";
+                File.WriteAllText(tmp, _jsonSerializer.SerializeToString(summary), Encoding.UTF8);
+                if (File.Exists(pathFile)) File.Replace(tmp, pathFile, null);
+                else File.Move(tmp, pathFile);
+            }
+            catch { }
+            return summary;
+        }
+
+
+        private static string? PrimaryIncludeIdFromItem(BaseItem media)
+        {
+            if (media == null || media.InternalId <= 0) return null;
+            bool isSeries = media.GetType().Name == "Series";
+            foreach (var key in new[] { "AniList", "Anilist", "anilist" })
+            {
+                var raw = media.GetProviderId(key);
+                if (string.IsNullOrWhiteSpace(raw)) continue;
+                if (int.TryParse(raw.Trim(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var aid) && aid > 0)
+                    return "anilist:" + aid.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+            var ids = CollectTypedProviderIds(media, isSeries);
+            return PreferTypedProvider(ids);
+        }
+
+        private static bool ItemMatchesIncludeId(BaseItem media, string includeId)
+        {
+            if (media == null || string.IsNullOrEmpty(includeId)) return false;
+            return AllIncludeIdsFromItem(media).Contains(includeId);
+        }
+
+        private static HashSet<string> AllIncludeIdsFromItem(BaseItem media)
+        {
+            var result = new HashSet<string>(StringComparer.Ordinal);
+            if (media == null) return result;
+            bool isSeries = media.GetType().Name == "Series";
+            foreach (var id in CollectTypedProviderIds(media, isSeries)) result.Add(id);
+            foreach (var key in new[] { "AniList", "Anilist", "anilist" })
+            {
+                var raw = media.GetProviderId(key);
+                if (string.IsNullOrWhiteSpace(raw)) continue;
+                if (int.TryParse(raw.Trim(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var aid) && aid > 0)
+                    result.Add("anilist:" + aid.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            return result;
+        }
+
+        private static List<string> CollectTypedProviderIds(BaseItem media, bool isSeries)
+        {
+            var providerIds = new List<string>();
+            void Add(string provider, string? sourceId)
+            {
+                var normalized = (sourceId ?? "").Trim().ToLowerInvariant();
+                var typed = provider + ":" + normalized;
+                if (AnimeCollectionPolicy.IsIdentifier(typed)) providerIds.Add(typed);
+            }
+            if (isSeries)
+            {
+                Add("tmdb_show", media.GetProviderId("Tmdb"));
+                Add("tvdb_show", media.GetProviderId("Tvdb"));
+                Add("imdb_show", media.GetProviderId("Imdb"));
+            }
+            else
+            {
+                Add("tmdb_movie", media.GetProviderId("Tmdb"));
+                Add("tvdb_movie", media.GetProviderId("Tvdb"));
+                Add("imdb_movie", media.GetProviderId("Imdb"));
+            }
+            return providerIds;
+        }
+
+        private static string? PreferTypedProvider(IEnumerable<string> ids)
+        {
+            var list = (ids ?? Array.Empty<string>()).Where(id => AnimeCollectionPolicy.IsIdentifier(id)).Distinct(StringComparer.Ordinal).ToList();
+            if (list.Count == 0) return null;
+            foreach (var prefix in new[] { "tmdb_", "imdb_", "tvdb_" })
+            {
+                var hit = list.Where(id => id.StartsWith(prefix, StringComparison.Ordinal))
+                    .OrderBy(id => id, StringComparer.Ordinal).FirstOrDefault();
+                if (hit != null) return hit;
+            }
+            return list.OrderBy(id => id, StringComparer.Ordinal).FirstOrDefault();
+        }
+
 
         private AnimeLastRunSummary? LoadAnimeLastRunSummary()
         {

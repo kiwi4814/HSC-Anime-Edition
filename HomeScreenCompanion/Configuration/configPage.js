@@ -2997,6 +2997,18 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             el.className = 'anime-card' + (card.HasReminder ? ' has-reminder' : '');
             if (card.Key) el.setAttribute('data-anime-key', card.Key);
             if (card.Name) el.setAttribute('data-anime-name', card.Name);
+            el.setAttribute('role', 'button');
+            el.setAttribute('tabindex', '0');
+            el.title = '点击编辑合集';
+            el.addEventListener('click', function () {
+                openAnimeCollectionEditor(view, { key: card.Key || '', name: card.Name || '' });
+            });
+            el.addEventListener('keydown', function (ev) {
+                if (ev.key === 'Enter' || ev.key === ' ') {
+                    ev.preventDefault();
+                    openAnimeCollectionEditor(view, { key: card.Key || '', name: card.Name || '' });
+                }
+            });
             var st = card.Status || '';
             var titles = card.MemberTitles || [];
             var members = titles.join('、');
@@ -3042,6 +3054,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         } else if (!dry && owned.length) {
             owned.forEach(function (o) {
                 addCard({
+                    Key: o.Key || '',
                     Name: o.Name || '未命名合集',
                     Status: 'unchanged',
                     MemberCount: o.MemberCount || 0,
@@ -3149,31 +3162,308 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
     }
 
     function focusAnimeReminderTarget(view, item) {
-        var key = (item && item.CollectionKey) || '';
-        var name = (item && item.CollectionName) || '';
-        var grid = view.querySelector('#animeCardGrid');
-        var card = null;
-        if (grid && key) card = grid.querySelector('.anime-card[data-anime-key="' + cssAttrEscape(key) + '"]');
-        if (!card && grid && name) {
-            var nodes = grid.querySelectorAll('.anime-card[data-anime-name]');
-            for (var i = 0; i < nodes.length; i++) {
-                if ((nodes[i].getAttribute('data-anime-name') || '') === name) { card = nodes[i]; break; }
+        openAnimeCollectionEditor(view, {
+            key: (item && item.CollectionKey) || '',
+            name: (item && item.CollectionName) || '',
+            reminderId: (item && item.Id) || ''
+        });
+    }
+
+    function showAnimeStudioMain(view) {
+        var main = view.querySelector('#animeStudioMain');
+        var panel = view.querySelector('#animeEditorPanel');
+        if (main) main.style.display = '';
+        if (panel) panel.style.display = 'none';
+        view._animeEditor = null;
+    }
+
+    function showAnimeEditorPanel(view) {
+        var main = view.querySelector('#animeStudioMain');
+        var panel = view.querySelector('#animeEditorPanel');
+        if (main) main.style.display = 'none';
+        if (panel) panel.style.display = '';
+    }
+
+    function openAnimeCollectionEditor(view, opts) {
+        opts = opts || {};
+        var key = (opts.key || '').trim();
+        var name = (opts.name || '').trim();
+        if (!key) {
+            if (window.Dashboard && window.Dashboard.alert) {
+                window.Dashboard.alert(name
+                    ? ('「' + name + '」还没有合集编号，请先同步一次后再编辑。')
+                    : '请先同步，生成合集后再编辑。');
             }
-        }
-        if (card) {
-            grid.querySelectorAll('.anime-card-focus').forEach(function (el) { el.classList.remove('anime-card-focus'); });
-            card.classList.add('anime-card-focus');
-            try { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { card.scrollIntoView(); }
-            var members = card.querySelector('.anime-card-members');
-            if (members) members.style.fontWeight = '600';
             return;
         }
-        // P2 editor not ready — open anime logs as a fallback.
-        var logBtn = view.querySelector('#btnAnimeOpenLogs');
-        if (logBtn) logBtn.click();
-        else if (window.Dashboard && window.Dashboard.alert) {
-            window.Dashboard.alert('还没有对应合集卡片。可先看详细日志，完整编辑会在后续版本提供。');
+        showAnimeEditorPanel(view);
+        view._animeEditor = { key: key, name: name, reminderId: opts.reminderId || '', members: [] };
+        var heading = view.querySelector('#animeEditorHeading');
+        if (heading) heading.textContent = '编辑合集';
+        var nameInput = view.querySelector('#txtAnimeEditorName');
+        if (nameInput) nameInput.value = name || '';
+        var hint = view.querySelector('#animeEditorHint');
+        if (hint) hint.textContent = '正在加载…';
+        var membersEl = view.querySelector('#animeEditorMembers');
+        if (membersEl) membersEl.innerHTML = '';
+        var empty = view.querySelector('#animeEditorMembersEmpty');
+        if (empty) empty.style.display = 'none';
+        var search = view.querySelector('#txtAnimeEditorSearch');
+        if (search) search.value = '';
+        var results = view.querySelector('#animeEditorSearchResults');
+        if (results) { results.innerHTML = ''; results.style.display = 'none'; }
+
+        window.ApiClient.getJSON(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/CollectionEditor', { Key: key }))
+            .then(function (data) {
+                if (!data || !data.Success) {
+                    if (hint) hint.textContent = (data && data.Message) || '无法打开编辑。';
+                    if (window.Dashboard && window.Dashboard.alert) {
+                        window.Dashboard.alert((data && data.Message) || '无法打开编辑。');
+                    }
+                    return;
+                }
+                view._animeEditor.key = data.Key || key;
+                view._animeEditor.hasManualMembers = !!data.HasManualMembers;
+                if (nameInput) nameInput.value = data.DisplayName || name || '';
+                view._animeEditor.members = (data.Members || []).map(function (m) {
+                    return {
+                        IncludeId: m.IncludeId || '',
+                        Title: m.Title || '',
+                        InLibrary: !!m.InLibrary,
+                        Selected: m.Selected !== false
+                    };
+                });
+                renderAnimeEditorMembers(view);
+                if (hint) {
+                    hint.textContent = data.HasManualMembers
+                        ? '当前按你保存的成员名单同步。可改名、勾选成员后保存；也可改回自动归类。'
+                        : '当前仍跟自动分组。保存后会记住你勾选的成员；显示名称会记下来供新建合集使用。';
+                }
+            })
+            .catch(function (err) {
+                if (hint) hint.textContent = '加载失败。';
+                if (window.Dashboard && window.Dashboard.alert) {
+                    window.Dashboard.alert('无法打开编辑：' + (err && err.message ? err.message : err));
+                }
+            });
+    }
+
+    function renderAnimeEditorMembers(view) {
+        var box = view.querySelector('#animeEditorMembers');
+        var empty = view.querySelector('#animeEditorMembersEmpty');
+        if (!box) return;
+        box.innerHTML = '';
+        var state = view._animeEditor || { members: [] };
+        var members = state.members || [];
+        if (!members.length) {
+            if (empty) empty.style.display = '';
+            return;
         }
+        if (empty) empty.style.display = 'none';
+        members.forEach(function (m, index) {
+            var row = document.createElement('div');
+            row.className = 'anime-editor-member';
+            var label = document.createElement('label');
+            var chk = document.createElement('input');
+            chk.type = 'checkbox';
+            chk.checked = !!m.Selected;
+            chk.addEventListener('change', function () {
+                m.Selected = !!chk.checked;
+            });
+            var text = document.createElement('div');
+            var title = document.createElement('div');
+            title.className = 'title';
+            title.textContent = m.Title || '未命名作品';
+            text.appendChild(title);
+            if (!m.InLibrary) {
+                var meta = document.createElement('div');
+                meta.className = 'meta';
+                meta.textContent = '库中暂未找到对应片源';
+                text.appendChild(meta);
+            }
+            label.appendChild(chk);
+            label.appendChild(text);
+            row.appendChild(label);
+            box.appendChild(row);
+        });
+    }
+
+    function animeEditorAddMember(view, hit) {
+        if (!view._animeEditor) return;
+        var includeId = (hit && hit.IncludeId) || '';
+        if (!includeId) return;
+        var members = view._animeEditor.members || [];
+        for (var i = 0; i < members.length; i++) {
+            if (members[i].IncludeId === includeId) {
+                members[i].Selected = true;
+                members[i].Title = hit.Title || members[i].Title;
+                members[i].InLibrary = true;
+                renderAnimeEditorMembers(view);
+                return;
+            }
+        }
+        members.push({
+            IncludeId: includeId,
+            Title: hit.Title || '未命名作品',
+            InLibrary: true,
+            Selected: true
+        });
+        view._animeEditor.members = members;
+        renderAnimeEditorMembers(view);
+    }
+
+    function animeEditorSearch(view, query) {
+        var results = view.querySelector('#animeEditorSearchResults');
+        if (!results) return;
+        query = (query || '').trim();
+        if (query.length < 1) {
+            results.innerHTML = '';
+            results.style.display = 'none';
+            return;
+        }
+        var reqId = (view._animeEditorSearchId = (view._animeEditorSearchId || 0) + 1);
+        window.ApiClient.getJSON(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/MediaSearch', { Q: query }))
+            .then(function (data) {
+                if (reqId !== view._animeEditorSearchId) return;
+                results.innerHTML = '';
+                var items = (data && data.Items) || [];
+                if (!items.length) {
+                    results.style.display = 'none';
+                    return;
+                }
+                items.forEach(function (hit) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'anime-editor-search-hit';
+                    var label = hit.Title || '未命名';
+                    if (hit.Year) label += '（' + hit.Year + '）';
+                    if (hit.Kind) label += ' · ' + hit.Kind;
+                    btn.textContent = label;
+                    btn.addEventListener('mousedown', function (ev) { ev.preventDefault(); });
+                    btn.addEventListener('click', function () {
+                        animeEditorAddMember(view, hit);
+                        results.innerHTML = '';
+                        results.style.display = 'none';
+                        var search = view.querySelector('#txtAnimeEditorSearch');
+                        if (search) search.value = '';
+                    });
+                    results.appendChild(btn);
+                });
+                results.style.display = 'block';
+            })
+            .catch(function () {
+                if (reqId !== view._animeEditorSearchId) return;
+                results.innerHTML = '';
+                results.style.display = 'none';
+            });
+    }
+
+    function applyAnimeEditorConfigToForm(view, result) {
+        if (!result) return;
+        var rules = view.querySelector('#txtAnimeCollectionRulesJson');
+        var aliases = view.querySelector('#txtAnimeCollectionAliasesJson');
+        var approved = view.querySelector('#txtAnimeApprovedCollectionKeys');
+        if (rules && typeof result.AnimeCollectionRulesJson === 'string') rules.value = result.AnimeCollectionRulesJson;
+        if (aliases && typeof result.AnimeCollectionAliasesJson === 'string') aliases.value = result.AnimeCollectionAliasesJson;
+        if (approved && typeof result.AnimeApprovedCollectionKeys === 'string') approved.value = result.AnimeApprovedCollectionKeys;
+        try {
+            originalConfigState = JSON.stringify(getUiConfig(view, true));
+            checkFormState();
+        } catch (e) { }
+    }
+
+    function saveAnimeCollectionEditor(view) {
+        var state = view._animeEditor;
+        if (!state || !state.key) return;
+        var nameInput = view.querySelector('#txtAnimeEditorName');
+        var displayName = nameInput ? (nameInput.value || '').trim() : '';
+        if (!displayName) {
+            if (window.Dashboard && window.Dashboard.alert) window.Dashboard.alert('请填写显示名称。');
+            return;
+        }
+        var includeIds = (state.members || []).filter(function (m) { return m && m.Selected && m.IncludeId; })
+            .map(function (m) { return m.IncludeId; });
+        if (!includeIds.length) {
+            if (window.Dashboard && window.Dashboard.alert) window.Dashboard.alert('请至少勾选一部作品。');
+            return;
+        }
+        var btn = view.querySelector('#btnAnimeEditorSave');
+        if (btn) btn.disabled = true;
+        var tok = window.ApiClient.accessToken();
+        var headers = { 'Content-Type': 'application/json' };
+        if (tok) headers['X-MediaBrowser-Token'] = tok;
+        fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/CollectionEditor/Save'), {
+            method: 'POST',
+            headers: headers,
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                Key: state.key,
+                DisplayName: displayName,
+                IncludeIds: includeIds,
+                MarkRemindersHandled: true
+            })
+        }).then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        }).then(function (result) {
+            if (!(result && result.Success)) {
+                if (window.Dashboard && window.Dashboard.alert) {
+                    window.Dashboard.alert((result && result.Message) || '保存失败。');
+                }
+                return;
+            }
+            applyAnimeEditorConfigToForm(view, result);
+            if (result.Summary) renderAnimeCards(view, result.Summary);
+            if (window.Dashboard && window.Dashboard.alert) {
+                window.Dashboard.alert(result.Message || '已保存。');
+            }
+            showAnimeStudioMain(view);
+        }).catch(function (err) {
+            if (window.Dashboard && window.Dashboard.alert) {
+                window.Dashboard.alert('保存失败：' + (err && err.message ? err.message : err));
+            }
+        }).then(function () {
+            if (btn) btn.disabled = false;
+        });
+    }
+
+    function clearAnimeCollectionEditorRule(view) {
+        var state = view._animeEditor;
+        if (!state || !state.key) return;
+        if (!window.confirm('改回自动归类后，下次同步会按作品关系重新分组。确定吗？')) return;
+        var btn = view.querySelector('#btnAnimeEditorAuto');
+        if (btn) btn.disabled = true;
+        var tok = window.ApiClient.accessToken();
+        var headers = { 'Content-Type': 'application/json' };
+        if (tok) headers['X-MediaBrowser-Token'] = tok;
+        fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/CollectionEditor/ClearRule'), {
+            method: 'POST',
+            headers: headers,
+            credentials: 'same-origin',
+            body: JSON.stringify({ Key: state.key, MarkRemindersHandled: true })
+        }).then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        }).then(function (result) {
+            if (!(result && result.Success)) {
+                if (window.Dashboard && window.Dashboard.alert) {
+                    window.Dashboard.alert((result && result.Message) || '操作失败。');
+                }
+                return;
+            }
+            applyAnimeEditorConfigToForm(view, result);
+            if (result.Summary) renderAnimeCards(view, result.Summary);
+            if (window.Dashboard && window.Dashboard.alert) {
+                window.Dashboard.alert(result.Message || '已改回自动归类。');
+            }
+            showAnimeStudioMain(view);
+        }).catch(function (err) {
+            if (window.Dashboard && window.Dashboard.alert) {
+                window.Dashboard.alert('操作失败：' + (err && err.message ? err.message : err));
+            }
+        }).then(function () {
+            if (btn) btn.disabled = false;
+        });
     }
 
     function cssAttrEscape(value) {
@@ -7633,6 +7923,30 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                             });
                             renderAnimeReminders(view, view._animeLastSummary || {});
                         });
+                    });
+                }
+                var animeEditorBack = view.querySelector('#btnAnimeEditorBack');
+                if (animeEditorBack) animeEditorBack.addEventListener('click', function () { showAnimeStudioMain(view); });
+                var animeEditorSave = view.querySelector('#btnAnimeEditorSave');
+                if (animeEditorSave) animeEditorSave.addEventListener('click', function () { saveAnimeCollectionEditor(view); });
+                var animeEditorAuto = view.querySelector('#btnAnimeEditorAuto');
+                if (animeEditorAuto) animeEditorAuto.addEventListener('click', function () { clearAnimeCollectionEditorRule(view); });
+                var animeEditorSearchInput = view.querySelector('#txtAnimeEditorSearch');
+                if (animeEditorSearchInput) {
+                    var searchTimer = null;
+                    animeEditorSearchInput.addEventListener('input', function () {
+                        var q = animeEditorSearchInput.value || '';
+                        if (searchTimer) clearTimeout(searchTimer);
+                        searchTimer = setTimeout(function () { animeEditorSearch(view, q); }, 220);
+                    });
+                    animeEditorSearchInput.addEventListener('focus', function () {
+                        animeEditorSearch(view, animeEditorSearchInput.value || '');
+                    });
+                    animeEditorSearchInput.addEventListener('blur', function () {
+                        setTimeout(function () {
+                            var results = view.querySelector('#animeEditorSearchResults');
+                            if (results) results.style.display = 'none';
+                        }, 180);
                     });
                 }
                 view.querySelector('#btnCloseLogs').addEventListener('click', () => { _logTab = null; logOverlay.classList.remove('modal-visible'); });

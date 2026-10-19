@@ -15,6 +15,14 @@ namespace HomeScreenCompanion
         public List<long> ManagedItemIds { get; set; } = new List<long>();
     }
 
+    /// <summary>Exact member rule snapshot for the visual editor (P2).</summary>
+    public sealed class AnimeExactRuleSnapshot
+    {
+        public string Key { get; set; } = "";
+        public List<string> IncludeIds { get; set; } = new List<string>();
+        public List<string> ExcludeIds { get; set; } = new List<string>();
+    }
+
     public sealed class AnimeCollectionState
     {
         public List<AnimeManagedCollection> Collections { get; set; } = new List<AnimeManagedCollection>();
@@ -149,6 +157,39 @@ namespace HomeScreenCompanion
                 return "未在批准名单中。";
             return null;
         }
+
+        internal bool HasExactRule(string key) =>
+            !string.IsNullOrEmpty(key) && _rules.Any(r => string.Equals(r.Key, key, StringComparison.Ordinal));
+
+        internal bool TryGetAlias(string key, out string alias)
+        {
+            alias = "";
+            if (string.IsNullOrEmpty(key) || !_aliases.TryGetValue(key, out var name) || string.IsNullOrWhiteSpace(name))
+                return false;
+            alias = name;
+            return true;
+        }
+
+        internal List<string> ExactIncludeIds(string key)
+        {
+            var rule = _rules.FirstOrDefault(r => string.Equals(r.Key, key, StringComparison.Ordinal));
+            if (rule == null) return new List<string>();
+            return rule.Include.OrderBy(id => id, StringComparer.Ordinal).ToList();
+        }
+
+        internal List<AnimeExactRuleSnapshot> ExportRules() =>
+            _rules.Select(r => new AnimeExactRuleSnapshot
+            {
+                Key = r.Key,
+                IncludeIds = r.Include.OrderBy(id => id, StringComparer.Ordinal).ToList(),
+                ExcludeIds = r.Exclude.OrderBy(id => id, StringComparer.Ordinal).ToList()
+            }).OrderBy(r => r.Key, StringComparer.Ordinal).ToList();
+
+        internal Dictionary<string, string> ExportAliases() =>
+            new Dictionary<string, string>(_aliases, StringComparer.Ordinal);
+
+        internal HashSet<string> ExportApproved() =>
+            new HashSet<string>(_approved, StringComparer.Ordinal);
 
         /// <summary>
         /// When ownership overlaps members but the planned Anchor differs, stick to the

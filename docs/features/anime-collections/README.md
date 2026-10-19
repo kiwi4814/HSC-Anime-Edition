@@ -85,7 +85,18 @@ anilist:1900000104
 | `missing_local` | 库里可能还缺 | AI `missing_local` |
 | `cannot_write` | 没法写入 | 跳过/冲突等人话原因 |
 
-有提醒的合集**默认仍写入**。只读 `GET .../Anime/LastRunSummary`；`POST .../Anime/Reminders/Handled` 切换已处理。未做合集成员编辑器前，「去处理」跳到对应卡片或打开详细日志。
+有提醒的合集**默认仍写入**。只读 `GET .../Anime/LastRunSummary`；`POST .../Anime/Reminders/Handled` 切换已处理。「去处理」与合集卡片点击打开 **合集编辑** 子视图（P2）：改显示名称、勾选/搜索添加成员、保存或改回自动归类。
+
+### 合集可视编辑（P2）
+
+主路径子视图（非 JSON 弹窗）：
+
+- **显示名称** → 写入 `AnimeCollectionAliasesJson`（界面不说别名表）；已有 Emby 合集不会自动改名，别名主要影响新建与界面展示。
+- **成员勾选/搜索添加** → 保存时写成该合集的精确 `IncludeIds` 规则（`AnimeCollectionRulesJson`）；若批准名单非空则自动补上该 Key。
+- **改回自动归类** → 删除该合集的手工成员规则，别名保留；下次同步再走自动分组。
+- 保存或改回自动时可把该合集相关提醒标为已处理。
+
+API（Admin）：`GET .../Anime/CollectionEditor`、`GET .../Anime/MediaSearch`、`POST .../Anime/CollectionEditor/Save`、`POST .../Anime/CollectionEditor/ClearRule`。
 
 ### 合集 Key 稳定性与归属恢复
 

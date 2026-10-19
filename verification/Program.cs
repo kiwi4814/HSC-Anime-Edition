@@ -25,6 +25,7 @@ static partial class Program
             TestDuplicates();
             TestExactMembership();
             TestAliasesAndApproval();
+            TestCollectionEditorRewrite();
             TestInvalidPolicies();
             TestLegacyStateAndCache();
             TestConfigurationCompatibility();
@@ -248,6 +249,27 @@ static partial class Program
         Assert(!approved.CanWrite(groups.Single(g => g.Anchor == C), false), "Approval never spreads to another key");
         Assert(!approved.CanWrite(new AnimeGroup { Anchor = D, Name = "用户纸月", EmbyIds = new() { 8, 9 } }, false), "Same display name grants no permission");
         Assert(!approved.CanWrite(first, true), "DryRun overrides approved alias");
+    }
+
+    static void TestCollectionEditorRewrite()
+    {
+        var rules = AnimeCollectionEditorSupport.UpsertExactRule("", Key, new[] { "anilist:1900000101", "tmdb_show:1900000202" });
+        var policy = AnimeCollectionPolicy.Parse(rules, "", "");
+        Assert(policy.HasExactRule(Key), "Editor upsert writes exact rule");
+        Assert(policy.ExactIncludeIds(Key).SequenceEqual(new[] { "anilist:1900000101", "tmdb_show:1900000202" }), "Editor include ids round-trip");
+        var aliases = AnimeCollectionEditorSupport.UpsertAlias("", Key, "用户纸月");
+        Assert(AnimeCollectionPolicy.Parse("", "", aliases).TryGetAlias(Key, out var alias) && alias == "用户纸月", "Editor alias upsert");
+        var updated = AnimeCollectionEditorSupport.UpsertExactRule(rules, Key, new[] { "anilist:1900000101", "anilist:1900000102" });
+        Assert(AnimeCollectionPolicy.Parse(updated, "", "").ExactIncludeIds(Key).SequenceEqual(new[] { "anilist:1900000101", "anilist:1900000102" }), "Editor replaces include set");
+        var cleared = AnimeCollectionEditorSupport.RemoveExactRule(updated, Key);
+        Assert(cleared == "" || !AnimeCollectionPolicy.Parse(cleared, "", "").HasExactRule(Key), "Editor clear removes exact rule");
+        Assert(AnimeCollectionEditorSupport.EnsureApprovedKey("", Key) == "", "Empty approval list stays empty");
+        var approved = AnimeCollectionEditorSupport.EnsureApprovedKey("anilist:1900000103", Key);
+        Assert(approved.Contains(Key) && approved.Contains("anilist:1900000103"), "Non-empty approval gains editor key");
+        Assert(AnimeCollectionEditorSupport.PrimaryIncludeId(Item(1, "星桥", true, A, "tmdb_show:1900000201")) == Key, "Primary include prefers anilist");
+        Assert(AnimeCollectionEditorSupport.PrimaryIncludeId(Item(2, "雾港", false, 0, "tmdb_movie:1900000204")) == "tmdb_movie:1900000204", "Primary include falls back to typed provider");
+        Reject(() => AnimeCollectionEditorSupport.UpsertExactRule("", Key, new[] { "bad" }), "Editor rejects invalid include id");
+        Reject(() => AnimeCollectionEditorSupport.UpsertAlias("", Key, " "), "Editor rejects blank display name");
     }
 
     static void TestInvalidPolicies()

@@ -29,7 +29,8 @@
 | `HomeScreenCompanion/AnimeAniListClient.cs` | AniList GraphQL 与关系缓存 | 请求/身份校验；真实服务未由离线测试验收 |
 | `HomeScreenCompanion/AnimeCollectionPolicy.cs` | 精确成员、批准、别名、身份和重复诊断 | 排除优先、完整替代、无默认作品规则、写入门槛 |
 | `HomeScreenCompanion/AnimeCollectionMembership.cs` | 维护已管理成员集合 | 只追踪插件管理成员，保留人工成员 |
-| `HomeScreenCompanion/AnimeCollectionTask.cs` | 扫描、映射、规划、审批后调用 Emby 合集 API；RestoreLog/LogStore.Anime、节点上限 8000、配额状态区分；图 min Anchor、归属粘滞、失效归属清除、拆分跳过原因 | 动漫独立开关/Dry Run、归属保护、失败不清空合集 |
+| `HomeScreenCompanion/AnimeCollectionEditorSupport.cs` | P2 可视编辑：精确规则/别名 JSON 改写与主包含身份选择 | 不暴露 JSON 用语；改写后经 Policy.Parse 校验 |
+| `HomeScreenCompanion/AnimeCollectionTask.cs` | 扫描、映射、规划、审批后调用 Emby 合集 API；RestoreLog/LogStore.Anime；P0/P1 摘要卡片与提醒；P2 卡片 MemberIncludeIds/归属 Key | 动漫独立开关/Dry Run、归属保护、失败不清空合集 |
 | `HomeScreenCompanion/AiRequestClient.cs` | 五种 provider 共用 HTTP 传输 | 超时/取消、体积边界、禁重定向、脱敏错误 |
 | `HomeScreenCompanion/AiResponseDtos.cs` | 统一 provider 响应 DTO | 是响应模型单一归属；不要在旧 DTO 文件重建重复类 |
 | `HomeScreenCompanion/AiSecretPolicy.cs` | 密钥导出清空、空导入保留 | 覆盖实际导出/导入调用点，而非只保留 helper |
@@ -46,7 +47,7 @@
 | `HomeScreenCompanion/PluginConfiguration.cs` | Compatible AI 与动漫配置、空默认策略、独立预算 | 新装默认与已有配置/旧备份分别处理 |
 | `HomeScreenCompanion/Configuration/configPage.html` | 新动漫/AI 控件、独立 controller、广泛汉化 | ID、控件绑定及技术标识；页面仍有指向官方 Issues 的链接 |
 | `HomeScreenCompanion/Configuration/configPage.js` | Fork GUID/请求路径、动漫加载保存与校验、AI 测试/建议展示、版本查询替代更新器及汉化 | 大面积字符串差异中夹有逻辑；不能整文件取上游 |
-| `HomeScreenCompanion/HomeScreenCompanionService.cs` | 大部分路由隔离、AI Admin 接口、备份 v3/密钥语义与汉化；新增 `Anime/Status` | 路由、DTO、处理器、配置往返必须一起审查 |
+| `HomeScreenCompanion/HomeScreenCompanionService.cs` | 大部分路由隔离、AI Admin 接口、备份 v3/密钥语义与汉化；`Anime/Status`、LastRunSummary/提醒、P2 CollectionEditor/MediaSearch | 路由、DTO、处理器、配置往返必须一起审查 |
 | `HomeScreenCompanion/DTOs.cs` | 删除重复 provider 响应类，转由新增文件持有 | 部分旧路由仍在；见下方已知缺口 |
 | `HomeScreenCompanion/ListFetcher.cs` | 移除各 provider 的重复 HTTP helper，改用共享客户端 | 既有列表选择仍沿用；共同超时/令牌上限改变旧路径语义 |
 | `HomeScreenCompanion/ServerEntryPoint.cs` | 禁止调用旧 AutoTag 自动迁移，另有日志汉化 | 防止迁移/删除其他插件数据；保留现有监听及镜像逻辑 |
