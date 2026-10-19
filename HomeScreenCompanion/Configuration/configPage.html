@@ -1053,15 +1053,15 @@
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label><input is="emby-checkbox" type="checkbox" id="chkAnimeEnabled" /><span>启用动漫合集</span></label>
-                            <div class="fieldDescription">默认关闭。新合集使用指定前缀；绝不接管已有的手工合集。</div>
+                            <div class="fieldDescription">默认关闭。插件只管理自己创建的合集，不会改动手工创建的合集。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeDryRun" /><span>动漫仅预览（建议先开启）</span></label>
-                            <div class="fieldDescription">默认开启，不写入合集。全局“仅预览”同样阻止写入；实际写入还须通过下方批准名单。</div>
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeDryRun" /><span>动漫合集仅预览</span></label>
+                            <div class="fieldDescription">开启时只在日志中列出预计的改动，不实际创建或修改合集。全局“仅预览”也有同样效果。关闭后，也只会处理批准名单中的合集。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
                             <label><input is="emby-checkbox" type="checkbox" id="chkAnimeIncludeSpinOffs" /><span>包含 AniList 已确认的衍生作品</span></label>
-                            <div class="fieldDescription">遍历前传、续作、支线及母作品关系，排除相似、客串与改编关系。关闭此项仍可能存在主线分支歧义；须人工复核并用明确成员规则确认后才能写入。</div>
+                            <div class="fieldDescription">包括前传、续作、外传和母作品，不包括相似作品、客串和改编。系列出现分支时（无论是否开启此项），需要先用明确成员规则确认，才会创建合集。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:15px;">
                             <input is="emby-input" type="text" id="txtAnimePrefix" label="合集名称前缀" placeholder="动漫 · " />
@@ -1069,18 +1069,18 @@
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
                             <input is="emby-input" type="number" min="10" max="300" id="txtAnimeApiBudget" label="每次同步最多新增 AniList 请求数" />
-                            <div class="fieldDescription">首次扫描可能需要多次运行以填充关系缓存；AniList 请求会限速。</div>
+                            <div class="fieldDescription">AniList 有请求频率限制，首次同步可能需要运行几次才能获取全部作品关系。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:16px;">
                             <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiOther" /><span>用 AI 复核关系不明确的作品</span></label>
-                            <div class="fieldDescription">默认关闭，使用统一提供商、凭据和预算。AI 不确认缺失身份映射，也不能替代明确成员规则与人工批准。</div>
+                            <div class="fieldDescription">默认关闭。使用下方的 AI 设置和预算。AI 只提供建议，不会自动修改合集。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
                             <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiNaming" /><span>AI 中文命名建议</span></label>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
                             <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiCollectionReview" /><span>AI 合集审查建议</span></label>
-                            <div class="fieldDescription">两项均默认关闭，仅保存分析建议，不自动改名或调整成员。关闭 AI 不影响确定性分组。</div>
+                            <div class="fieldDescription">默认关闭。只生成建议，不会自动改名或调整成员。不开启 AI 也能正常分组。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
                             <label class="inputLabel" for="selAnimeAiProvider">AI 提供商</label>
@@ -1104,7 +1104,7 @@
                                 <input type="checkbox" class="chkShowApiKey" data-target="txtCompatibleAiApiKey" /> 显示
                             </label>
                         </div>
-                        <div id="compatibleAiHttpWarning" role="status" style="display:none;color:#e8a838;margin:12px 0;">HTTP 不加密，会明文传输请求和密钥。仅用于受信任的本机或局域网服务，不要用于公网。</div>
+                        <div id="compatibleAiHttpWarning" role="status" style="display:none;color:#e8a838;margin:12px 0;">HTTP 不加密，请求内容和密钥会以明文传输。请只在本机或可信局域网中使用。</div>
                         <div class="inputContainer" style="margin-top:12px;">
                             <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxCalls" label="每次运行最多 AI 调用数" />
                         </div>
@@ -1113,7 +1113,7 @@
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
                             <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxTokensPerRun" label="每次运行 AI Token 总上限" />
-                            <div class="fieldDescription">统一预算：默认 15 次、每次 800 令牌、每次运行共 4000 令牌。任一项为 0 即不调用 AI；令牌预算不等于费用保证。</div>
+                            <div class="fieldDescription">默认每次运行最多调用 15 次，每次 800 Token，合计 4000 Token。任一项设为 0 即不调用 AI。</div>
                         </div>
                         <button is="emby-button" type="button" id="btnTestAnimeAiConnection" class="raised btn-neutral">测试 AI 连接</button>
                         <div id="animeAiConnectionResult" role="status" aria-live="polite" style="margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere;"></div>
@@ -1138,7 +1138,7 @@
                             <textarea is="emby-textarea" id="txtAnimeCollectionAliasesJson" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='{"anilist:&lt;作品ID&gt;":"虚构作品甲","anilist:&lt;另一作品ID&gt;":"虚构作品乙"}'></textarea>
                             <div class="fieldDescription">为合集 Key 指定显示名称。示例中的作品和 ID 均为虚构，请替换后使用。</div>
                         </div>
-                        <p class="fieldDescription" style="margin-top:16px;">映射缓存保留 7 天。下载、校验或遍历失败，以及规则、别名、批准格式错误时均禁止写入。不自动删除合集；重复媒体仅按带类型的提供商 ID 提示，不去重或修改媒体。</p>
+                        <p class="fieldDescription" style="margin-top:16px;">映射数据缓存 7 天。数据获取失败或上面的设置格式有误时，本次不会改动任何合集。插件不会自动删除合集；发现重复媒体时只在日志中提示，不会处理。</p>
                     </div>
                 </div>
 

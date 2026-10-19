@@ -211,10 +211,10 @@ namespace HomeScreenCompanion
                 int movieCount = allItems.Count(i => i.GetType().Name.Contains("Movie"));
                 int seriesCount = allItems.Count(i => i.GetType().Name.Contains("Series"));
                 int activeGroupTotal = config.Tags.Count(t => t.Active && !string.IsNullOrWhiteSpace(t.Tag));
-                _log.Info($"  媒体库： {movieCount:N0} 部电影, {seriesCount:N0} 部剧集");
-                _log.Info($"  分组： {activeGroupTotal} 已启用");
+                _log.Info($"  媒体库：{movieCount:N0} 部电影，{seriesCount:N0} 部剧集");
+                _log.Info($"  分组：{activeGroupTotal} 已启用");
                 _log.Rule();
-                _log.Debug($"媒体库扫描： {allItems.Count:N0} 个项目, {imdbLookup.Count:N0} 具有 IMDb ID  ·  {RunLog.Elapsed(runTimer.Elapsed)}");
+                _log.Debug($"媒体库扫描：{allItems.Count:N0} 个项目，{imdbLookup.Count:N0} 具有 IMDb ID  ·  {RunLog.Elapsed(runTimer.Elapsed)}");
 
                 var fetcher = new ListFetcher(_httpClient, _jsonSerializer);
                 var desiredTagsMap = new Dictionary<Guid, HashSet<string>>();
@@ -479,7 +479,7 @@ namespace HomeScreenCompanion
                     }
                 }
 
-                _log.Debug($"缓存就绪，耗时 {RunLog.Elapsed(runTimer.Elapsed)}  ·  媒体信息 {mediaInfoCache.Count:N0} 个项目  ·  用户数据 {userDataCache.Count:N0} 条记录，用户数 {preloadedUsers?.Length ?? 0} 位用户  ·  人物查询 {personCache.Count}  ·  合集/播放列表查询 {collectionMembershipCache.Count}");
+                _log.Debug($"缓存就绪，耗时 {RunLog.Elapsed(runTimer.Elapsed)}  ·  媒体信息 {mediaInfoCache.Count:N0} 个项目  ·  用户数据 {userDataCache.Count:N0} 条记录  ·  用户 {preloadedUsers?.Length ?? 0} 位  ·  人物查询 {personCache.Count}  ·  合集/播放列表查询 {collectionMembershipCache.Count}");
                 _log.Blank();
                 _log.Info("» 获取来源");
                 var phaseTimer = System.Diagnostics.Stopwatch.StartNew();
@@ -635,7 +635,7 @@ namespace HomeScreenCompanion
                                     if (blacklist.Contains(extItem.Imdb))
                                     {
                                         _extBlacklisted++;
-                                        _log.Debug($"    黑名单已排除： {extItem.Name} ({extItem.Imdb})");
+                                        _log.Debug($"    黑名单已排除：{extItem.Name} ({extItem.Imdb})");
                                         continue;
                                     }
 
@@ -655,7 +655,7 @@ namespace HomeScreenCompanion
                                     }
                                 }
                             }
-                            _log.Debug($"  已获取 {gs.ListCount} 个项目 耗时 {fetchTimer.ElapsedMilliseconds} ms  ·  {matchedLocalItems.Count} 通过 IMDb ID 匹配  ·  {gs.MissingItems.Count} 不在媒体库中  ·  {_extBlacklisted} 已被黑名单排除  ·  {_extNoImdb} 无 IMDb ID");
+                            _log.Debug($"  已获取 {gs.ListCount} 个项目，耗时 {fetchTimer.ElapsedMilliseconds} ms  ·  IMDb ID 匹配 {matchedLocalItems.Count}  ·  {gs.MissingItems.Count} 个不在媒体库中  ·  {_extBlacklisted} 已被黑名单排除  ·  {_extNoImdb} 无 IMDb ID");
                         }
                         else if (tagConfig.SourceType == "LocalCollection" || tagConfig.SourceType == "LocalPlaylist")
                         {
@@ -698,7 +698,7 @@ namespace HomeScreenCompanion
                                     if (children.Count == 0)
                                         gs.Warnings.Add($"'{tagConfig.LocalSourceId}' 为空（或仅包含虚拟项目）");
                                     else
-                                        _log.Debug($"  来源项目数： {children.Count}");
+                                        _log.Debug($"  来源项目数：{children.Count}");
 
                                     foreach (var child in children)
                                     {
@@ -728,7 +728,7 @@ namespace HomeScreenCompanion
                                         var imdb = itemToTag.GetProviderId("Imdb");
                                         if (!string.IsNullOrEmpty(imdb) && blacklist.Contains(imdb))
                                         {
-                                            _log.Debug($"    黑名单已排除： {itemToTag.Name} ({imdb})");
+                                            _log.Debug($"    黑名单已排除：{itemToTag.Name} ({imdb})");
                                             continue;
                                         }
 
@@ -758,7 +758,7 @@ namespace HomeScreenCompanion
                                 CachedMediaInfo? ci = mediaInfoCache.TryGetValue(item.InternalId, out var ciVal) ? ciVal : (CachedMediaInfo?)null;
                                 return ItemMatchesMediaInfo(item, tagConfig, debug, seriesEpisodeCache, personCache, userDataCache, ci, preloadedUsers, seriesLastPlayedCache, collectionMembershipCache, seriesEpisodeNamesCache);
                             }).ToList();
-                            _log.Debug($"  筛选条件： {beforeCount} → {matchedLocalItems.Count} 个项目");
+                            _log.Debug($"  筛选条件：{beforeCount} → {matchedLocalItems.Count} 个项目");
                         }
 
                         if (tagConfig.SourceType == "MediaInfo")
@@ -819,16 +819,16 @@ namespace HomeScreenCompanion
                                     {
                                         // Collapse up: episodes → season/series
                                         if (ep) list.AddRange(matchedLocalItems);
-                                        if (sea) { var s = ResolveParentSeasons(matchedLocalItems); _log.Debug($"  输出层级： {matchedLocalItems.Count} 集 → {s.Count} 季"); list.AddRange(s); foreach (var x in s) allScannedSeasonItems.TryAdd(x.Id, x); }
-                                        if (ser) { var s = ResolveParentSeries(matchedLocalItems); _log.Debug($"  输出层级： {matchedLocalItems.Count} 集 → {s.Count} 部剧集"); list.AddRange(s); }
+                                        if (sea) { var s = ResolveParentSeasons(matchedLocalItems); _log.Debug($"  输出层级：{matchedLocalItems.Count} 集 → {s.Count} 季"); list.AddRange(s); foreach (var x in s) allScannedSeasonItems.TryAdd(x.Id, x); }
+                                        if (ser) { var s = ResolveParentSeries(matchedLocalItems); _log.Debug($"  输出层级：{matchedLocalItems.Count} 集 → {s.Count} 部剧集"); list.AddRange(s); }
                                     }
                                     else
                                     {
                                         // Expand down: series → seasons/episodes; movies stay as-is for any target
                                         var movies = matchedLocalItems.Where(i => !i.GetType().Name.Contains("Series")).ToList();
                                         if (ser) list.AddRange(matchedLocalItems);
-                                        if (sea) { var s = ResolveChildSeasons(seriesOnly); _log.Debug($"  输出层级： {seriesOnly.Count} 部剧集 → {s.Count} 季"); list.AddRange(s); foreach (var x in s) allScannedSeasonItems.TryAdd(x.Id, x); list.AddRange(movies); }
-                                        if (ep)  { var e = ResolveChildEpisodes(seriesOnly); _log.Debug($"  输出层级： {seriesOnly.Count} 部剧集 → {e.Count} 集"); list.AddRange(e); foreach (var x in e) allScannedEpisodeItems.TryAdd(x.Id, x); list.AddRange(movies); }
+                                        if (sea) { var s = ResolveChildSeasons(seriesOnly); _log.Debug($"  输出层级：{seriesOnly.Count} 部剧集 → {s.Count} 季"); list.AddRange(s); foreach (var x in s) allScannedSeasonItems.TryAdd(x.Id, x); list.AddRange(movies); }
+                                        if (ep)  { var e = ResolveChildEpisodes(seriesOnly); _log.Debug($"  输出层级：{seriesOnly.Count} 部剧集 → {e.Count} 集"); list.AddRange(e); foreach (var x in e) allScannedEpisodeItems.TryAdd(x.Id, x); list.AddRange(movies); }
                                     }
                                     return list;
                                 }
@@ -838,7 +838,7 @@ namespace HomeScreenCompanion
                             }
                             if (debug)
                             {
-                                _log.Debug($"  已扫描 {itemsToScan.Count:N0} 个项目 耗时 {groupTimer.ElapsedMilliseconds} ms  ·  {matchedLocalItems.Count} 已匹配  (标签输出 {tagOutputItems.Count}, 合集输出 {collectionOutputItems.Count})");
+                                _log.Debug($"  已扫描 {itemsToScan.Count:N0} 个项目，耗时 {groupTimer.ElapsedMilliseconds} ms  ·  匹配 {matchedLocalItems.Count}（标签输出 {tagOutputItems.Count}，合集输出 {collectionOutputItems.Count}）");
                                 WriteMatchedItemsDebug(matchedLocalItems);
                             }
                         }
@@ -877,7 +877,7 @@ namespace HomeScreenCompanion
                                     if (blacklist.Contains(imdbId))
                                     {
                                         _aiBlacklisted++;
-                                        _log.Debug($"    黑名单已排除： {_aiLabel} ({imdbId})");
+                                        _log.Debug($"    黑名单已排除：{_aiLabel} ({imdbId})");
                                         continue;
                                     }
 
@@ -896,7 +896,7 @@ namespace HomeScreenCompanion
                                     {
                                         // IMDB ID not found in library — fall back to title+year match
                                         var titleMatches = FindByTitleAndYear(matchableItems, aiItem.title, aiItem.year);
-                                        if (titleMatches.Count > 0) { _aiTitleMatched++; _log.Debug($"    {imdbId} 不在媒体库中 — 已匹配 '{_aiLabel}' 按标题"); }
+                                        if (titleMatches.Count > 0) { _aiTitleMatched++; _log.Debug($"    {imdbId} 不在媒体库中 — 按标题匹配到 '{_aiLabel}'"); }
                                         else gs.MissingItems.Add($"{_aiLabel}  {imdbId}");
                                         foreach (var localItem in titleMatches)
                                         {
@@ -919,7 +919,7 @@ namespace HomeScreenCompanion
                                         if (!string.IsNullOrEmpty(imdb) && blacklist.Contains(imdb))
                                         {
                                             _aiBlacklisted++;
-                                            _log.Debug($"    黑名单已排除： {localItem.Name} ({imdb})");
+                                            _log.Debug($"    黑名单已排除：{localItem.Name} ({imdb})");
                                             continue;
                                         }
                                         if (!matchedLocalItems.Contains(localItem))
@@ -928,7 +928,7 @@ namespace HomeScreenCompanion
                                 }
                             }
 
-                            _log.Debug($"  AI ({tagConfig.AiProvider}) 返回 {gs.ListCount} 个项目 耗时 {fetchTimer.ElapsedMilliseconds} ms  ·  {matchedLocalItems.Count} 已匹配 ({_aiTitleMatched} 仅按标题)  ·  {gs.MissingItems.Count} 不在媒体库中  ·  {_aiBlacklisted} 已被黑名单排除");
+                            _log.Debug($"  AI ({tagConfig.AiProvider}) 返回 {gs.ListCount} 个项目，耗时 {fetchTimer.ElapsedMilliseconds} ms  ·  匹配 {matchedLocalItems.Count}（其中 {_aiTitleMatched} 个仅按标题）  ·  {gs.MissingItems.Count} 个不在媒体库中  ·  {_aiBlacklisted} 已被黑名单排除");
                             if (tagConfig.AiRefreshIntervalDays > 0)
                             {
                                 tagConfig.AiLastRunDate = DateTime.UtcNow;
@@ -1053,7 +1053,7 @@ namespace HomeScreenCompanion
                             gs.Warnings.Add($"合集 '{tagConfig.LocalSourceId}' 在媒体库中未找到");
                         if (gs.MissingItems.Count > 0 && debug)
                         {
-                            _log.Debug($"  不在媒体库中 ({gs.MissingItems.Count}):");
+                            _log.Debug($"  不在媒体库中（{gs.MissingItems.Count}）：");
                             foreach (var _missing in gs.MissingItems) _log.Debug("    " + _missing);
                         }
                         _log.Debug($"  分组完成，耗时 {groupTimer.ElapsedMilliseconds} ms");
@@ -1098,7 +1098,7 @@ namespace HomeScreenCompanion
                 if (groupPlaylistItems.Count > 0 && !dryRun)
                 {
                     int _plCreated = statsList.Sum(g => g.PlaylistUsersCreated), _plUpdated = statsList.Sum(g => g.PlaylistUsersUpdated), _plFailed = statsList.Sum(g => g.PlaylistUsersFailed);
-                    _log.Info($"    {_plCreated} 已创建, {_plUpdated} 已更新{(_plFailed > 0 ? $", {_plFailed} 失败" : "")}  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}");
+                    _log.Info($"    创建 {_plCreated}，更新 {_plUpdated}{(_plFailed > 0 ? $"，失败 {_plFailed}" : "")}  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}");
                 }
 
                 if (!dryRun)
@@ -1166,7 +1166,7 @@ namespace HomeScreenCompanion
                         try { _libraryManager.UpdateItem(item, item.Parent, ItemUpdateType.MetadataEdit, null); }
                         catch (Exception ex)
                         {
-                            _log.Warn($"无法保存标签： '{item.Name}': {ex.Message}");
+                            _log.Warn($"无法保存标签：'{item.Name}'：{ex.Message}");
                             foreach (var t in toRemove) if (!configuredTags.Contains(t)) orphanCleanupFailed.Add(t);
                         }
                         if (++updateCount % 25 == 0)
@@ -1204,7 +1204,7 @@ namespace HomeScreenCompanion
                         try { _libraryManager.UpdateItem(item, item.Parent, ItemUpdateType.MetadataEdit, null); }
                         catch (Exception ex)
                         {
-                            _log.Warn($"无法保存标签： '{item.Name}': {ex.Message}");
+                            _log.Warn($"无法保存标签：'{item.Name}'：{ex.Message}");
                             foreach (var t in toRemove) if (!configuredTags.Contains(t)) orphanCleanupFailed.Add(t);
                         }
                         if (++updateCount % 25 == 0)
@@ -1242,7 +1242,7 @@ namespace HomeScreenCompanion
                         try { _libraryManager.UpdateItem(item, item.Parent, ItemUpdateType.MetadataEdit, null); }
                         catch (Exception ex)
                         {
-                            _log.Warn($"无法保存季的标签 '{item.Name}': {ex.Message}");
+                            _log.Warn($"无法保存季的标签 '{item.Name}'：{ex.Message}");
                             foreach (var t in toRemove) if (!configuredTags.Contains(t)) orphanCleanupFailed.Add(t);
                         }
                         if (++updateCount % 25 == 0)
@@ -1274,8 +1274,8 @@ namespace HomeScreenCompanion
                 _log.Info(tagsAdded == 0 && tagsRemoved == 0
                     ? $"    无需修改标签  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}"
                     : dryRun
-                        ? $"    预计添加 {tagsAdded} 并移除 {tagsRemoved} 标签 涉及 {RunLog.Plural(itemsChanged, "个项目")}"
-                        : $"    +{tagsAdded} 已添加, -{tagsRemoved} 已移除 涉及 {RunLog.Plural(itemsChanged, "个项目")}  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}");
+                        ? $"    预计添加 {tagsAdded} 个、移除 {tagsRemoved} 个标签，涉及 {RunLog.Plural(itemsChanged, "个项目")}"
+                        : $"    添加 {tagsAdded} 个、移除 {tagsRemoved} 个标签，涉及 {RunLog.Plural(itemsChanged, "个项目")}  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}");
 
                 _log.Blank();
                 _log.Info("» 合集");
@@ -1294,14 +1294,14 @@ namespace HomeScreenCompanion
 
                         if (existingColl == null)
                         {
-                            if (dryRun) { collWouldCreate++; _log.Debug($"  {cName}  →  预计创建 ({desiredIds.Count} 个项目)"); continue; }
+                            if (dryRun) { collWouldCreate++; _log.Debug($"  {cName}  →  预计创建（{desiredIds.Count} 个项目）"); continue; }
                             var createdRef = await _collectionManager.CreateCollection(new CollectionCreationOptions { Name = cName, IsLocked = false, ItemIdList = desiredIds.ToArray() });
                             if (createdRef != null)
                             {
                                 collCreated++;
                                 collCreatedSet.Add(cName);
                                 collItemsAdded[cName] = desiredIds.Count;
-                                _log.Debug($"  {cName}  →  已创建 ({desiredIds.Count} 个项目)");
+                                _log.Debug($"  {cName}  →  已创建（{desiredIds.Count} 个项目）");
                                 if (collectionDescriptions.ContainsKey(cName) || collectionPosters.ContainsKey(cName))
                                     ApplyCollectionMeta(createdRef, cName, collectionDescriptions, collectionPosters, debug);
                                 ApplyCollectionSortName(createdRef, cName, collectionSortNames.GetValueOrDefault(cName));
@@ -1324,7 +1324,7 @@ namespace HomeScreenCompanion
                                 collItemsRemoved[cName] = toRemove.Count;
                                 if (debug)
                                 {
-                                    _log.Debug($"  {cName}  →  已更新 (+{toAdd.Count}, -{toRemove.Count})");
+                                    _log.Debug($"  {cName}  →  已更新（+{toAdd.Count}，-{toRemove.Count}）");
                                     var _collMap = allItems.ToDictionary(i => i.InternalId, i => i.Name + (i.ProductionYear.HasValue ? $" ({i.ProductionYear})" : ""));
                                     string CollLabel(long id) => _collMap.TryGetValue(id, out var _cn) ? _cn : id.ToString();
                                     foreach (var id in toAdd) _log.Debug($"    + {CollLabel(id)}");
@@ -1334,11 +1334,11 @@ namespace HomeScreenCompanion
                             else if (toAdd.Count > 0 || toRemove.Count > 0)
                             {
                                 collWouldUpdate++;
-                                _log.Debug($"  {cName}  →  预计更新 (+{toAdd.Count}, -{toRemove.Count})");
+                                _log.Debug($"  {cName}  →  预计更新（+{toAdd.Count}，-{toRemove.Count}）");
                             }
                             else
                             {
-                                _log.Debug($"  {cName}  →  已是最新 ({currentMembers.Count} 个项目)");
+                                _log.Debug($"  {cName}  →  已是最新（{currentMembers.Count} 个项目）");
                             }
                             if (!dryRun && (collectionDescriptions.ContainsKey(cName) || collectionPosters.ContainsKey(cName)))
                                 ApplyCollectionMeta(existingColl, cName, collectionDescriptions, collectionPosters, debug);
@@ -1348,10 +1348,10 @@ namespace HomeScreenCompanion
                     }
                     catch (Exception ex)
                     {
-                        _log.Error($"合集 \"{cName}\" 无法更新： {ex.Message}");
+                        _log.Error($"合集 \"{cName}\" 无法更新：{ex.Message}");
                         WriteExceptionDebug(ex);
                         foreach (var _gsC in statsList.Where(g => string.Equals(g.CollectionName, cName, StringComparison.OrdinalIgnoreCase)))
-                            _gsC.Warnings.Add($"合集无法更新： {ex.Message}");
+                            _gsC.Warnings.Add($"合集无法更新：{ex.Message}");
                     }
                 }
                 foreach (var gs in statsList)
@@ -1382,21 +1382,21 @@ namespace HomeScreenCompanion
                         {
                             _libraryManager.DeleteItem(coll, new DeleteOptions { DeleteFileLocation = false });
                             collDeleted++;
-                            _log.Skip($"合集 \"{oldName}\" 已移除 (所属分组已删除、禁用或不在计划时间内)");
+                            _log.Skip($"合集 \"{oldName}\" 已移除（所属分组已删除、禁用或不在计划时间内）");
                         }
                         else if (coll != null)
                         {
-                            _log.Skip($"合集 \"{oldName}\" 预计移除 (所属分组已删除、禁用或不在计划时间内)");
+                            _log.Skip($"合集 \"{oldName}\" 预计移除（所属分组已删除、禁用或不在计划时间内）");
                         }
                     }
                     catch (Exception ex)
                     {
-                        _log.Warn($"合集 \"{oldName}\" 无法移除： {ex.Message}");
+                        _log.Warn($"合集 \"{oldName}\" 无法移除：{ex.Message}");
                     }
                 }
                 _log.Info(dryRun
-                    ? $"    预计创建 {collWouldCreate} 并更新 {collWouldUpdate} 个合集"
-                    : $"    {collCreated} 已创建, {collUpdated} 已更新, {collDeleted} 已移除  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}");
+                    ? $"    预计创建 {collWouldCreate} 个、更新 {collWouldUpdate} 个合集"
+                    : $"    创建 {collCreated}，更新 {collUpdated}，移除 {collDeleted}  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}");
                 if (!dryRun) SaveFileHistory("homescreencompanion_collections.txt", activeCollections.ToList());
                 if (!dryRun) Plugin.Instance.SaveConfiguration();
 
@@ -1408,7 +1408,7 @@ namespace HomeScreenCompanion
                 if (!dryRun) ManageHomeSections(config, cancellationToken, debug, statsList);
                 else _log.Skip("仅预览 — 不修改主屏幕栏目");
                 if (!dryRun)
-                    _log.Info($"    {statsList.Count(g => g.HomeSectionSynced)} 已同步, {statsList.Count(g => g.HomeSectionRemoved)} 已移除  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}");
+                    _log.Info($"    同步 {statsList.Count(g => g.HomeSectionSynced)}，移除 {statsList.Count(g => g.HomeSectionRemoved)}  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}");
 
                 CleanupDisabledPlaylists(config, dryRun);
                 bool _hasTopLists = (config.TopLists ?? new List<TopListHomeSection>()).Any(t => !string.IsNullOrWhiteSpace(t.TagName));
@@ -1500,7 +1500,7 @@ namespace HomeScreenCompanion
                 foreach (var kvp in tagRemovedByTag.Where(kvp => kvp.Value > 0 && !displayedTagNames.Contains(kvp.Key)))
                 {
                     _log.Info("[Cleanup]");
-                    _log.Skip($"标签 \"{kvp.Key}\" {(dryRun ? "预计移除" : "已移除")} 来自 {RunLog.Plural(kvp.Value, "个项目")} (所属分组已删除或禁用)");
+                    _log.Skip($"标签 \"{kvp.Key}\"：{(dryRun ? "预计从" : "已从")} {RunLog.Plural(kvp.Value, "个项目")}上移除（所属分组已删除或禁用）");
                     _log.Blank();
                 }
 
@@ -1527,25 +1527,25 @@ namespace HomeScreenCompanion
 
                 _log.Rule();
                 _log.Info("汇总");
-                var _groupParts = new List<string> { $"{groupsOk} 正常" };
-                if (groupsWarned > 0) _groupParts.Add($"{groupsWarned} 有警告");
-                if (groupsSkipped > 0) _groupParts.Add($"{groupsSkipped} 已跳过");
-                if (groupsFailed > 0) _groupParts.Add($"{groupsFailed} 失败");
-                _log.Info($"  分组：        {string.Join(", ", _groupParts)}");
-                _log.Info($"  标签：          +{summaryTagsAdded} 已添加, -{tagsRemoved} 已移除");
+                var _groupParts = new List<string> { $"正常 {groupsOk}" };
+                if (groupsWarned > 0) _groupParts.Add($"有警告 {groupsWarned}");
+                if (groupsSkipped > 0) _groupParts.Add($"跳过 {groupsSkipped}");
+                if (groupsFailed > 0) _groupParts.Add($"失败 {groupsFailed}");
+                _log.Info($"  分组：{string.Join("，", _groupParts)}");
+                _log.Info($"  标签：添加 {summaryTagsAdded}，移除 {tagsRemoved}");
                 _log.Info(dryRun
-                    ? $"  合集:   {collWouldCreate} 预计创建, {collWouldUpdate} 已更新"
-                    : $"  合集:   {totalCollCreated} 已创建, {totalCollUpdated} 已更新, {collDeleted} 已移除");
+                    ? $"  合集：预计创建 {collWouldCreate}，预计更新 {collWouldUpdate}"
+                    : $"  合集：创建 {totalCollCreated}，更新 {totalCollUpdated}，移除 {collDeleted}");
                 if (statsList.Any(g => g.EnablePlaylist))
-                    _log.Info($"  播放列表:     {statsList.Sum(g => g.PlaylistUsersCreated)} 已创建, {statsList.Sum(g => g.PlaylistUsersUpdated)} 已更新{(statsList.Sum(g => g.PlaylistUsersFailed) > 0 ? $", {statsList.Sum(g => g.PlaylistUsersFailed)} 失败" : "")}");
-                _log.Info($"  主屏幕栏目： {totalHsSynced} 已同步, {totalHsRemoved} 已移除");
+                    _log.Info($"  播放列表：创建 {statsList.Sum(g => g.PlaylistUsersCreated)}，更新 {statsList.Sum(g => g.PlaylistUsersUpdated)}{(statsList.Sum(g => g.PlaylistUsersFailed) > 0 ? $"，失败 {statsList.Sum(g => g.PlaylistUsersFailed)}" : "")}");
+                _log.Info($"  主屏幕栏目：同步 {totalHsSynced}，移除 {totalHsRemoved}");
                 _log.Info($"  完成，耗时 {elapsedStr}  ·  {StatusSymbol(groupsFailed, groupsWarned)} {(dryRun ? "仅预览 — " : "")}{(groupsFailed > 0 ? $"已完成，有 {groupsFailed} 个错误" : groupsWarned > 0 ? $"已完成，有 {groupsWarned} 条警告" : "已完成")}");
                 _log.Rule();
             }
             catch (Exception ex)
             {
                 LastRunStatus = $"Failed: {ex.Message}";
-                _log.Error($"同步已中止： {ex.Message}");
+                _log.Error($"同步已中止：{ex.Message}");
                 WriteExceptionDebug(ex);
             }
             finally { IsRunning = false; PersistLog(); }
@@ -1602,8 +1602,8 @@ namespace HomeScreenCompanion
             {
                 var _nextAiRun = tagConfig.AiLastRunDate.AddDays(tagConfig.AiRefreshIntervalDays);
                 _log.Rule();
-                _log.Info($"Home Screen Companion v{Plugin.Instance?.Version}  ·  {startTime:yyyy-MM-dd HH:mm}  ·  单个分组： {_displayName}");
-                _log.Skip($"已跳过： AI 下次刷新日期为 {_nextAiRun:yyyy-MM-dd}");
+                _log.Info($"Home Screen Companion v{Plugin.Instance?.Version}  ·  {startTime:yyyy-MM-dd HH:mm}  ·  单个分组：{_displayName}");
+                _log.Skip($"已跳过：AI 下次刷新日期为 {_nextAiRun:yyyy-MM-dd}");
                 _log.Rule();
                 LastRunStatus = $"Skipped ({DateTime.Now:HH:mm})";
                 return (true, $"已跳过 — AI 下次刷新日期为 {_nextAiRun:yyyy-MM-dd}");
@@ -1619,9 +1619,9 @@ namespace HomeScreenCompanion
             int _movieCount = allItems.Count(i => i.GetType().Name.Contains("Movie"));
             int _seriesCount = allItems.Count(i => i.GetType().Name.Contains("Series"));
             _log.Rule();
-            _log.Info($"Home Screen Companion v{Plugin.Instance?.Version}  ·  {startTime:yyyy-MM-dd HH:mm}  ·  单个分组： {_displayName}");
+            _log.Info($"Home Screen Companion v{Plugin.Instance?.Version}  ·  {startTime:yyyy-MM-dd HH:mm}  ·  单个分组：{_displayName}");
             if (dryRun) _log.Warn("仅预览 — 不会修改任何内容，日志只显示预计操作");
-            _log.Info($"  媒体库： {_movieCount:N0} 部电影, {_seriesCount:N0} 部剧集");
+            _log.Info($"  媒体库：{_movieCount:N0} 部电影，{_seriesCount:N0} 部剧集");
             _log.Rule();
 
             var gs = new GroupRunStats
@@ -1924,7 +1924,7 @@ namespace HomeScreenCompanion
                         foreach (var extItem in items)
                         {
                             if (string.IsNullOrEmpty(extItem.Imdb)) continue;
-                            if (blacklist.Contains(extItem.Imdb)) { _srcBlacklisted++; _log.Debug($"    黑名单已排除： {extItem.Name} ({extItem.Imdb})"); continue; }
+                            if (blacklist.Contains(extItem.Imdb)) { _srcBlacklisted++; _log.Debug($"    黑名单已排除：{extItem.Name} ({extItem.Imdb})"); continue; }
                             if (tagConfig.EnableTag && !tagConfig.OnlyCollection)
                                 TagCacheManager.Instance.AddToCache($"imdb_{extItem.Imdb}", tagName);
                             if (imdbLookup.TryGetValue(extItem.Imdb, out var localItems))
@@ -1938,7 +1938,7 @@ namespace HomeScreenCompanion
                                 gs.MissingItems.Add($"{extItem.Name}  {extItem.Imdb}");
                             }
                         }
-                        _log.Debug($"  {src.Url}  →  {items.Count} 个项目 耗时 {fetchTimer.ElapsedMilliseconds} ms  ·  {_srcMatched} 通过 IMDb ID 匹配  ·  {gs.MissingItems.Count - _srcMissingBefore} 不在媒体库中  ·  {_srcBlacklisted} 已被黑名单排除");
+                        _log.Debug($"  {src.Url}  →  {items.Count} 个项目，耗时 {fetchTimer.ElapsedMilliseconds} ms  ·  IMDb ID 匹配 {_srcMatched}  ·  {gs.MissingItems.Count - _srcMissingBefore} 个不在媒体库中  ·  {_srcBlacklisted} 已被黑名单排除");
                     }
                 }
                 else if (tagConfig.SourceType == "LocalCollection" || tagConfig.SourceType == "LocalPlaylist")
@@ -1981,7 +1981,7 @@ namespace HomeScreenCompanion
                             srcMatched = srcMatched.Take(srcLimit).ToList();
                         foreach (var m in srcMatched)
                             if (!matchedLocalItems.Contains(m)) matchedLocalItems.Add(m);
-                        _log.Debug($"  '{src.LocalSourceId}'  →  {children.Count} 个项目, {srcMatched.Count} 个可用电影/剧集项目");
+                        _log.Debug($"  '{src.LocalSourceId}'  →  {children.Count} 个项目，{srcMatched.Count} 个可用电影/剧集项目");
                     }
 
                     // Only fail outright if no source in the group could be resolved
@@ -2024,7 +2024,7 @@ namespace HomeScreenCompanion
                     }
                     if (debug)
                     {
-                        _log.Debug($"  已扫描 {_itemsToScan.Count:N0} 个项目 耗时 {groupTimer.ElapsedMilliseconds} ms  ·  {matchedLocalItems.Count} 已匹配");
+                        _log.Debug($"  已扫描 {_itemsToScan.Count:N0} 个项目，耗时 {groupTimer.ElapsedMilliseconds} ms  ·  匹配 {matchedLocalItems.Count}");
                         WriteMatchedItemsDebug(matchedLocalItems);
                     }
                     // Redirect matched items to the selected output level (tag and collection independently)
@@ -2092,7 +2092,7 @@ namespace HomeScreenCompanion
                         if (!string.IsNullOrEmpty(aiItem.imdb_id))
                         {
                             var imdbId = aiItem.imdb_id.Trim();
-                            if (blacklist.Contains(imdbId)) { _aiBlacklisted++; _log.Debug($"    黑名单已排除： {_aiLabel} ({imdbId})"); continue; }
+                            if (blacklist.Contains(imdbId)) { _aiBlacklisted++; _log.Debug($"    黑名单已排除：{_aiLabel} ({imdbId})"); continue; }
                             if (tagConfig.EnableTag && !tagConfig.OnlyCollection)
                                 TagCacheManager.Instance.AddToCache($"imdb_{imdbId}", tagName);
                             if (imdbLookup.TryGetValue(imdbId, out var localItems))
@@ -2104,7 +2104,7 @@ namespace HomeScreenCompanion
                             {
                                 // IMDB ID not found in library — fall back to title+year match
                                 var titleMatches = FindByTitleAndYear(matchableItems, aiItem.title, aiItem.year);
-                                if (titleMatches.Count > 0) { _aiTitleMatched++; _log.Debug($"    {imdbId} 不在媒体库中 — 已匹配 '{_aiLabel}' 按标题"); }
+                                if (titleMatches.Count > 0) { _aiTitleMatched++; _log.Debug($"    {imdbId} 不在媒体库中 — 按标题匹配到 '{_aiLabel}'"); }
                                 else gs.MissingItems.Add($"{_aiLabel}  {imdbId}");
                                 foreach (var localItem in titleMatches)
                                 {
@@ -2127,7 +2127,7 @@ namespace HomeScreenCompanion
                             }
                         }
                     }
-                    _log.Debug($"  AI ({tagConfig.AiProvider}) 返回 {_listCount} 个项目 耗时 {fetchTimer.ElapsedMilliseconds} ms  ·  {matchedLocalItems.Count} 已匹配 ({_aiTitleMatched} 仅按标题)  ·  {gs.MissingItems.Count} 不在媒体库中  ·  {_aiBlacklisted} 已被黑名单排除");
+                    _log.Debug($"  AI ({tagConfig.AiProvider}) 返回 {_listCount} 个项目，耗时 {fetchTimer.ElapsedMilliseconds} ms  ·  匹配 {matchedLocalItems.Count}（其中 {_aiTitleMatched} 个仅按标题）  ·  {gs.MissingItems.Count} 个不在媒体库中  ·  {_aiBlacklisted} 已被黑名单排除");
 
                     if (tagConfig.AiRefreshIntervalDays > 0)
                     {
@@ -2144,7 +2144,7 @@ namespace HomeScreenCompanion
                 WriteFetchLine(gs);
                 WriteSingleRunFooter(gs, startTime, dryRun, logMissing);
                 LastRunStatus = $"Failed: {ex.Message}";
-                return (false, $"错误： {ex.Message}");
+                return (false, $"错误：{ex.Message}");
             }
 
             // Apply MediaInfo post-filter for non-MediaInfo source types
@@ -2157,7 +2157,7 @@ namespace HomeScreenCompanion
                     CachedMediaInfo? ci = mediaInfoCache.TryGetValue(item.InternalId, out var ciVal) ? ciVal : (CachedMediaInfo?)null;
                     return ItemMatchesMediaInfo(item, tagConfig, debug, seriesEpisodeCache, personCache, userDataCache, ci, preloadedUsers, seriesLastPlayedCache, collectionMembershipCache, seriesEpisodeNamesCache);
                 }).ToList();
-                _log.Debug($"  筛选条件： {beforeCount} → {matchedLocalItems.Count} 个项目");
+                _log.Debug($"  筛选条件：{beforeCount} → {matchedLocalItems.Count} 个项目");
             }
 
             // For non-MediaInfo sources, apply output level selection (expand down from Series/Movie)
@@ -2194,7 +2194,7 @@ namespace HomeScreenCompanion
             }
             if (gs.MissingItems.Count > 0 && debug)
             {
-                _log.Debug($"  不在媒体库中 ({gs.MissingItems.Count}):");
+                _log.Debug($"  不在媒体库中（{gs.MissingItems.Count}）：");
                 foreach (var _missing in gs.MissingItems) _log.Debug("    " + _missing);
             }
             gs.ElapsedMs = groupTimer.ElapsedMilliseconds;
@@ -2238,7 +2238,7 @@ namespace HomeScreenCompanion
                 {
                     if (shouldHave) item.AddTag(tagName); else item.RemoveTag(tagName);
                     try { _libraryManager.UpdateItem(item, item.Parent, ItemUpdateType.MetadataEdit, null); }
-                    catch (Exception ex) { _log.Warn($"无法保存标签： '{item.Name}': {ex.Message}"); }
+                    catch (Exception ex) { _log.Warn($"无法保存标签：'{item.Name}'：{ex.Message}"); }
                     if (++updateCount % 25 == 0) await Task.Yield();
                 }
                 if (shouldHave) tagsAdded++; else tagsRemoved++;
@@ -2293,7 +2293,7 @@ namespace HomeScreenCompanion
                     {
                         if (shouldHaveEp) ep.AddTag(tagName); else ep.RemoveTag(tagName);
                         try { _libraryManager.UpdateItem(ep, ep.Parent, ItemUpdateType.MetadataEdit, null); }
-                        catch (Exception ex) { _log.Warn($"无法保存单集的标签 '{ep.Name}': {ex.Message}"); }
+                        catch (Exception ex) { _log.Warn($"无法保存单集的标签 '{ep.Name}'：{ex.Message}"); }
                         if (++updateCount % 25 == 0) await Task.Yield();
                     }
                     if (shouldHaveEp) tagsAdded++; else tagsRemoved++;
@@ -2350,7 +2350,7 @@ namespace HomeScreenCompanion
                     {
                         if (shouldHaveSeason) season.AddTag(tagName); else season.RemoveTag(tagName);
                         try { _libraryManager.UpdateItem(season, season.Parent, ItemUpdateType.MetadataEdit, null); }
-                        catch (Exception ex) { _log.Warn($"无法保存季的标签 '{season.Name}': {ex.Message}"); }
+                        catch (Exception ex) { _log.Warn($"无法保存季的标签 '{season.Name}'：{ex.Message}"); }
                         if (++updateCount % 25 == 0) await Task.Yield();
                     }
                     if (shouldHaveSeason) tagsAdded++; else tagsRemoved++;
@@ -2362,8 +2362,8 @@ namespace HomeScreenCompanion
                 _log.Info(tagsAdded == 0 && tagsRemoved == 0
                     ? $"    无需修改标签  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}"
                     : dryRun
-                        ? $"    预计添加 {tagsAdded} 并移除 {tagsRemoved} 标签"
-                        : $"    +{tagsAdded} 已添加, -{tagsRemoved} 已移除  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}");
+                        ? $"    预计添加 {tagsAdded} 个、移除 {tagsRemoved} 个标签"
+                        : $"    添加 {tagsAdded} 个、移除 {tagsRemoved} 个标签  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}");
             else if (gs.BoxSetHse)
                 _log.Skip("标签应用于合集本身，不应用于其中项目（参见结果）");
             else
@@ -2393,7 +2393,7 @@ namespace HomeScreenCompanion
                         collResult = 1;
                         _collCreated = true;
                         _collItemsAdded = desiredIds.Count;
-                        _log.Debug($"  {cName}  →  已创建 ({desiredIds.Count} 个项目)");
+                        _log.Debug($"  {cName}  →  已创建（{desiredIds.Count} 个项目）");
                         if (createdColl != null) ApplyCollectionSortName(createdColl, cName, tagConfig.CollectionSortName);
                     }
                     else
@@ -2411,8 +2411,8 @@ namespace HomeScreenCompanion
                         if (debug)
                         {
                             _log.Debug(collResult == 0
-                                ? $"  {cName}  →  已是最新 ({currentMembers.Count} 个项目)"
-                                : $"  {cName}  →  已更新 (+{toAdd.Count}, -{toRemove.Count})");
+                                ? $"  {cName}  →  已是最新（{currentMembers.Count} 个项目）"
+                                : $"  {cName}  →  已更新（+{toAdd.Count}，-{toRemove.Count}）");
                             var _collMap = allItems.ToDictionary(i => i.InternalId, i => i.Name + (i.ProductionYear.HasValue ? $" ({i.ProductionYear})" : ""));
                             string CollLabel(long id) => _collMap.TryGetValue(id, out var _cn) ? _cn : id.ToString();
                             foreach (var id in toAdd) _log.Debug($"    + {CollLabel(id)}");
@@ -2423,19 +2423,19 @@ namespace HomeScreenCompanion
                     gs.CollectionItemsAdded = _collItemsAdded;
                     gs.CollectionItemsRemoved = _collItemsRemoved;
                     _log.Info(_collCreated
-                        ? $"    合集 \"{cName}\" 已创建，项目数 {RunLog.Plural(_collItemsAdded, "个项目")}  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}"
+                        ? $"    合集 \"{cName}\" 已创建（{RunLog.Plural(_collItemsAdded, "个项目")}）  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}"
                         : collResult == 0
                             ? $"    合集 \"{cName}\" 已是最新  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}"
-                            : $"    合集 \"{cName}\" 已更新 (+{_collItemsAdded}, -{_collItemsRemoved})  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}");
+                            : $"    合集 \"{cName}\" 已更新（+{_collItemsAdded}，-{_collItemsRemoved}）  ·  {RunLog.Elapsed(phaseTimer.Elapsed)}");
                 }
                 catch (Exception ex)
                 {
-                    _log.Error($"合集 \"{cName}\" 无法更新： {ex.Message}");
+                    _log.Error($"合集 \"{cName}\" 无法更新：{ex.Message}");
                     WriteExceptionDebug(ex);
-                    gs.Warnings.Add($"合集无法更新： {ex.Message}");
+                    gs.Warnings.Add($"合集无法更新：{ex.Message}");
                     gs.TagsAdded = tagsAdded; gs.TagsRemoved = tagsRemoved;
                     WriteSingleRunFooter(gs, startTime, dryRun, logMissing);
-                    return (true, $"{matchedLocalItems.Count} 已匹配, {tagsAdded}↑ {tagsRemoved}↓ 标签 — 合集错误： {ex.Message}");
+                    return (true, $"匹配 {matchedLocalItems.Count}，{tagsAdded}↑ {tagsRemoved}↓ 标签 — 合集错误：{ex.Message}");
                 }
             }
 
@@ -2506,10 +2506,10 @@ namespace HomeScreenCompanion
             }
             else
             {
-                parts = new List<string> { $"{matchedLocalItems.Count} 已匹配" };
+                parts = new List<string> { $"匹配 {matchedLocalItems.Count}" };
                 if (tagsAdded > 0 || tagsRemoved > 0) parts.Add($"{tagsAdded}↑ {tagsRemoved}↓ 标签");
             }
-            if (collResult > 0) parts.Add("合集 已更新");
+            if (collResult > 0) parts.Add("合集已更新");
             if (dryRun) parts.Add("（仅预览）");
             var summary = string.Join(", ", parts);
             return (true, summary);
@@ -2566,7 +2566,7 @@ namespace HomeScreenCompanion
                             desiredPlIdSet.Add(item.InternalId);
                         }
                     }
-                    _log.Debug($"  {desiredPlIdList.Count} 个不重复项目，用户数 {tagConfig.PlaylistUserIds.Count} 位用户");
+                    _log.Debug($"  {desiredPlIdList.Count} 个不重复项目  ·  {tagConfig.PlaylistUserIds.Count} 位用户");
                     bool plMappingChanged = false;
                     foreach (var userId in tagConfig.PlaylistUserIds)
                     {
@@ -2613,7 +2613,7 @@ namespace HomeScreenCompanion
                             {
                                 mapping.PlaylistId = existingPlaylist.Id.ToString();
                                 plMappingChanged = true;
-                                _log.Debug($"  {plUser.Name}: 已存储的播放列表 ID 失效 — 已按名称重新关联到 {existingPlaylist.Id}");
+                                _log.Debug($"  {plUser.Name}：已存储的播放列表 ID 失效 — 已按名称重新关联到 {existingPlaylist.Id}");
                             }
                         }
 
@@ -2670,19 +2670,19 @@ namespace HomeScreenCompanion
                                     if (ownerSet)
                                         _libraryManager.UpdateItem(newPl, newPl.Parent, ItemUpdateType.MetadataEdit, null);
                                     if (gs != null) gs.PlaylistUsersCreated++;
-                                    _log.Ok($"播放列表 \"{plName}\": 已创建，用户 {plUser.Name} ({RunLog.Plural(desiredPlIdList.Count, "个项目")})");
-                                    _log.Debug($"  {plUser.Name}: 播放列表 ID {newPl.Id}, 所有者 {(ownerSet ? "已设置" : "未设置")}");
+                                    _log.Ok($"播放列表 \"{plName}\"：已为用户 {plUser.Name} 创建（{RunLog.Plural(desiredPlIdList.Count, "个项目")}）");
+                                    _log.Debug($"  {plUser.Name}：播放列表 ID {newPl.Id}，所有者 {(ownerSet ? "已设置" : "未设置")}");
                                 }
                                 catch (Exception ex)
                                 {
                                     if (gs != null) gs.PlaylistUsersCreated++;
-                                    _log.Warn($"播放列表 \"{plName}\": 已创建，用户 {plUser.Name} 但无法设置所有者： {ex.Message}");
+                                    _log.Warn($"播放列表 \"{plName}\"：已为用户 {plUser.Name} 创建，但无法设置所有者：{ex.Message}");
                                 }
                             }
                             else
                             {
                                 if (gs != null) gs.PlaylistUsersFailed++;
-                                _log.Warn($"播放列表 \"{plName}\": 已创建，用户 {plUser.Name} 但无法确认其 ID — 将在下次同步时重试");
+                                _log.Warn($"播放列表 \"{plName}\"：已为用户 {plUser.Name} 创建，但无法确认其 ID — 将在下次同步时重试");
                             }
                         }
                         else
@@ -2723,7 +2723,7 @@ namespace HomeScreenCompanion
                                 try {
                                     await _playlistManager.RemoveFromPlaylist(existingPlaylist.InternalId, entryIdsToRemove.ToArray());
                                 } catch (Exception ex) {
-                                    _log.Warn($"播放列表 \"{plName}\": 无法移除 {entryIdsToRemove.Count} 个项目 用户 {plUser.Name}: {ex.Message}");
+                                    _log.Warn($"播放列表 \"{plName}\"：无法为用户 {plUser.Name} 移除 {entryIdsToRemove.Count} 个项目：{ex.Message}");
                                 }
                             }
 
@@ -2778,7 +2778,7 @@ namespace HomeScreenCompanion
                                 }
                                 catch (Exception ex)
                                 {
-                                    _log.Warn($"播放列表 \"{plName}\": 无法调整顺序，用户 {plUser.Name}: {ex.Message}");
+                                    _log.Warn($"播放列表 \"{plName}\"：无法为用户 {plUser.Name} 调整顺序：{ex.Message}");
                                     break;
                                 }
                             }
@@ -2791,11 +2791,11 @@ namespace HomeScreenCompanion
                                 if (toAdd.Length > 0) _plParts.Add($"+{toAdd.Length}");
                                 if (entryIdsToRemove.Count > 0) _plParts.Add($"-{entryIdsToRemove.Count}");
                                 if (reordered) _plParts.Add("已重新排序");
-                                _log.Ok($"播放列表 \"{plName}\": 已更新，用户 {plUser.Name} ({string.Join(", ", _plParts)})");
+                                _log.Ok($"播放列表 \"{plName}\"：已为用户 {plUser.Name} 更新（{string.Join("，", _plParts)}）");
                             }
                             else
                             {
-                                _log.Debug($"  {plUser.Name}: 已是最新 ({currentOrder.Count} 个项目)");
+                                _log.Debug($"  {plUser.Name}：已是最新（{currentOrder.Count} 个项目）");
                             }
                         }
                     }
@@ -2804,8 +2804,8 @@ namespace HomeScreenCompanion
                 }
                 catch (Exception ex)
                 {
-                    if (gs != null) { gs.PlaylistUsersFailed++; gs.Warnings.Add($"播放列表同步失败： {ex.Message}"); }
-                    _log.Error($"播放列表 \"{_plLogName}\" 无法同步： {ex.Message}");
+                    if (gs != null) { gs.PlaylistUsersFailed++; gs.Warnings.Add($"播放列表同步失败：{ex.Message}"); }
+                    _log.Error($"播放列表 \"{_plLogName}\" 无法同步：{ex.Message}");
                     WriteExceptionDebug(ex);
                 }
             }
@@ -2858,14 +2858,14 @@ namespace HomeScreenCompanion
                                 }
                                 catch (Exception ex)
                                 {
-                                    _log.Warn($"{_hsDisplayName}: 无法移除主屏幕栏目： {ex.Message}");
+                                    _log.Warn($"{_hsDisplayName}：无法移除主屏幕栏目：{ex.Message}");
                                 }
                             }
                             if (_removedHs > 0)
                             {
                                 var _gsR = statsList?.FirstOrDefault(s => s.TagName != null && string.Equals(s.TagName, _hsTagName, StringComparison.OrdinalIgnoreCase));
                                 if (_gsR != null) _gsR.HomeSectionRemoved = true;
-                                _log.Skip($"{_hsDisplayName}: 已移除主屏幕栏目，用户数 {RunLog.Plural(_removedHs, "位用户")} (分组状态： {(tc.EnableHomeSection ? "未启用或不在计划时间内" : "已不再显示主屏幕栏目")})");
+                                _log.Skip($"{_hsDisplayName}：已为 {RunLog.Plural(_removedHs, "位用户")}移除主屏幕栏目（{(tc.EnableHomeSection ? "分组未启用或不在计划时间内" : "分组已不再显示主屏幕栏目")}）");
                             }
                         }
                         // Always clear tracking (including duplicate flat entries) so this
@@ -2989,7 +2989,7 @@ namespace HomeScreenCompanion
 
                 int _hsSynced = 0;
                 if (tc.HomeSectionUserIds.Count > 0)
-                    _log.Section($"主屏幕栏目： {_hsDisplayName}");
+                    _log.Section($"主屏幕栏目：{_hsDisplayName}");
                 foreach (var userId in tc.HomeSectionUserIds)
                 {
                     string _hsAction = "已创建";
@@ -3056,7 +3056,7 @@ namespace HomeScreenCompanion
                             string _hsUserName = Guid.TryParse(userId, out var _hsGuid)
                                 ? (_userManager.GetUserById(_hsGuid)?.Name ?? userId)
                                 : userId;
-                            _log.Debug($"  {_hsUserName}: {_hsAction} (栏目 ID {trackId})");
+                            _log.Debug($"  {_hsUserName}：{_hsAction}（栏目 ID {trackId}）");
                         }
                     }
                     catch (Exception ex)
@@ -3064,14 +3064,14 @@ namespace HomeScreenCompanion
                         string _hsUserName2 = Guid.TryParse(userId, out var _hsGuid2)
                             ? (_userManager.GetUserById(_hsGuid2)?.Name ?? userId)
                             : userId;
-                        HsWarn(statsList, _hsTagName, _hsDisplayName, $"主屏幕栏目操作失败，用户 {_hsUserName2}: {ex.Message}");
+                        HsWarn(statsList, _hsTagName, _hsDisplayName, $"为用户 {_hsUserName2} 处理主屏幕栏目失败：{ex.Message}");
                     }
                 }
                 if (_hsSynced > 0)
                 {
                     var _gsS = statsList?.FirstOrDefault(s => s.TagName != null && string.Equals(s.TagName, _hsTagName, StringComparison.OrdinalIgnoreCase));
                     if (_gsS != null) { _gsS.HomeSectionSynced = true; _gsS.HomeSectionUserCount = _hsSynced; }
-                    _log.Ok($"{_hsDisplayName}: 已同步主屏幕栏目，用户数 {RunLog.Plural(_hsSynced, "位用户")}");
+                    _log.Ok($"{_hsDisplayName}：已为 {RunLog.Plural(_hsSynced, "位用户")}同步主屏幕栏目");
                 }
                 else if (tc.HomeSectionUserIds.Count == 0)
                 {
@@ -3166,9 +3166,9 @@ namespace HomeScreenCompanion
                 if (!dryRun)
                 {
                     try { _libraryManager.UpdateItem(target, target.Parent, ItemUpdateType.MetadataEdit, null); }
-                    catch (Exception ex) { _log.Warn($"无法保存合集标签： '{target.Name}': {ex.Message}"); }
+                    catch (Exception ex) { _log.Warn($"无法保存合集标签：'{target.Name}'：{ex.Message}"); }
                 }
-                _log.Debug($"  合集 '{target.Name}' {(dryRun ? "预计添加标签" : "已添加标签")} 使用 '{tagName}'");
+                _log.Debug($"  合集 '{target.Name}'：{(dryRun ? "预计添加" : "已添加")}标签 '{tagName}'");
             }
             else
             {
@@ -3197,7 +3197,7 @@ namespace HomeScreenCompanion
                             if (pl != null && !dryRun)
                             {
                                 try { _libraryManager.DeleteItem(pl, new DeleteOptions { DeleteFileLocation = false }); }
-                                catch (Exception ex) { _log.Warn($"播放列表 '{pl.Name}' 无法移除： {ex.Message}"); }
+                                catch (Exception ex) { _log.Warn($"播放列表 '{pl.Name}' 无法移除：{ex.Message}"); }
                             }
                         }
                     }
@@ -3218,7 +3218,7 @@ namespace HomeScreenCompanion
                             if (pl != null && !dryRun)
                             {
                                 try { _libraryManager.DeleteItem(pl, new DeleteOptions { DeleteFileLocation = false }); }
-                                catch (Exception ex) { _log.Warn($"播放列表 '{pl.Name}' 无法移除： {ex.Message}"); }
+                                catch (Exception ex) { _log.Warn($"播放列表 '{pl.Name}' 无法移除：{ex.Message}"); }
                             }
                         }
                         if (!dryRun) tc.PlaylistMappings.Remove(orphan);
@@ -3272,7 +3272,7 @@ namespace HomeScreenCompanion
                 if (updated && !dryRun)
                 {
                     try { _libraryManager.UpdateItem(boxSet, boxSet.Parent, ItemUpdateType.MetadataEdit, null); }
-                    catch (Exception ex) { _log.Warn($"无法更新合集标签： '{boxSet.Name}': {ex.Message}"); }
+                    catch (Exception ex) { _log.Warn($"无法更新合集标签：'{boxSet.Name}'：{ex.Message}"); }
                 }
             }
             return removed;
@@ -4466,7 +4466,7 @@ namespace HomeScreenCompanion
         /// <summary>One debug line describing where a group's items come from and which features it drives.</summary>
         private string DescribeSourceDetail(TagConfig tc, int effectiveLimit)
         {
-            var parts = new List<string> { "来源： " + DescribeSource(tc) };
+            var parts = new List<string> { "来源：" + DescribeSource(tc) };
             switch (tc.SourceType)
             {
                 case "MediaInfo":
@@ -4477,7 +4477,7 @@ namespace HomeScreenCompanion
                     parts.Add($"'{tc.LocalSourceId}'");
                     break;
                 case "AI":
-                    parts.Add($"提示词 {tc.AiPrompt?.Length ?? 0} 个字符" + (tc.AiIncludeRecentlyWatched ? ", 包含观看历史" : ""));
+                    parts.Add($"提示词 {tc.AiPrompt?.Length ?? 0} 个字符" + (tc.AiIncludeRecentlyWatched ? "，包含观看历史" : ""));
                     break;
                 default:
                     parts.Add(tc.Url ?? "");
@@ -4492,7 +4492,7 @@ namespace HomeScreenCompanion
             if (tc.EnableCollection) features.Add("合集");
             if (tc.EnablePlaylist) features.Add("播放列表");
             if (tc.EnableHomeSection) features.Add("主屏幕栏目");
-            if (features.Count > 0) parts.Add("创建： " + string.Join(", ", features));
+            if (features.Count > 0) parts.Add("创建：" + string.Join(", ", features));
             return string.Join("  ·  ", parts);
         }
 
@@ -4505,7 +4505,7 @@ namespace HomeScreenCompanion
             string head = $"[{gs.GroupIndex}/{gs.GroupTotal}] {gs.DisplayName}  ({gs.SourceLabel})";
             if (gs.Skipped)
             {
-                _log.Skip($"{head}  ·  已跳过: {gs.SkipReason}");
+                _log.Skip($"{head}  ·  已跳过：{gs.SkipReason}");
                 return;
             }
             if (gs.ErrorMessage != null)
@@ -4515,7 +4515,7 @@ namespace HomeScreenCompanion
             }
             if (gs.Warnings.Count > 0)
             {
-                _log.Warn($"{head}  ·  {gs.Warnings[0]}{(gs.Warnings.Count > 1 ? $"  (+{gs.Warnings.Count - 1} 条更多信息，参见结果)" : "")}");
+                _log.Warn($"{head}  ·  {gs.Warnings[0]}{(gs.Warnings.Count > 1 ? $"（另有 {gs.Warnings.Count - 1} 条，见结果）" : "")}");
                 return;
             }
             _log.Info("    " + head + "  ·  " + DescribeSourceCounts(gs));
@@ -4524,8 +4524,8 @@ namespace HomeScreenCompanion
         private static string DescribeSourceCounts(GroupRunStats gs)
         {
             if (gs.BoxSetHse) return gs.BoxSetTaggedCount > 0 ? $"{RunLog.Plural(gs.BoxSetTaggedCount, "个合集")} 已添加标签" : "未找到合集";
-            if (gs.SourceType == "MediaInfo") return $"已扫描 {gs.ListCount:N0} 个项目, {gs.MatchCount} 已匹配";
-            if (gs.SourceType == "LocalCollection" || gs.SourceType == "LocalPlaylist") return $"{gs.ListCount} 个来源项目， {gs.MatchCount} 已匹配";
+            if (gs.SourceType == "MediaInfo") return $"已扫描 {gs.ListCount:N0} 个项目，匹配 {gs.MatchCount}";
+            if (gs.SourceType == "LocalCollection" || gs.SourceType == "LocalPlaylist") return $"{gs.ListCount} 个来源项目，匹配 {gs.MatchCount}";
             return $"{gs.ListCount} 个列表项目， {gs.MatchCount} 在媒体库中";
         }
 
@@ -4535,13 +4535,13 @@ namespace HomeScreenCompanion
             _log.Info($"[{gs.GroupIndex}/{gs.GroupTotal}] {gs.DisplayName}  ({gs.SourceLabel})");
             if (gs.Skipped)
             {
-                _log.Skip($"已跳过： {gs.SkipReason}");
+                _log.Skip($"已跳过：{gs.SkipReason}");
                 _log.Blank();
                 return;
             }
             if (gs.ErrorMessage != null)
             {
-                _log.Error($"失败： {gs.ErrorMessage}");
+                _log.Error($"失败：{gs.ErrorMessage}");
                 _log.Detail("标签、合集和播放列表保持不变（安全保护）");
                 _log.Blank();
                 return;
@@ -4551,55 +4551,55 @@ namespace HomeScreenCompanion
             if (gs.BoxSetHse)
             {
                 if (gs.BoxSetTaggedCount > 0)
-                    _log.Ok($"{RunLog.Plural(gs.BoxSetTaggedCount, "个合集")} 已添加标签 使用 \"{gs.TagName}\"");
+                    _log.Ok($"已为 {RunLog.Plural(gs.BoxSetTaggedCount, "个合集")}添加标签 \"{gs.TagName}\"");
             }
             else if (gs.SourceType == "MediaInfo")
                 _log.Ok($"已扫描 {gs.ListCount:N0} 个项目  ·  {gs.MatchCount} 符合筛选条件");
             else if (gs.SourceType == "LocalCollection" || gs.SourceType == "LocalPlaylist")
             {
-                if (gs.ListCount > 0) _log.Ok($"来源： {gs.ListCount} 个项目  ·  {gs.MatchCount} 已匹配");
+                if (gs.ListCount > 0) _log.Ok($"来源：{gs.ListCount} 个项目  ·  匹配 {gs.MatchCount}");
             }
             else if (gs.ListCount > 0)
-                _log.Ok($"列表： {gs.ListCount} 个项目  ·  {gs.MatchCount} 在媒体库中");
+                _log.Ok($"列表：{gs.ListCount} 个项目  ·  {gs.MatchCount} 在媒体库中");
 
             if (gs.EnableTag && !gs.BoxSetHse)
             {
-                if (dryRun) _log.Skip($"标签 \"{gs.TagName}\": 预计添加 {gs.TagsAdded}, 移除 {gs.TagsRemoved} （仅预览）");
-                else if (gs.TagsAdded == 0 && gs.TagsRemoved == 0) _log.Ok($"标签 \"{gs.TagName}\": 已是最新");
-                else _log.Ok($"标签 \"{gs.TagName}\": +{gs.TagsAdded} 已添加, -{gs.TagsRemoved} 已移除");
+                if (dryRun) _log.Skip($"标签 \"{gs.TagName}\"：预计添加 {gs.TagsAdded}，移除 {gs.TagsRemoved}（仅预览）");
+                else if (gs.TagsAdded == 0 && gs.TagsRemoved == 0) _log.Ok($"标签 \"{gs.TagName}\"：已是最新");
+                else _log.Ok($"标签 \"{gs.TagName}\"：添加 {gs.TagsAdded}，移除 {gs.TagsRemoved}");
             }
 
             if (gs.EnableCollection)
             {
-                if (dryRun) _log.Skip($"合集 \"{gs.CollectionName}\": 未修改（仅预览）");
-                else if (gs.CollectionCreated) _log.Ok($"合集 \"{gs.CollectionName}\": 已创建，项目数 {RunLog.Plural(gs.CollectionItemsAdded, "个项目")}");
-                else if (gs.CollectionItemsAdded > 0 || gs.CollectionItemsRemoved > 0) _log.Ok($"合集 \"{gs.CollectionName}\": 已更新 (+{gs.CollectionItemsAdded}, -{gs.CollectionItemsRemoved})");
-                else if (gs.MatchCount == 0) _log.Skip($"合集 \"{gs.CollectionName}\": 保持不变 — 无匹配项目");
-                else _log.Ok($"合集 \"{gs.CollectionName}\": 已是最新");
+                if (dryRun) _log.Skip($"合集 \"{gs.CollectionName}\"：未修改（仅预览）");
+                else if (gs.CollectionCreated) _log.Ok($"合集 \"{gs.CollectionName}\"：已创建（{RunLog.Plural(gs.CollectionItemsAdded, "个项目")}）");
+                else if (gs.CollectionItemsAdded > 0 || gs.CollectionItemsRemoved > 0) _log.Ok($"合集 \"{gs.CollectionName}\"：已更新（+{gs.CollectionItemsAdded}，-{gs.CollectionItemsRemoved}）");
+                else if (gs.MatchCount == 0) _log.Skip($"合集 \"{gs.CollectionName}\"：保持不变 — 无匹配项目");
+                else _log.Ok($"合集 \"{gs.CollectionName}\"：已是最新");
             }
 
             if (gs.EnablePlaylist)
             {
-                if (dryRun) _log.Skip($"播放列表 \"{gs.PlaylistName}\": 未修改（仅预览）");
-                else if (gs.PlaylistUsersFailed > 0) _log.Warn($"播放列表 \"{gs.PlaylistName}\": 失败，用户数 {RunLog.Plural(gs.PlaylistUsersFailed, "位用户")}");
+                if (dryRun) _log.Skip($"播放列表 \"{gs.PlaylistName}\"：未修改（仅预览）");
+                else if (gs.PlaylistUsersFailed > 0) _log.Warn($"播放列表 \"{gs.PlaylistName}\"：{RunLog.Plural(gs.PlaylistUsersFailed, "位用户")}失败");
                 else if (gs.PlaylistUsersCreated > 0 || gs.PlaylistUsersUpdated > 0)
                 {
                     var p = new List<string>();
-                    if (gs.PlaylistUsersCreated > 0) p.Add($"已创建，用户 {RunLog.Plural(gs.PlaylistUsersCreated, "位用户")}");
-                    if (gs.PlaylistUsersUpdated > 0) p.Add($"已更新，用户 {RunLog.Plural(gs.PlaylistUsersUpdated, "位用户")}");
-                    _log.Ok($"播放列表 \"{gs.PlaylistName}\": {string.Join(", ", p)}");
+                    if (gs.PlaylistUsersCreated > 0) p.Add($"已为 {RunLog.Plural(gs.PlaylistUsersCreated, "位用户")}创建");
+                    if (gs.PlaylistUsersUpdated > 0) p.Add($"已为 {RunLog.Plural(gs.PlaylistUsersUpdated, "位用户")}更新");
+                    _log.Ok($"播放列表 \"{gs.PlaylistName}\"：{string.Join("，", p)}");
                 }
-                else if (gs.PlaylistUsersTotal == 0) _log.Skip($"播放列表 \"{gs.PlaylistName}\": 未选择用户");
+                else if (gs.PlaylistUsersTotal == 0) _log.Skip($"播放列表 \"{gs.PlaylistName}\"：未选择用户");
                 else if (!gs.Warnings.Any(w => w.StartsWith("播放列表", StringComparison.OrdinalIgnoreCase)))
-                    _log.Ok($"播放列表 \"{gs.PlaylistName}\": 已是最新，用户数 {RunLog.Plural(gs.PlaylistUsersTotal, "位用户")}");
+                    _log.Ok($"播放列表 \"{gs.PlaylistName}\"：已是最新（{RunLog.Plural(gs.PlaylistUsersTotal, "位用户")}）");
             }
 
             if (gs.EnableHomeSection)
             {
-                if (dryRun) _log.Skip("主屏幕栏目： 未修改（仅预览）");
-                else if (gs.HomeSectionSynced) _log.Ok($"主屏幕栏目： 已同步，用户数 {RunLog.Plural(gs.HomeSectionUserCount, "位用户")}");
-                else if (gs.HomeSectionRemoved) _log.Skip("主屏幕栏目： 已移除");
-                else _log.Skip("主屏幕栏目： 未同步");
+                if (dryRun) _log.Skip("主屏幕栏目：未修改（仅预览）");
+                else if (gs.HomeSectionSynced) _log.Ok($"主屏幕栏目：已同步（{RunLog.Plural(gs.HomeSectionUserCount, "位用户")}）");
+                else if (gs.HomeSectionRemoved) _log.Skip("主屏幕栏目：已移除");
+                else _log.Skip("主屏幕栏目：未同步");
             }
 
             foreach (var w in gs.Warnings) _log.Warn(w);
@@ -4608,7 +4608,7 @@ namespace HomeScreenCompanion
             {
                 if (logMissing)
                 {
-                    _log.Skip($"媒体库中缺失 ({gs.MissingItems.Count}):");
+                    _log.Skip($"媒体库中缺失（{gs.MissingItems.Count}）：");
                     foreach (var m in gs.MissingItems) _log.Detail(m);
                 }
                 else
@@ -4634,15 +4634,15 @@ namespace HomeScreenCompanion
             _log.Rule();
             _log.Info("汇总");
             if (gs.EnableTag && !gs.BoxSetHse)
-                _log.Info($"  标签：          +{gs.TagsAdded} 已添加, -{gs.TagsRemoved} 已移除");
+                _log.Info($"  标签：添加 {gs.TagsAdded}，移除 {gs.TagsRemoved}");
             if (gs.BoxSetHse)
-                _log.Info($"  已添加标签的合集： {gs.BoxSetTaggedCount}");
+                _log.Info($"  已添加标签的合集：{gs.BoxSetTaggedCount}");
             if (gs.EnableCollection)
-                _log.Info($"  合集:   {(gs.CollectionCreated ? 1 : 0)} 已创建, {(!gs.CollectionCreated && (gs.CollectionItemsAdded > 0 || gs.CollectionItemsRemoved > 0) ? 1 : 0)} 已更新");
+                _log.Info($"  合集：创建 {(gs.CollectionCreated ? 1 : 0)}，更新 {(!gs.CollectionCreated && (gs.CollectionItemsAdded > 0 || gs.CollectionItemsRemoved > 0) ? 1 : 0)}");
             if (gs.EnablePlaylist)
-                _log.Info($"  播放列表:     {gs.PlaylistUsersCreated} 已创建, {gs.PlaylistUsersUpdated} 已更新{(gs.PlaylistUsersFailed > 0 ? $", {gs.PlaylistUsersFailed} 失败" : "")}");
+                _log.Info($"  播放列表：创建 {gs.PlaylistUsersCreated}，更新 {gs.PlaylistUsersUpdated}{(gs.PlaylistUsersFailed > 0 ? $"，失败 {gs.PlaylistUsersFailed}" : "")}");
             if (gs.EnableHomeSection)
-                _log.Info($"  主屏幕栏目： {(gs.HomeSectionSynced ? 1 : 0)} 已同步");
+                _log.Info($"  主屏幕栏目：同步 {(gs.HomeSectionSynced ? 1 : 0)}");
             _log.Info($"  完成，耗时 {RunLog.Elapsed(DateTime.Now - startTime)}  ·  {StatusSymbol(failed, warned)} {(dryRun ? "仅预览 — " : "")}{(failed > 0 ? $"已完成，有 {failed} 个错误" : warned > 0 ? $"已完成，有 {warned} 条警告" : "已完成")}");
             _log.Rule();
         }
@@ -4662,17 +4662,17 @@ namespace HomeScreenCompanion
         {
             _log.Warn($"{displayName}: {message}");
             var gs = statsList?.FirstOrDefault(s => s.TagName != null && string.Equals(s.TagName, tagName, StringComparison.OrdinalIgnoreCase));
-            gs?.Warnings.Add("主屏幕栏目： " + message);
+            gs?.Warnings.Add("主屏幕栏目：" + message);
         }
 
         private void WriteMatchedItemsDebug(List<BaseItem> matchedLocalItems)
         {
             if (!_log.Extended || matchedLocalItems.Count == 0) return;
-            _log.Debug($"  匹配项目 ({matchedLocalItems.Count}):");
+            _log.Debug($"  匹配项目（{matchedLocalItems.Count}）：");
             int shown = 0;
             foreach (var mi in matchedLocalItems)
             {
-                if (shown >= 50) { _log.Debug($"    … 另有 {matchedLocalItems.Count - shown} 个更多项目"); break; }
+                if (shown >= 50) { _log.Debug($"    … 另有 {matchedLocalItems.Count - shown} 个项目"); break; }
                 var yr = mi.ProductionYear.HasValue ? $" ({mi.ProductionYear})" : "";
                 var tp = mi.GetType().Name.Contains("Series") ? "剧集"
                        : mi.GetType().Name.Contains("Episode") ? "单集"
@@ -4904,9 +4904,9 @@ namespace HomeScreenCompanion
                         if (!dryRun)
                         {
                             try { Directory.Delete(dir, true); }
-                            catch (Exception ex) { _log.Warn($"榜单 '{folderName}': 无法移除文件夹： {ex.Message}"); }
+                            catch (Exception ex) { _log.Warn($"榜单 '{folderName}'：无法移除文件夹：{ex.Message}"); }
                         }
-                        _log.Skip($"榜单 '{folderName}': 文件夹 {(dryRun ? "预计移除" : "已移除")} (已不再配置)");
+                        _log.Skip($"榜单 '{folderName}'：文件夹 {(dryRun ? "预计移除" : "已移除")}（已不再配置）");
                     }
                 }
             }
@@ -5115,7 +5115,7 @@ namespace HomeScreenCompanion
                 }
                 catch { }
 
-                _log.Ok($"榜单 '{tl.TagName}': {RunLog.Plural(count, "部电影")} 已同步到媒体库文件夹");
+                _log.Ok($"榜单 '{tl.TagName}'：{RunLog.Plural(count, "部电影")} 已同步到媒体库文件夹");
             }
         }
 
@@ -5148,7 +5148,7 @@ namespace HomeScreenCompanion
                     {
                         // Manual list: its series are the ones in the folder's manifest.
                         var manifest = ShowTopList.ReadManifest(folderPath, _jsonSerializer);
-                        if (manifest.Count == 0) { _log.Skip($"榜单 '{tl.TagName}': 此榜单未保存剧集"); continue; }
+                        if (manifest.Count == 0) { _log.Skip($"榜单 '{tl.TagName}'：此榜单未保存剧集"); continue; }
                         series = ShowTopList.ResolveSeries(_libraryManager, manifest.Select(e => (e.SeriesId, e.ImdbId)));
                     }
                     if (maxItems > 0) series = series.Take(maxItems).ToList();
@@ -5157,11 +5157,11 @@ namespace HomeScreenCompanion
                         _libraryManager, _jsonSerializer, _httpClient, _providerManager, _fileSystem, m => _log.Warn(m));
                     try { _libraryMonitor?.ReportFileSystemChanged(folderPath); } catch { }
                     ShowTopList.ApplyIndexed(folderPath, _libraryManager, _jsonSerializer);
-                    _log.Ok($"榜单 '{tl.TagName}': {RunLog.Plural(count, "部剧集")} 已同步到媒体库文件夹");
+                    _log.Ok($"榜单 '{tl.TagName}'：{RunLog.Plural(count, "部剧集")} 已同步到媒体库文件夹");
                 }
                 catch (Exception ex)
                 {
-                    _log.Warn($"榜单 '{tl.TagName}': 无法同步剧集 — {ex.Message}");
+                    _log.Warn($"榜单 '{tl.TagName}'：无法同步剧集 — {ex.Message}");
                 }
             }
         }

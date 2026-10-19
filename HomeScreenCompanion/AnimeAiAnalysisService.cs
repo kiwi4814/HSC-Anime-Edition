@@ -199,14 +199,14 @@ namespace HomeScreenCompanion
                     continue;
                 }
                 if (!budget.TryReserve(SystemPrompt, input, out var maxTokens))
-                { AddWarning(result, "AI 分析已达到本轮调用或 Token 预算上限；未处理的项目保留确定性结果。", warn); break; }
+                { AddWarning(result, "已达到本次运行的 AI 调用次数或 Token 上限，其余作品未分析。", warn); break; }
                 try
                 {
                     var raw = await _complete(config, SystemPrompt, input, maxTokens, token).ConfigureAwait(false);
                     AnimeAiSuggestion? suggestion;
                     try { suggestion = _json.DeserializeFromString<AnimeAiSuggestion>(AiRequestClient.CleanAiJsonOutput(raw)); }
                     catch { throw new AiRequestException("invalid_json", "AI 分析响应不是有效的结构化 JSON。"); }
-                    if (suggestion == null || !Validate(suggestion, candidate)) throw new AiRequestException("invalid_json", "AI 建议缺少有效的输入编号、关系证据或置信度，已忽略。");
+                    if (suggestion == null || !Validate(suggestion, candidate)) throw new AiRequestException("invalid_json", "AI 返回的建议不完整，已忽略。");
                     suggestion.InputItems = candidate.InputItems;
                     suggestion.InputTitles = candidate.InputTitles;
                     CopyGroupContext(suggestion, candidate);
@@ -218,12 +218,12 @@ namespace HomeScreenCompanion
                     suggestion.SuggestedName = SafeText(suggestion.SuggestedName, 240);
                     suggestion.Reason = SafeText(suggestion.Reason, 1000);
                     AssessNameEvidence(suggestion);
-                    if (!Validate(suggestion, candidate)) throw new AiRequestException("invalid_json", "AI 建议在文本清理后缺少有效内容，已忽略。");
+                    if (!Validate(suggestion, candidate)) throw new AiRequestException("invalid_json", "AI 返回的建议没有有效内容，已忽略。");
                     result.Suggestions.Add(suggestion);
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (AiRequestException ex) { AddWarning(result, ex.Message, warn); if (ex.Category != "invalid_json") break; }
-                catch { AddWarning(result, "AI 分析不可用，确定性处理结果不受影响。", warn); break; }
+                catch { AddWarning(result, "AI 分析不可用，合集处理不受影响。", warn); break; }
             }
             result.CallsUsed = budget.CallsUsed;
             result.TokensReserved = budget.TokensReserved;

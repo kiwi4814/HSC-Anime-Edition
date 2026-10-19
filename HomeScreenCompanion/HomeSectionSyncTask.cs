@@ -118,7 +118,7 @@ namespace HomeScreenCompanion
                     return Task.CompletedTask;
                 }
 
-                _log.Info($"  来源用户： {sourceName}  ·  {RunLog.Plural(sourceSections.Sections.Length, "个栏目")}");
+                _log.Info($"  来源用户：{sourceName}  ·  {RunLog.Plural(sourceSections.Sections.Length, "个栏目")}");
                 _log.Section("来源用户的栏目");
                 foreach (var s in sourceSections.Sections)
                     _log.Debug($"  [{s.SectionType}] \"{s.CustomName ?? s.Name}\"");
@@ -144,7 +144,7 @@ namespace HomeScreenCompanion
                         var existing = _userManager.GetHomeSections(targetInternalId, cancellationToken);
                         if (existing?.Sections?.Length > 0)
                         {
-                            _log.Debug($"  {targetName}: 正在替换 {existing.Sections.Length} 个现有栏目");
+                            _log.Debug($"  {targetName}：正在替换 {existing.Sections.Length} 个现有栏目");
                             var idsToDelete = existing.Sections
                                 .Where(s => !string.IsNullOrEmpty(s.Id))
                                 .Select(s => s.Id)
@@ -160,12 +160,12 @@ namespace HomeScreenCompanion
                             totalCopied++;
                         }
 
-                        _log.Ok($"{targetName}: {RunLog.Plural(sourceSections.Sections.Length, "个栏目")} 已复制");
+                        _log.Ok($"{targetName}：{RunLog.Plural(sourceSections.Sections.Length, "个栏目")} 已复制");
                     }
                     catch (Exception ex)
                     {
                         failedUsers++;
-                        _log.Error($"{targetName}: 无法复制主屏幕 — {ex.Message}");
+                        _log.Error($"{targetName}：无法复制主屏幕 — {ex.Message}");
                     }
 
                     progress.Report(20 + (int)(80.0 * (i + 1) / targetCount));
@@ -183,7 +183,7 @@ namespace HomeScreenCompanion
                             var sourceConf = _userManager.GetUserConfiguration(sourceUser);
                             if (sourceConf?.OrderedViews != null && sourceConf.OrderedViews.Length > 0)
                             {
-                                _log.Debug($"  来源用户顺序： [{string.Join(", ", sourceConf.OrderedViews)}]");
+                                _log.Debug($"  来源用户顺序：[{string.Join(", ", sourceConf.OrderedViews)}]");
                                 foreach (var targetIdStr in config.HomeSyncTargetUserIds)
                                 {
                                     string targetName2 = Guid.TryParse(targetIdStr, out var tgtGuid2)
@@ -197,11 +197,11 @@ namespace HomeScreenCompanion
                                         if (targetConf == null) continue;
                                         targetConf.OrderedViews = sourceConf.OrderedViews;
                                         _userManager.UpdateConfiguration(_userManager.GetInternalId(targetIdStr), targetConf);
-                                        _log.Ok($"{targetName2}: 已复制媒体库顺序");
+                                        _log.Ok($"{targetName2}：已复制媒体库顺序");
                                     }
                                     catch (Exception ex)
                                     {
-                                        _log.Warn($"{targetName2}: 无法复制媒体库顺序 — {ex.Message}");
+                                        _log.Warn($"{targetName2}：无法复制媒体库顺序 — {ex.Message}");
                                     }
                                 }
                             }
@@ -217,7 +217,7 @@ namespace HomeScreenCompanion
                     }
                     catch (Exception ex)
                     {
-                        _log.Error($"媒体库顺序同步失败： {ex.Message}");
+                        _log.Error($"媒体库顺序同步失败：{ex.Message}");
                     }
                 }
 
@@ -226,7 +226,7 @@ namespace HomeScreenCompanion
                 LastSyncResult = $"成功 — 已将 {totalCopied} 个栏目复制到 {targetCount} 位用户。";
                 _log.Rule();
                 _log.Info("汇总");
-                _log.Info($"  栏目：      {totalCopied} 已复制到 {RunLog.Plural(targetCount - failedUsers, "位用户")}{(failedUsers > 0 ? $", {RunLog.Plural(failedUsers, "位用户")} 失败" : "")}");
+                _log.Info($"  栏目：已复制 {totalCopied} 个到 {RunLog.Plural(targetCount - failedUsers, "位用户")}{(failedUsers > 0 ? $"，失败 {RunLog.Plural(failedUsers, "位用户")}" : "")}");
                 _log.Info($"  完成，耗时 {RunLog.Elapsed(DateTime.Now - startTime)}  ·  {(failedUsers > 0 ? "✖ 已完成，有 " + RunLog.Plural(failedUsers, "个错误") : "✔ 已完成")}");
                 _log.Rule();
                 progress.Report(100);
@@ -238,8 +238,8 @@ namespace HomeScreenCompanion
             }
             catch (Exception ex)
             {
-                LastSyncResult = $"错误： {ex.Message}";
-                _log.Error($"同步已中止： {ex.Message}");
+                LastSyncResult = $"错误：{ex.Message}";
+                _log.Error($"同步已中止：{ex.Message}");
             }
             finally
             {

@@ -45,7 +45,7 @@ namespace HomeScreenCompanion
                 (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp) ||
                 string.IsNullOrEmpty(uri.Host) || !string.IsNullOrEmpty(uri.UserInfo) ||
                 !string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment))
-                throw new AiRequestException("configuration", "AI 接口地址无效：请使用不含凭据、查询参数和片段的 HTTP(S) 地址。");
+                throw new AiRequestException("configuration", "AI 接口地址无效，请填写 http:// 或 https:// 开头的地址（不要包含用户名、密码或 ? # 后的部分）。");
             var path = uri.AbsolutePath.TrimEnd('/');
             if (!path.EndsWith("/chat/completions", StringComparison.OrdinalIgnoreCase))
                 path += path.Length == 0 ? "/v1/chat/completions" : "/chat/completions";
@@ -57,7 +57,7 @@ namespace HomeScreenCompanion
             var url = provider.Equals("Ollama", StringComparison.OrdinalIgnoreCase) ? config.OllamaBaseUrl :
                 provider.Equals("OpenAICompatible", StringComparison.OrdinalIgnoreCase) ? config.CompatibleAiBaseUrl : "";
             return Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == "http"
-                ? "当前 AI 接口使用 HTTP，提示词和凭据将以明文传输；仅应在可信本机或局域网中使用。" : "";
+                ? "AI 接口使用 HTTP，请求内容和密钥会以明文传输，请只在本机或可信局域网中使用。" : "";
         }
 
         public static string Model(PluginConfiguration c, string? provider)
@@ -131,7 +131,7 @@ namespace HomeScreenCompanion
                         if (status == 401 || status == 403) throw new AiRequestException("unauthorized", "AI 身份验证失败，请检查密钥和访问权限。");
                         if (status == 429) throw new AiRequestException("rate_limit", "AI 请求受限或额度不足，请稍后重试。");
                         if (status >= 500) throw new AiRequestException("server", "AI 服务暂时不可用。");
-                        if (!response.IsSuccessStatusCode) throw new AiRequestException("http", "AI 接口返回异常状态（" + status + "）；不会跟随重定向。");
+                        if (!response.IsSuccessStatusCode) throw new AiRequestException("http", "AI 接口返回异常状态（" + status + "）。");
                         string raw = await ReadBoundedAsync(response.Content, linked.Token).ConfigureAwait(false);
                         try
                         {

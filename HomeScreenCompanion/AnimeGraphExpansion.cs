@@ -36,7 +36,7 @@ namespace HomeScreenCompanion
                     cancellationToken.ThrowIfCancellationRequested();
                     if (queued.Count > graphNodeLimit)
                     {
-                        onProgress("关系图节点数已达上限；未修改任何合集。");
+                        onProgress("作品关系数量已达上限，本次未修改任何合集。");
                         break;
                     }
                     var node = toVisit.Dequeue();
@@ -45,7 +45,7 @@ namespace HomeScreenCompanion
                     {
                         if (result.NetworkRequests >= requestBudget)
                         {
-                            onProgress("AniList 请求数已达本次上限；请再次运行任务以填充缓存。");
+                            onProgress("已达到本次 AniList 请求上限，请再次运行任务以继续获取。");
                             // The dequeued node is still unresolved, even if it was the last
                             // queued node. Never let an empty queue turn this into Complete.
                             return result;

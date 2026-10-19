@@ -2402,7 +2402,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 var delLabel = (row.querySelector('.txtEntryLabel').value || '').trim();
                 var delTag = (row.querySelector('.txtTagName').value || '').trim();
                 var delName = delLabel && delTag && delLabel.toLowerCase() !== delTag.toLowerCase()
-                    ? '"' + delLabel + '" (标签: ' + delTag + ')' 
+                    ? '"' + delLabel + '"（标签：' + delTag + '）' 
                     : (delLabel || delTag) ? '"' + (delLabel || delTag) + '"' : '';
                 if (confirm(delName ? '删除标签组 ' + delName + '？' : '删除此标签组？')) {
                     row.remove();
@@ -2434,7 +2434,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                         lbl.textContent = '运行组';
                         btn.disabled = false;
                         if (view) refreshStatus(view);
-                        window.Dashboard.alert(result.Success ? ('完成: ' + result.Message) : ('失败: ' + result.Message));
+                        window.Dashboard.alert(result.Success ? ('完成：' + result.Message) : ('失败：' + result.Message));
                     }).catch(function () {
                         lbl.textContent = '运行组';
                         btn.disabled = false;
@@ -2499,12 +2499,12 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                     })
                 }).then(function(r) { return r.json(); })
                 .then(function(result) {
-                    if (resultSpan) resultSpan.textContent = result.Success ? result.Message : ('失败: ' + result.Message);
+                    if (resultSpan) resultSpan.textContent = result.Success ? result.Message : ('失败：' + result.Message);
                     if (result.Success) aiModal.show(result);
-                    else aiModal.fail('AI 测试失败: ' + result.Message);
+                    else aiModal.fail('AI 测试失败：' + result.Message);
                 }).catch(function(err) {
-                    if (resultSpan) resultSpan.textContent = '错误: ' + err.message;
-                    aiModal.fail('错误: ' + err.message);
+                    if (resultSpan) resultSpan.textContent = '错误：' + err.message;
+                    aiModal.fail('错误：' + err.message);
                 }).finally(function() { btnTestAi.disabled = false; });
             }
         });
@@ -2647,7 +2647,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                         row.querySelector('.poster-filename').textContent = file.name;
                         row.querySelector('.poster-preview-container').style.display = 'block';
                     } else {
-                        window.Dashboard.alert('上传失败: ' + (result.Message || '未知错误'));
+                        window.Dashboard.alert('上传失败：' + (result.Message || '未知错误'));
                         img.style.display = 'none';
                     }
                 }).catch(function () {
@@ -2689,7 +2689,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                     img.style.display = 'block';
                     row.querySelector('.txtPosterUrl').value = '';
                 } else {
-                    window.Dashboard.alert('加载图片失败： ' + (result.Message || '未知错误'));
+                    window.Dashboard.alert('加载图片失败：' + (result.Message || '未知错误'));
                 }
             }).catch(function () {
                 window.Dashboard.alert('获取图片时出错。请检查 URL 和服务器日志。');
@@ -2727,7 +2727,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             else if (raw.indexOf('⚠') >= 0) cls = 'log-warn';
             else if (raw.indexOf('✔') >= 0) cls = 'log-ok';
             else if (/^\s{1,3}– /.test(raw)) cls = 'log-skip';
-            else if (/^(»|结果$|汇总$|\[Cleanup\]$|\[\d+\/\d+\] |Home Screen Companion |主屏幕同步 )/.test(raw)) cls = 'log-head';
+            else if (/^(»|结果$|汇总$|\[Cleanup\]$|\[\d+\/\d+\] |Home Screen Companion |主屏幕同步 |动漫合集同步 )/.test(raw)) cls = 'log-head';
 
             var line = document.createElement('div');
             line.className = 'log-line' + (cls ? ' ' + cls : '');
@@ -3468,7 +3468,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 });
             })
             .catch(function(e) {
-                tab.querySelector('.hse-fields-inner').innerHTML = '<em style="color:#cc4444">加载失败： ' + e.message + '</em>';
+                tab.querySelector('.hse-fields-inner').innerHTML = '<em style="color:#cc4444">加载失败：' + e.message + '</em>';
                 tab.dataset.hseLoaded = '0'; // allow retry
             });
     }
@@ -5270,7 +5270,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
             var html =
                 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;">' +
-                '<h3 style="margin:0;font-size:1.1em;color:#52B54B;">' + (existingData ? '编辑' : '创建') + (isShows ? ' 剧集' : '') + ' 榜单： ' + escHtml(displayName) + '</h3>' +
+                '<h3 style="margin:0;font-size:1.1em;color:#52B54B;">' + (existingData ? '编辑' : '创建') + (isShows ? ' 剧集' : '') + ' 榜单：' + escHtml(displayName) + '</h3>' +
                 '<button type="button" class="btnTlmClose" style="background:transparent;border:none;color:inherit;cursor:pointer;padding:2px;opacity:0.6;line-height:1;"><i class="md-icon">close</i></button>' +
                 '</div>' +
 
@@ -5372,7 +5372,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 });
             });
         }).catch(function (err) {
-            renderBox('<div style="color:#cc3333;padding:10px 0;">加载失败： ' + (err.message || err) + '</div>' +
+            renderBox('<div style="color:#cc3333;padding:10px 0;">加载失败：' + (err.message || err) + '</div>' +
                 '<div style="margin-top:16px;text-align:right;"><button type="button" class="btnTlmClose" style="cursor:pointer;border:1px solid var(--line-color);background:transparent;color:inherit;border-radius:3px;padding:6px 14px;font-size:0.9em;">关闭</button></div>');
             modal.querySelector('.btnTlmClose').addEventListener('click', function () { modal.remove(); });
         });
@@ -5687,7 +5687,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         .catch(function (err) {
             var innerBox = modal.querySelector('div');
             innerBox.innerHTML =
-                '<div style="color:#cc3333;padding:10px 0;">加载失败： ' + escapeHtml(err.message || String(err)) + '</div>' +
+                '<div style="color:#cc3333;padding:10px 0;">加载失败：' + escapeHtml(err.message || String(err)) + '</div>' +
                 '<div style="margin-top:16px;text-align:right;">' +
                 '<button type="button" class="btnMtlClose" style="cursor:pointer;border:1px solid var(--line-color);background:transparent;color:inherit;border-radius:3px;padding:6px 14px;font-size:0.9em;">关闭</button>' +
                 '</div>';
@@ -5734,7 +5734,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 var data      = res[2];
 
                 if (!data.Success) {
-                    body.innerHTML = '<div style="color:#cc3333;padding:8px 0;">加载失败： ' + escHtml(data.Message || '未知错误') + '</div>';
+                    body.innerHTML = '<div style="color:#cc3333;padding:8px 0;">加载失败：' + escHtml(data.Message || '未知错误') + '</div>';
                     return;
                 }
 
@@ -5959,7 +5959,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 };
 
             }).catch(function (err) {
-                body.innerHTML = '<div style="color:#cc3333;padding:8px 0;">加载失败： ' + escHtml(err.message || String(err)) + '</div>';
+                body.innerHTML = '<div style="color:#cc3333;padding:8px 0;">加载失败：' + escHtml(err.message || String(err)) + '</div>';
             });
 
         } else {
@@ -6078,7 +6078,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 };
 
             }).catch(function (err) {
-                body.innerHTML = '<div style="color:#cc3333;padding:8px 0;">加载用户失败： ' + escHtml(err.message || String(err)) + '</div>';
+                body.innerHTML = '<div style="color:#cc3333;padding:8px 0;">加载用户失败：' + escHtml(err.message || String(err)) + '</div>';
             });
         }
     }
