@@ -3523,13 +3523,13 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 memberTitles: (c.MemberTitles || []).slice(),
                 memberIncludeIds: (c.MemberIncludeIds || []).slice(),
                 moreCount: c.MoreCount || 0,
-                hasReminder: !!(c.Status === 'skipped' || ((c.Reason || '').length)),
+                hasReminder: !!(c.HasReminder || c.Status === 'skipped' || ((c.Reason || '').length)),
                 discarded: false,
                 excluded: {},
                 membersExpanded: false
             };
         });
-        view._animeConfirm = { items: items, sessionDiscarded: 0 };
+        view._animeConfirm = { items: items, sessionDiscarded: 0, filter: 'all' };
         renderAnimeConfirmPanel(view);
         overlay.classList.add('open');
         overlay.setAttribute('aria-hidden', 'false');
@@ -3550,14 +3550,14 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         active.forEach(function (i) {
             if (i.status === 'will_create' || i.status === 'created') n++;
             else if (i.status === 'will_update' || i.status === 'updated') m++;
-            if (i.hasReminder || i.status === 'skipped' || i.reason) k++;
+            if (animeConfirmIsDoubt(i)) k++;
         });
         var d = items.filter(function (i) { return i.discarded; }).length;
         return { create: n, update: m, doubt: k, discarded: d, active: active.length };
     }
 
     function animeConfirmIsDoubt(item) {
-        return !!(item.hasReminder || item.status === 'skipped' || (item.reason && item.reason.length));
+        return !!(item && (item.hasReminder || item.status === 'skipped' || (item.reason && item.reason.length)));
     }
 
     function renderAnimeConfirmPanel(view) {
@@ -3567,48 +3567,50 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var summaryEl = view.querySelector('#animeConfirmSummary') || document.getElementById('animeConfirmSummary');
         if (summaryEl) {
             summaryEl.textContent = '将新建 ' + counts.create + ' · 将更新 ' + counts.update +
-                ' · 有疑问 ' + counts.doubt + ' · 已废弃 ' + counts.discarded;
+                (counts.doubt ? (' · 吃不准 ' + counts.doubt) : '') +
+                (counts.discarded ? (' · 已废弃 ' + counts.discarded) : '');
         }
-        var doubtTitle = view.querySelector('#animeConfirmDoubtTitle') || document.getElementById('animeConfirmDoubtTitle');
-        var okTitle = view.querySelector('#animeConfirmOkTitle') || document.getElementById('animeConfirmOkTitle');
-        var doubtList = view.querySelector('#animeConfirmDoubtList') || document.getElementById('animeConfirmDoubtList');
-        var okList = view.querySelector('#animeConfirmOkList') || document.getElementById('animeConfirmOkList');
-        var doubtItems = state.items.filter(function (i) { return !i.discarded && animeConfirmIsDoubt(i); });
-        var okItems = state.items.filter(function (i) { return !i.discarded && !animeConfirmIsDoubt(i); });
-        if (doubtTitle) doubtTitle.textContent = '有疑问（' + doubtItems.length + '）';
-        if (okTitle) okTitle.textContent = '没问题 · 其余 ' + okItems.length + ' 个合集';
-        function buildList(el, list, collapsedDefault) {
-            if (!el) return;
-            el.innerHTML = '';
-            if (!list.length) {
-                var empty = document.createElement('div');
-                empty.className = 'fieldDescription';
-                empty.textContent = '这里暂时没有合集。';
-                el.appendChild(empty);
-                return;
-            }
-            list.forEach(function (item) {
-                el.appendChild(buildAnimeConfirmItem(view, item));
+        var filter = state.filter || 'all';
+        var filterBar = view.querySelector('#animeConfirmFilter') || document.getElementById('animeConfirmFilter');
+        if (filterBar) {
+            Array.prototype.forEach.call(filterBar.querySelectorAll('[data-anime-confirm-filter]'), function (btn) {
+                var on = btn.getAttribute('data-anime-confirm-filter') === filter;
+                if (on) btn.classList.add('active');
+                else btn.classList.remove('active');
             });
         }
-        buildList(doubtList, doubtItems);
-        buildList(okList, okItems);
-        var okSection = view.querySelector('#animeConfirmOkSection') || document.getElementById('animeConfirmOkSection');
-        if (okSection) okSection.style.display = okItems.length ? '' : 'none';
-        var doubtSection = view.querySelector('#animeConfirmDoubtSection') || document.getElementById('animeConfirmDoubtSection');
-        if (doubtSection) doubtSection.style.display = doubtItems.length ? '' : 'none';
-        var toggle = view.querySelector('#btnAnimeConfirmToggleOk') || document.getElementById('btnAnimeConfirmToggleOk');
-        if (toggle && okList) {
-            var open = okList.style.display !== 'none';
-            toggle.textContent = open ? '收起' : '展开';
+        var listEl = view.querySelector('#animeConfirmList') || document.getElementById('animeConfirmList');
+        if (!listEl) return;
+        listEl.innerHTML = '';
+        var visible = state.items.filter(function (i) {
+            if (i.discarded) return false;
+            if (filter === 'doubt') return animeConfirmIsDoubt(i);
+            return true;
+        });
+        if (!visible.length) {
+            var empty = document.createElement('div');
+            empty.className = 'fieldDescription';
+            empty.textContent = filter === 'doubt' ? '没有吃不准的合集。' : '这里暂时没有合集。';
+            listEl.appendChild(empty);
+            return;
         }
+        visible.forEach(function (item) {
+            listEl.appendChild(buildAnimeConfirmItem(view, item));
+        });
     }
 
     function buildAnimeConfirmItem(view, item) {
         var wrap = document.createElement('div');
-        wrap.className = 'anime-confirm-item' + (item.discarded ? ' discarded' : '');
+        var doubt = animeConfirmIsDoubt(item);
+        wrap.className = 'anime-confirm-item' + (item.discarded ? ' discarded' : '') + (doubt ? ' doubt' : '');
         var top = document.createElement('div');
         top.className = 'anime-confirm-item-top';
+        if (doubt) {
+            var badge = document.createElement('span');
+            badge.className = 'anime-confirm-badge';
+            badge.textContent = '吃不准';
+            top.appendChild(badge);
+        }
         var nameInput = document.createElement('input');
         nameInput.type = 'text';
         nameInput.value = item.name || '';
@@ -3634,7 +3636,6 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var titles = item.memberTitles || [];
         var show = titles.slice(0, item.membersExpanded ? titles.length : 4);
         var text = show.join('、');
-        var hidden = titles.length - show.length + (item.moreCount || 0);
         if (!item.membersExpanded && (titles.length > 4 || (item.moreCount || 0) > 0)) {
             var rest = Math.max(0, titles.length - 4) + (item.moreCount || 0);
             if (text) text += '；';
@@ -3685,13 +3686,17 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
     function discardAnimeConfirmItem(view, item) {
         if (!item || item.discarded || !item.key) return;
-        animePostJson('HomeScreenCompanionAnime/Anime/Discard', { Key: item.key }).then(function (data) {
+        animePostJson('HomeScreenCompanionAnime/Anime/Discard', {
+            Key: item.key,
+            Name: (item.name || '').trim()
+        }).then(function (data) {
             if (!data || !data.Success) {
                 window.Dashboard.alert((data && data.Message) || '废弃失败。');
                 return;
             }
             item.discarded = true;
             renderAnimeConfirmPanel(view);
+            try { loadAnimeDiscardedList(view); } catch (e) { }
         }).catch(function (err) {
             window.Dashboard.alert('废弃失败：' + (err && err.message ? err.message : err));
         });
@@ -3757,11 +3762,90 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             closeAnimeConfirmPanel(view);
             return waitAnimeTaskIdle(view).then(function () {
                 return loadAnimeLastRunSummary(view);
+            }).then(function (summary) {
+                if (summary && window.Dashboard && window.Dashboard.alert) {
+                    var n = summary.Created || 0;
+                    var m = summary.Updated || 0;
+                    window.Dashboard.alert('新建 ' + n + ' · 更新 ' + m);
+                }
+                refreshStatus(view);
+                try { loadAnimeDiscardedList(view); } catch (e) { }
+                return summary;
             });
         }).catch(function (err) {
             window.Dashboard.alert('创建失败：' + (err && err.message ? err.message : err));
         }).then(function () {
             if (btn) btn.disabled = false;
+        });
+    }
+
+    function loadAnimeDiscardedList(view) {
+        var listEl = view.querySelector('#animeDiscardedList') || document.getElementById('animeDiscardedList');
+        var emptyEl = view.querySelector('#animeDiscardedEmpty') || document.getElementById('animeDiscardedEmpty');
+        if (!listEl) return Promise.resolve();
+        return window.ApiClient.getJSON(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/Discarded'))
+            .then(function (data) {
+                listEl.innerHTML = '';
+                var items = (data && data.Items) || [];
+                if (!items.length) {
+                    if (emptyEl) {
+                        emptyEl.style.display = '';
+                        emptyEl.textContent = '当前没有已废弃的合集。';
+                        delete emptyEl.dataset.failed;
+                    }
+                    return data;
+                }
+                if (emptyEl) {
+                    emptyEl.style.display = 'none';
+                    emptyEl.textContent = '当前没有已废弃的合集。';
+                    delete emptyEl.dataset.failed;
+                }
+                items.forEach(function (item) {
+                    if (!item || !item.Key) return;
+                    var row = document.createElement('div');
+                    row.className = 'anime-discarded-row';
+                    var name = document.createElement('div');
+                    name.className = 'anime-discarded-name';
+                    name.textContent = item.Name || '（暂无名称）';
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'anime-discarded-restore';
+                    btn.textContent = '恢复';
+                    btn.addEventListener('click', function () {
+                        restoreAnimeDiscardedItem(view, item.Key, btn);
+                    });
+                    row.appendChild(name);
+                    row.appendChild(btn);
+                    listEl.appendChild(row);
+                });
+                return data;
+            })
+            .catch(function () {
+                listEl.innerHTML = '';
+                if (emptyEl) {
+                    emptyEl.style.display = '';
+                    emptyEl.textContent = '废弃列表暂时无法加载。';
+                    emptyEl.dataset.failed = '1';
+                }
+            });
+    }
+
+    function restoreAnimeDiscardedItem(view, key, button) {
+        if (!key) return;
+        if (button) button.disabled = true;
+        animePostJson('HomeScreenCompanionAnime/Anime/Restore', { Key: key }).then(function (data) {
+            if (!data || !data.Success) {
+                window.Dashboard.alert((data && data.Message) || '恢复失败。');
+                if (button) button.disabled = false;
+                return;
+            }
+            if (window.Dashboard && window.Dashboard.alert) {
+                window.Dashboard.alert(data.Message || '已恢复。');
+            }
+            loadAnimeDiscardedList(view);
+        }).catch(function (err) {
+            window.Dashboard.alert('恢复失败：' + (err && err.message ? err.message : err));
+            if (button) button.disabled = false;
         });
     }
 
@@ -8566,14 +8650,14 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         if (confirmCancel) confirmCancel.addEventListener('click', function () { closeAnimeConfirmPanel(view); });
         var confirmCreate = view.querySelector('#btnAnimeConfirmCreate') || document.getElementById('btnAnimeConfirmCreate');
         if (confirmCreate) confirmCreate.addEventListener('click', function () { submitAnimeConfirmCreate(view); });
-        var confirmToggleOk = view.querySelector('#btnAnimeConfirmToggleOk') || document.getElementById('btnAnimeConfirmToggleOk');
-        if (confirmToggleOk) {
-            confirmToggleOk.addEventListener('click', function () {
-                var okList = view.querySelector('#animeConfirmOkList') || document.getElementById('animeConfirmOkList');
-                if (!okList) return;
-                var open = okList.style.display === 'none';
-                okList.style.display = open ? '' : 'none';
-                confirmToggleOk.textContent = open ? '收起' : '展开';
+        var confirmFilter = view.querySelector('#animeConfirmFilter') || document.getElementById('animeConfirmFilter');
+        if (confirmFilter) {
+            confirmFilter.addEventListener('click', function (ev) {
+                var btn = ev.target && ev.target.closest ? ev.target.closest('[data-anime-confirm-filter]') : null;
+                if (!btn || !view._animeConfirm) return;
+                var next = btn.getAttribute('data-anime-confirm-filter') || 'all';
+                view._animeConfirm.filter = next;
+                renderAnimeConfirmPanel(view);
             });
         }
         var confirmOverlay = view.querySelector('#animeConfirmOverlay') || document.getElementById('animeConfirmOverlay');
@@ -8582,6 +8666,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 if (ev.target === confirmOverlay) closeAnimeConfirmPanel(view);
             });
         }
+        try { loadAnimeDiscardedList(view); } catch (e) { }
 
         view.querySelector('#btnDialHomeScreen').addEventListener('click', function () {
             runTask('HomeSectionSyncTask', '主屏幕同步');
@@ -8772,6 +8857,9 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                         var isOpen = body.style.display !== 'none';
                         body.style.display = isOpen ? 'none' : 'block';
                         if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+                        if (!isOpen && panel.id === 'animeSettingsPanel') {
+                            try { loadAnimeDiscardedList(view); } catch (e) { }
+                        }
                     }
                 }
                 return;

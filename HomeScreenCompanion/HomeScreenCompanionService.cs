@@ -214,6 +214,8 @@ namespace HomeScreenCompanion
     public class AnimeDiscardCollectionRequest : IReturn<AnimeDiscardCollectionResponse>
     {
         public string Key { get; set; } = "";
+        /// <summary>Optional human display name (no prefix); never the internal Key.</summary>
+        public string Name { get; set; } = "";
     }
     public class AnimeDiscardCollectionResponse
     {
@@ -221,6 +223,30 @@ namespace HomeScreenCompanion
         public string Message { get; set; } = "";
         public string AnimeDiscardedCollectionKeys { get; set; } = "";
         public int DiscardedCount { get; set; }
+    }
+
+    [Route("/HomeScreenCompanionAnime/Anime/Discarded", "GET")]
+    [Authenticated(Roles = "Admin")]
+    public class GetAnimeDiscardedCollectionsRequest : IReturn<AnimeDiscardedCollectionsResponse> { }
+
+    public class AnimeDiscardedCollectionItem
+    {
+        public string Key { get; set; } = "";
+        public string Name { get; set; } = "";
+    }
+
+    public class AnimeDiscardedCollectionsResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = "";
+        public List<AnimeDiscardedCollectionItem> Items { get; set; } = new List<AnimeDiscardedCollectionItem>();
+    }
+
+    [Route("/HomeScreenCompanionAnime/Anime/Restore", "POST")]
+    [Authenticated(Roles = "Admin")]
+    public class AnimeRestoreDiscardedCollectionRequest : IReturn<AnimeDiscardCollectionResponse>
+    {
+        public string Key { get; set; } = "";
     }
 
     [Route("/HomeScreenCompanionAnime/Anime/ConfirmCreate", "POST")]
@@ -1296,7 +1322,8 @@ public class HomeScreenCompanionService : IService
                 var config = Plugin.Instance?.Configuration;
                 if (config == null)
                     return new AnimeDiscardCollectionResponse { Success = false, Message = "插件配置不可用。" };
-                string next = AnimeCollectionEditorSupport.AddDiscardedKey(config.AnimeDiscardedCollectionKeys, key);
+                string next = AnimeCollectionEditorSupport.AddDiscardedKey(
+                    config.AnimeDiscardedCollectionKeys, key, request?.Name);
                 config.AnimeDiscardedCollectionKeys = next;
                 Plugin.Instance!.SaveConfiguration();
                 var count = AnimeCollectionEditorSupport.ParseDiscardedKeys(next).Count;
@@ -1314,6 +1341,83 @@ public class HomeScreenCompanionService : IService
             }
         }
 
+        public object Get(GetAnimeDiscardedCollectionsRequest request)
+        {
+            try
+            {
+                var config = Plugin.Instance?.Configuration;
+                if (config == null)
+                    return new AnimeDiscardedCollectionsResponse { Success = false, Message = "插件配置不可用。" };
+                var entries = AnimeCollectionEditorSupport.ParseDiscardedEntries(config.AnimeDiscardedCollectionKeys);
+                var aliases = AnimeCollectionPolicy.Parse(
+                    "", "", config.AnimeCollectionAliasesJson ?? "").ExportAliases();
+                var summary = LoadAnimeLastRunSummary() ?? new AnimeLastRunSummary();
+                var nameByKey = new Dictionary<string, string>(StringComparer.Ordinal);
+                void Remember(string k, string n)
+                {
+                    k = (k ?? "").Trim();
+                    n = AnimeCollectionEditorSupport.SanitizeDiscardedDisplayName(n);
+                    if (string.IsNullOrEmpty(k) || string.IsNullOrEmpty(n)) return;
+                    if (!nameByKey.ContainsKey(k)) nameByKey[k] = n;
+                }
+                foreach (var pair in aliases) Remember(pair.Key, pair.Value);
+                if (summary.Owned != null)
+                {
+                    foreach (var card in summary.Owned)
+                        if (card != null) Remember(card.Key, card.Name);
+                }
+                if (summary.Cards != null)
+                {
+                    foreach (var card in summary.Cards)
+                        if (card != null) Remember(card.Key, card.Name);
+                }
+                var items = new List<AnimeDiscardedCollectionItem>();
+                foreach (var entry in entries.OrderBy(e => e.Name ?? "", StringComparer.CurrentCultureIgnoreCase)
+                             .ThenBy(e => e.Key, StringComparer.Ordinal))
+                {
+                    string name = AnimeCollectionEditorSupport.SanitizeDiscardedDisplayName(entry.Name);
+                    if (string.IsNullOrEmpty(name) && nameByKey.TryGetValue(entry.Key, out var resolved))
+                        name = resolved;
+                    if (string.IsNullOrEmpty(name)) name = "（暂无名称）";
+                    items.Add(new AnimeDiscardedCollectionItem { Key = entry.Key, Name = name });
+                }
+                return new AnimeDiscardedCollectionsResponse { Success = true, Items = items };
+            }
+            catch (Exception ex)
+            {
+                return new AnimeDiscardedCollectionsResponse { Success = false, Message = "无法读取废弃列表：" + ex.Message };
+            }
+        }
+
+        public object Post(AnimeRestoreDiscardedCollectionRequest request)
+        {
+            try
+            {
+                string key = (request?.Key ?? "").Trim();
+                if (string.IsNullOrEmpty(key) || !AnimeCollectionPolicy.IsIdentifier(key) ||
+                    !key.StartsWith("anilist:", StringComparison.Ordinal))
+                    return new AnimeDiscardCollectionResponse { Success = false, Message = "缺少合集编号。" };
+                var config = Plugin.Instance?.Configuration;
+                if (config == null)
+                    return new AnimeDiscardCollectionResponse { Success = false, Message = "插件配置不可用。" };
+                string next = AnimeCollectionEditorSupport.RemoveDiscardedKey(config.AnimeDiscardedCollectionKeys, key);
+                config.AnimeDiscardedCollectionKeys = next;
+                Plugin.Instance!.SaveConfiguration();
+                var count = AnimeCollectionEditorSupport.ParseDiscardedKeys(next).Count;
+                return new AnimeDiscardCollectionResponse
+                {
+                    Success = true,
+                    Message = "已恢复。下次同步可以再次出现这个合集。",
+                    AnimeDiscardedCollectionKeys = next,
+                    DiscardedCount = count
+                };
+            }
+            catch (Exception ex)
+            {
+                return new AnimeDiscardCollectionResponse { Success = false, Message = "恢复失败：" + ex.Message };
+            }
+        }
+
         public object Post(AnimeConfirmCreateRequest request)
         {
             try
@@ -1326,11 +1430,13 @@ public class HomeScreenCompanionService : IService
                 if (config.DryRunMode)
                     return new AnimeManualSyncResponse { Success = false, Message = "设置里的「仅预览」总开关仍开着，无法写入。请先到设置里关闭后再创建。" };
 
-                // Apply discards first
+                // Apply discards first (name already stored if user discarded in the panel)
                 foreach (var raw in request?.DiscardKeys ?? new List<string>())
                 {
                     var key = (raw ?? "").Trim();
-                    if (string.IsNullOrEmpty(key)) continue;
+                    if (string.IsNullOrEmpty(key) || !AnimeCollectionPolicy.IsIdentifier(key) ||
+                        !key.StartsWith("anilist:", StringComparison.Ordinal))
+                        continue;
                     config.AnimeDiscardedCollectionKeys = AnimeCollectionEditorSupport.AddDiscardedKey(
                         config.AnimeDiscardedCollectionKeys, key);
                 }

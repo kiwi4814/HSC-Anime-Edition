@@ -690,6 +690,46 @@
             font-size: 0.88em;
         }
         .anime-confirm-discard-btn:hover { background: rgba(220,80,80,0.12); }
+        .anime-confirm-filter {
+            display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+            margin: 0 0 12px;
+        }
+        .anime-confirm-filter button {
+            border: 1px solid var(--line-color); background: transparent; color: inherit;
+            border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 0.88em;
+        }
+        .anime-confirm-filter button.active {
+            border-color: rgba(82,181,75,0.65); background: rgba(82,181,75,0.12); font-weight: 650;
+        }
+        .anime-confirm-item.doubt {
+            border-color: rgba(232,168,56,0.7);
+            box-shadow: inset 3px 0 0 rgba(232,168,56,0.85);
+        }
+        .anime-confirm-badge {
+            display: inline-block; font-size: 0.75em; font-weight: 700;
+            padding: 2px 8px; border-radius: 999px; letter-spacing: 0.02em;
+            background: rgba(232,168,56,0.22); color: inherit;
+            border: 1px solid rgba(232,168,56,0.55);
+        }
+        .anime-confirm-item-top .anime-confirm-badge { flex: 0 0 auto; }
+        .anime-discarded-block {
+            margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--line-color);
+        }
+        .anime-discarded-block h3 {
+            margin: 0 0 6px; font-size: 0.95em; font-weight: 650; opacity: 0.9;
+        }
+        .anime-discarded-list { margin-top: 8px; }
+        .anime-discarded-row {
+            display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid var(--line-color);
+        }
+        .anime-discarded-row:last-child { border-bottom: none; }
+        .anime-discarded-name { flex: 1; min-width: 120px; font-size: 0.92em; }
+        .anime-discarded-restore {
+            border: 1px solid var(--line-color); background: transparent; color: inherit;
+            border-radius: 6px; padding: 4px 12px; cursor: pointer; font-size: 0.86em;
+        }
+        .anime-discarded-restore:hover { background: rgba(82,181,75,0.12); }
 
         /* Home Screen tab */
         .hsc-card {
@@ -1269,6 +1309,13 @@
                         <div class="inputContainer" style="margin-top:16px;">
                             <input is="emby-input" type="number" min="10" max="600" id="txtAnimeApiBudget" label="每次同步最多查询外网次数" />
                             <div class="fieldDescription">默认 300。首次同步可能需要多跑几次。单次最多 600。</div>
+                        </div>
+
+                        <div class="anime-discarded-block" id="animeDiscardedBlock">
+                            <h3>已废弃的合集</h3>
+                            <div class="fieldDescription" style="margin-bottom:6px;line-height:1.6;">废弃后不会再出现在同步提议里。点恢复后，下次同步可以再次看到。</div>
+                            <div id="animeDiscardedList" class="anime-discarded-list"></div>
+                            <div id="animeDiscardedEmpty" class="fieldDescription" style="display:none;margin-top:6px;">当前没有已废弃的合集。</div>
                         </div>
 
                         <div class="advanced-section settings-panel" style="margin-top:22px;border:1px solid var(--line-color);border-radius:8px;">
@@ -2479,19 +2526,11 @@
                 <div class="anime-confirm-summary" id="animeConfirmSummary"></div>
             </div>
             <div class="anime-confirm-body" id="animeConfirmBody">
-                <div class="anime-confirm-section" id="animeConfirmDoubtSection">
-                    <div class="anime-confirm-section-title">
-                        <span id="animeConfirmDoubtTitle">有疑问</span>
-                    </div>
-                    <div id="animeConfirmDoubtList"></div>
+                <div class="anime-confirm-filter" id="animeConfirmFilter" role="tablist" aria-label="清单筛选">
+                    <button type="button" data-anime-confirm-filter="all" class="active">全部</button>
+                    <button type="button" data-anime-confirm-filter="doubt">吃不准</button>
                 </div>
-                <div class="anime-confirm-section" id="animeConfirmOkSection">
-                    <div class="anime-confirm-section-title">
-                        <span id="animeConfirmOkTitle">没问题</span>
-                        <button type="button" id="btnAnimeConfirmToggleOk">展开</button>
-                    </div>
-                    <div id="animeConfirmOkList" style="display:none;"></div>
-                </div>
+                <div id="animeConfirmList"></div>
             </div>
             <div class="anime-confirm-footer">
                 <button type="button" is="emby-button" class="raised btn-neutral" id="btnAnimeConfirmCancel">取消</button>

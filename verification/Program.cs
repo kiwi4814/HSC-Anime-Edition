@@ -297,6 +297,14 @@ static partial class Program
         Assert(discarded.Contains(Key), "Discarded key persisted");
         discarded = AnimeCollectionEditorSupport.AddDiscardedKey(discarded, Key);
         Assert(AnimeCollectionEditorSupport.ParseDiscardedKeys(discarded).Count == 1, "Discarded keys are unique");
+        discarded = AnimeCollectionEditorSupport.AddDiscardedKey(discarded, Key, "星桥纪事");
+        var entries = AnimeCollectionEditorSupport.ParseDiscardedEntries(discarded);
+        Assert(entries.Count == 1 && entries[0].Name == "星桥纪事", "Discarded display name stored beside key");
+        Assert(AnimeCollectionEditorSupport.ParseDiscardedKeys(discarded).Contains(Key), "Keyed parse still works with name");
+        discarded = AnimeCollectionEditorSupport.AddDiscardedKey(discarded, Key, "");
+        Assert(AnimeCollectionEditorSupport.ParseDiscardedEntries(discarded)[0].Name == "星桥纪事", "Empty name keeps prior label");
+        discarded = AnimeCollectionEditorSupport.AddDiscardedKey(discarded, Key, "anilist:999");
+        Assert(AnimeCollectionEditorSupport.ParseDiscardedEntries(discarded)[0].Name == "星桥纪事", "Internal key rejected as display name");
         discarded = AnimeCollectionEditorSupport.RemoveDiscardedKey(discarded, Key);
         Assert(AnimeCollectionEditorSupport.ParseDiscardedKeys(discarded).Count == 0, "Removed discarded key");
         Reject(() => AnimeCollectionEditorSupport.AddDiscardedKey("", "not-a-key"), "Invalid discarded key rejected");

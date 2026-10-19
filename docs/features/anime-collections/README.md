@@ -108,10 +108,11 @@ API（Admin）：`GET .../Anime/CollectionEditor`、`GET .../Anime/MediaSearch`�
 
 ### 手动同步：预览确认框
 
-- 「立即同步」**始终**先跑仅预览（不写库），再打开「确认创建」面板：改名 / 废弃 / 可选去掉成员 →「一键创建」才写入未废弃项。
-- 页上「定时自动写入」对应配置 `AnimeDryRun` 取反：开=计划任务直接写；关=计划任务也只记预览摘要。手动路径不被该开关短路。
-- 废弃写入 `AnimeDiscardedCollectionKeys`（内部合集 Key，界面不展示）；之后预览与写入都跳过。
-- API（Admin）：`POST .../Anime/ManualPreview`、`POST .../Anime/Discard`、`POST .../Anime/ConfirmCreate`。
+- 「立即同步」**始终**先跑仅预览（不写库），再打开「确认创建」面板：一张清单列出本次全部候选；每行可改名 / 废弃；吃不准的行加黄标 + 人话原因（不挡一键创建）。可选筛选「全部 / 吃不准」，默认全部。
+- 「一键创建」成功后关掉清单，弹出短结果「新建 N · 更新 M」，并刷新合集一览与上次状态。
+- 计划任务直接写入全部候选（仅受全局「仅预览」约束）；手动仍走预览→清单→创建。
+- 废弃写入 `AnimeDiscardedCollectionKeys`（可附带显示名；界面只显示名、不展示内部 Key）；之后预览与写入都跳过。设置 → 动漫合集里可查看「已废弃的合集」并恢复。
+- API（Admin）：`POST .../Anime/ManualPreview`、`POST .../Anime/Discard`、`GET .../Anime/Discarded`、`POST .../Anime/Restore`、`POST .../Anime/ConfirmCreate`。
 
 编辑合集子视图**不再**提供关系图 UI；成员仍用勾选列表。
 

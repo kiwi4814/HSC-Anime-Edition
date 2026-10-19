@@ -193,38 +193,95 @@ namespace HomeScreenCompanion
             sb.Append('"');
             return sb.ToString();
         }
-        internal static string AddDiscardedKey(string discardedKeys, string key)
+        internal sealed class DiscardedCollectionEntry
+        {
+            public string Key { get; set; } = "";
+            public string Name { get; set; } = "";
+        }
+
+        /// <summary>
+        /// Persist a discarded collection key. Optional display name is stored as key + tab + name
+        /// so the settings restore list can show a human label without exposing Key.
+        /// Empty name keeps any previously stored name for the same key.
+        /// </summary>
+        internal static string AddDiscardedKey(string discardedKeys, string key, string? displayName = null)
         {
             key = (key ?? "").Trim();
             if (!AnimeCollectionPolicy.IsIdentifier(key))
                 throw new InvalidDataException("无法识别的合集编号。");
-            var set = ParseDiscardedKeys(discardedKeys);
-            set.Add(key);
-            return NormalizeKeyList(set);
+            string name = SanitizeDiscardedDisplayName(displayName);
+            var entries = ParseDiscardedEntries(discardedKeys);
+            var existing = entries.FirstOrDefault(e => string.Equals(e.Key, key, StringComparison.Ordinal));
+            if (existing != null)
+            {
+                if (!string.IsNullOrEmpty(name)) existing.Name = name;
+            }
+            else
+            {
+                entries.Add(new DiscardedCollectionEntry { Key = key, Name = name });
+            }
+            return NormalizeDiscardedEntries(entries);
         }
 
         internal static string RemoveDiscardedKey(string discardedKeys, string key)
         {
-            var set = ParseDiscardedKeys(discardedKeys);
-            set.Remove((key ?? "").Trim());
-            return NormalizeKeyList(set);
+            key = (key ?? "").Trim();
+            var entries = ParseDiscardedEntries(discardedKeys)
+                .Where(e => !string.Equals(e.Key, key, StringComparison.Ordinal))
+                .ToList();
+            return NormalizeDiscardedEntries(entries);
         }
 
         internal static HashSet<string> ParseDiscardedKeys(string discardedKeys)
         {
-            var set = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var raw in (discardedKeys ?? "").Split('\n'))
-            {
-                var k = raw.Trim();
-                if (k.Length == 0) continue;
-                if (!AnimeCollectionPolicy.IsIdentifier(k)) continue;
-                set.Add(k);
-            }
-            return set;
+            return new HashSet<string>(
+                ParseDiscardedEntries(discardedKeys).Select(e => e.Key),
+                StringComparer.Ordinal);
         }
 
-        private static string NormalizeKeyList(IEnumerable<string> set) =>
-            string.Join("\n", set.OrderBy(k => k, StringComparer.Ordinal));
+        internal static List<DiscardedCollectionEntry> ParseDiscardedEntries(string discardedKeys)
+        {
+            var list = new List<DiscardedCollectionEntry>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var raw in (discardedKeys ?? "").Split('\n'))
+            {
+                var line = raw.Trim();
+                if (line.Length == 0) continue;
+                string key = line;
+                string name = "";
+                int tab = line.IndexOf('\t');
+                if (tab >= 0)
+                {
+                    key = line.Substring(0, tab).Trim();
+                    name = SanitizeDiscardedDisplayName(line.Substring(tab + 1));
+                }
+                if (!AnimeCollectionPolicy.IsIdentifier(key)) continue;
+                if (!seen.Add(key)) continue;
+                list.Add(new DiscardedCollectionEntry { Key = key, Name = name });
+            }
+            return list;
+        }
+
+        internal static string SanitizeDiscardedDisplayName(string? displayName)
+        {
+            var name = (displayName ?? "").Trim();
+            if (string.IsNullOrEmpty(name)) return "";
+            if (name.Any(char.IsControl)) return "";
+            // Never persist internal keys as the user-facing label.
+            if (name.StartsWith("anilist:", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("tmdb_", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("tvdb_", StringComparison.OrdinalIgnoreCase))
+                return "";
+            if (name.Length > 200) name = name.Substring(0, 200).Trim();
+            return name;
+        }
+
+        private static string NormalizeDiscardedEntries(IEnumerable<DiscardedCollectionEntry> entries)
+        {
+            return string.Join("\n", entries
+                .OrderBy(e => e.Key, StringComparer.Ordinal)
+                .Select(e => string.IsNullOrEmpty(e.Name) ? e.Key : (e.Key + "\t" + e.Name)));
+        }
 
     }
 }
