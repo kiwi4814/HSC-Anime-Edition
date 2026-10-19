@@ -3760,17 +3760,24 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 return null;
             }
             closeAnimeConfirmPanel(view);
-            return waitAnimeTaskIdle(view).then(function () {
-                return loadAnimeLastRunSummary(view);
-            }).then(function (summary) {
-                if (summary && window.Dashboard && window.Dashboard.alert) {
-                    var n = summary.Created || 0;
-                    var m = summary.Updated || 0;
-                    window.Dashboard.alert('新建 ' + n + ' · 更新 ' + m);
+            return waitAnimeTaskIdle(view).then(function (taskStatus) {
+                if (taskStatus && taskStatus.IsRunning) {
+                    if (window.Dashboard && window.Dashboard.alert) {
+                        window.Dashboard.alert('创建任务已在后台执行，请稍后在动漫页查看结果。');
+                    }
+                    refreshStatus(view);
+                    return null;
                 }
-                refreshStatus(view);
-                try { loadAnimeDiscardedList(view); } catch (e) { }
-                return summary;
+                return loadAnimeLastRunSummary(view).then(function (summary) {
+                    if (summary && window.Dashboard && window.Dashboard.alert) {
+                        var n = summary.Created || 0;
+                        var m = summary.Updated || 0;
+                        window.Dashboard.alert('新建 ' + n + ' · 更新 ' + m);
+                    }
+                    refreshStatus(view);
+                    try { loadAnimeDiscardedList(view); } catch (e) { }
+                    return summary;
+                });
             });
         }).catch(function (err) {
             window.Dashboard.alert('创建失败：' + (err && err.message ? err.message : err));
