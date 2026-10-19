@@ -92,11 +92,22 @@ assert 'data-page-tab="AnimeCollections"' in html
 assert 'id="tabAnimeCollections"' in html
 assert 'btnAnimeRunNow' in html and '#btnAnimeRunNow' in js
 assert 'LastRunSummary' in service
-assert 'last-run-summary.json' in (SRC / 'AnimeCollectionTask.cs').read_text(encoding='utf-8')
+task_cs = (SRC / 'AnimeCollectionTask.cs').read_text(encoding='utf-8')
+assert 'last-run-summary.json' in task_cs
+assert 'ReminderItems' in task_cs
+assert 'class AnimeReminder' in task_cs
+assert 'Reminders/Handled' in service
+assert 'id="animeRemindersSection"' in html
+assert 'anime-card-dot' in html
+assert 'renderAnimeReminders' in js
+assert 'HasReminder' in js
 # Main anime path must not show jargon; advanced fold may keep support labels.
 anime_tab = html.split('id="tabAnimeCollections"', 1)[1].split('id="tabCleanup"', 1)[0]
 for banned in ('批准名单', '成员规则', 'Dry Run', 'Anchor', '连通分量', '赋能', '闭环', 'Provider', 'Token'):
     assert banned not in anime_tab, 'banned on anime tab: ' + banned
+for banned in ('批准名单', '成员规则', 'Dry Run', '赋能', '闭环'):
+    assert banned not in anime_tab
 print('PASS: P0 anime studio tab + last-run summary wiring')
+print('PASS: P1 reminders in last-run-summary + yellow-dot + reminders UI')
 
 print('NOT_TESTED by this script: C# build/smoke, runtime authentication/backup HTTP, browser rendering, real AI providers or Emby runtime; consult separate logs')

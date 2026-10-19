@@ -2980,6 +2980,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         if (!grid) return;
         grid.innerHTML = '';
         summary = summary || {};
+        view._animeLastSummary = summary;
         var cards = summary.Cards || [];
         var owned = summary.Owned || [];
         var dry = !!summary.DryRun;
@@ -2993,13 +2994,24 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
         function addCard(card) {
             var el = document.createElement('div');
-            el.className = 'anime-card';
+            el.className = 'anime-card' + (card.HasReminder ? ' has-reminder' : '');
+            if (card.Key) el.setAttribute('data-anime-key', card.Key);
+            if (card.Name) el.setAttribute('data-anime-name', card.Name);
             var st = card.Status || '';
             var titles = card.MemberTitles || [];
             var members = titles.join('、');
             if (card.MoreCount > 0) members += (members ? '；' : '') + '还有 ' + card.MoreCount + ' 部';
             var reason = card.Reason || '';
-            el.appendChild(Object.assign(document.createElement('div'), { className: 'anime-card-title', textContent: card.Name || '未命名合集' }));
+            var titleRow = document.createElement('div');
+            titleRow.className = 'anime-card-title-row';
+            titleRow.appendChild(Object.assign(document.createElement('div'), { className: 'anime-card-title', textContent: card.Name || '未命名合集' }));
+            if (card.HasReminder) {
+                var dot = document.createElement('span');
+                dot.className = 'anime-card-dot';
+                dot.title = '有未处理提醒';
+                titleRow.appendChild(dot);
+            }
+            el.appendChild(titleRow);
             var stEl = document.createElement('div');
             stEl.className = 'anime-card-status ' + st;
             stEl.textContent = animeStatusLabel(st);
@@ -3035,13 +3047,169 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                     MemberCount: o.MemberCount || 0,
                     MemberTitles: [],
                     MoreCount: 0,
-                    Reason: ''
+                    Reason: '',
+                    HasReminder: !!o.HasReminder
                 });
             });
             if (empty) empty.style.display = 'none';
         } else {
             if (empty) empty.style.display = '';
         }
+
+        renderAnimeReminders(view, summary);
+    }
+
+    function animeReminderFilter(view) {
+        return view._animeReminderFilter || 'open';
+    }
+
+    function renderAnimeReminders(view, summary) {
+        var list = view.querySelector('#animeReminderList');
+        var empty = view.querySelector('#animeRemindersEmpty');
+        var hint = view.querySelector('#animeRemindersHint');
+        if (!list) return;
+        list.innerHTML = '';
+        summary = summary || {};
+        var items = summary.ReminderItems || [];
+        var filter = animeReminderFilter(view);
+        var openCount = items.filter(function (r) { return r && !r.Handled; }).length;
+        var handledCount = items.length - openCount;
+        if (hint) {
+            if (!items.length) hint.textContent = '';
+            else hint.textContent = '未处理 ' + openCount + (handledCount ? (' · 已处理 ' + handledCount) : '');
+        }
+
+        var shown = items.filter(function (r) {
+            if (!r) return false;
+            if (filter === 'open') return !r.Handled;
+            if (filter === 'handled') return !!r.Handled;
+            return true;
+        });
+
+        if (!shown.length) {
+            if (empty) {
+                empty.style.display = '';
+                if (!items.length) empty.textContent = '暂无提醒。同步时吃不准的合集会出现在这里。';
+                else if (filter === 'open') empty.textContent = '没有未处理提醒。';
+                else if (filter === 'handled') empty.textContent = '还没有已处理提醒。';
+                else empty.textContent = '暂无提醒。';
+            }
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+
+        shown.forEach(function (item) {
+            var row = document.createElement('div');
+            row.className = 'anime-reminder-row' + (item.Handled ? ' handled' : '');
+            row.setAttribute('data-reminder-id', item.Id || '');
+
+            var typeEl = document.createElement('div');
+            typeEl.className = 'anime-reminder-type';
+            typeEl.textContent = item.TypeLabel || '需要留意';
+            row.appendChild(typeEl);
+
+            var nameEl = document.createElement('div');
+            nameEl.className = 'anime-reminder-name';
+            nameEl.textContent = item.CollectionName || item.CollectionKey || '未命名合集';
+            row.appendChild(nameEl);
+
+            if (item.Reason) {
+                var reasonEl = document.createElement('div');
+                reasonEl.className = 'anime-reminder-reason';
+                reasonEl.textContent = item.Reason;
+                row.appendChild(reasonEl);
+            }
+
+            var actions = document.createElement('div');
+            actions.className = 'anime-reminder-actions';
+
+            var goBtn = document.createElement('button');
+            goBtn.type = 'button';
+            goBtn.setAttribute('is', 'emby-button');
+            goBtn.className = 'raised btn-neutral';
+            goBtn.textContent = '去处理';
+            goBtn.addEventListener('click', function () {
+                focusAnimeReminderTarget(view, item);
+            });
+            actions.appendChild(goBtn);
+
+            var markBtn = document.createElement('button');
+            markBtn.type = 'button';
+            markBtn.setAttribute('is', 'emby-button');
+            markBtn.className = 'raised btn-neutral';
+            markBtn.textContent = item.Handled ? '标为未处理' : '标为已处理';
+            markBtn.addEventListener('click', function () {
+                setAnimeReminderHandled(view, item.Id, !item.Handled, markBtn);
+            });
+            actions.appendChild(markBtn);
+
+            row.appendChild(actions);
+            list.appendChild(row);
+        });
+    }
+
+    function focusAnimeReminderTarget(view, item) {
+        var key = (item && item.CollectionKey) || '';
+        var name = (item && item.CollectionName) || '';
+        var grid = view.querySelector('#animeCardGrid');
+        var card = null;
+        if (grid && key) card = grid.querySelector('.anime-card[data-anime-key="' + cssAttrEscape(key) + '"]');
+        if (!card && grid && name) {
+            var nodes = grid.querySelectorAll('.anime-card[data-anime-name]');
+            for (var i = 0; i < nodes.length; i++) {
+                if ((nodes[i].getAttribute('data-anime-name') || '') === name) { card = nodes[i]; break; }
+            }
+        }
+        if (card) {
+            grid.querySelectorAll('.anime-card-focus').forEach(function (el) { el.classList.remove('anime-card-focus'); });
+            card.classList.add('anime-card-focus');
+            try { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { card.scrollIntoView(); }
+            var members = card.querySelector('.anime-card-members');
+            if (members) members.style.fontWeight = '600';
+            return;
+        }
+        // P2 editor not ready — open anime logs as a fallback.
+        var logBtn = view.querySelector('#btnAnimeOpenLogs');
+        if (logBtn) logBtn.click();
+        else if (window.Dashboard && window.Dashboard.alert) {
+            window.Dashboard.alert('还没有对应合集卡片。可先看详细日志，完整编辑会在后续版本提供。');
+        }
+    }
+
+    function cssAttrEscape(value) {
+        if (window.CSS && typeof window.CSS.escape === 'function') return window.CSS.escape(value);
+        return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    }
+
+    function setAnimeReminderHandled(view, id, handled, button) {
+        if (!id) return;
+        if (button) button.disabled = true;
+        var tok = window.ApiClient.accessToken();
+        var headers = { 'Content-Type': 'application/json' };
+        if (tok) headers['X-MediaBrowser-Token'] = tok;
+        fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/Reminders/Handled'), {
+            method: 'POST',
+            headers: headers,
+            credentials: 'same-origin',
+            body: JSON.stringify({ Id: id, Handled: !!handled })
+        }).then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        }).then(function (result) {
+            if (result && result.Success && result.Summary) {
+                renderAnimeCards(view, result.Summary);
+            } else {
+                if (window.Dashboard && window.Dashboard.alert) {
+                    window.Dashboard.alert((result && result.Message) || '无法更新提醒状态。');
+                }
+                if (button) button.disabled = false;
+            }
+        }).catch(function (err) {
+            if (window.Dashboard && window.Dashboard.alert) {
+                window.Dashboard.alert('无法更新提醒状态：' + (err && err.message ? err.message : err));
+            }
+            if (button) button.disabled = false;
+        });
     }
 
     function loadAnimeLastRunSummary(view) {
@@ -7454,6 +7622,19 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                     renderLogModal(view);
                     logOverlay.classList.add('modal-visible');
                 });
+                var reminderFilter = view.querySelector('#animeRemindersFilter');
+                if (reminderFilter) {
+                    view._animeReminderFilter = view._animeReminderFilter || 'open';
+                    reminderFilter.querySelectorAll('button[data-filter]').forEach(function (btn) {
+                        btn.addEventListener('click', function () {
+                            view._animeReminderFilter = btn.getAttribute('data-filter') || 'open';
+                            reminderFilter.querySelectorAll('button[data-filter]').forEach(function (b) {
+                                b.classList.toggle('active', b === btn);
+                            });
+                            renderAnimeReminders(view, view._animeLastSummary || {});
+                        });
+                    });
+                }
                 view.querySelector('#btnCloseLogs').addEventListener('click', () => { _logTab = null; logOverlay.classList.remove('modal-visible'); });
                 logOverlay.addEventListener('click', e => { if (e.target === logOverlay) { _logTab = null; logOverlay.classList.remove('modal-visible'); } });
                 view.querySelectorAll('#logTabs .log-tab').forEach(function (tab) {

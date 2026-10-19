@@ -67,9 +67,25 @@ anilist:1900000104
 | `anibridge-v3.json` | 验证后的映射缓存，默认每七天刷新 |
 | `anime-anilist-relations.json` | AniList 关系缓存，任务使用 14 天新鲜度 |
 | `owned-collections.json` | 已管理 CollectionId/Anchor/Name/ManagedItemIds |
+| `last-run-summary.json` | 上次同步摘要：计数、合集/预览卡片、**提醒列表**（P1）。界面「提醒 N」、卡片黄点、提醒区块都读这里；不另建 `reminders.json` |
 | `ai-analysis.json` | 可选的 AI 建议报告，详见 [AI 分析](../ai-analysis/README.md) |
 
 任务日志通过 LogStore（key=`anime`）持久化，设置页「日志」弹窗的「动漫」选项卡与 `/HomeScreenCompanionAnime/Anime/Status` 可读。旧 `anime-ai-decisions.json` 不是当前 AI 分析服务的活动报告；兼容 DTO/离线哨兵仍存在，不把旧文件名当成新缓存格式。
+
+### 同步提醒（P1）
+
+同步结束写入 `anime/last-run-summary.json`（字段 `ReminderItems` + 计数 `Reminders`）。同 Id 去重更新，保留用户「已处理」标记。
+
+| Type | 界面文案 | 来源 |
+|---|---|---|
+| `branch` | 系列结构复杂 | `ReviewRequired`（无明确成员规则时） |
+| `cross_ip` | 可能混进其它作品 | AI `ReviewIssues`（有则接，无则不造） |
+| `duplicate` | 片源重复 | 组内多成员共享 Provider 身份；或 AI duplicate |
+| `naming` | 名称不太合适 | AI 命名建议 |
+| `missing_local` | 库里可能还缺 | AI `missing_local` |
+| `cannot_write` | 没法写入 | 跳过/冲突等人话原因 |
+
+有提醒的合集**默认仍写入**。只读 `GET .../Anime/LastRunSummary`；`POST .../Anime/Reminders/Handled` 切换已处理。未做合集成员编辑器前，「去处理」跳到对应卡片或打开详细日志。
 
 ### 合集 Key 稳定性与归属恢复
 

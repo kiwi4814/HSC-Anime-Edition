@@ -561,8 +561,22 @@
             border: 1px solid var(--line-color); border-radius: 10px;
             background: var(--theme-background-level2); padding: 14px 16px;
             display: flex; flex-direction: column; gap: 8px; min-height: 120px;
+            position: relative; transition: box-shadow 0.2s ease, border-color 0.2s ease;
         }
-        .anime-card-title { font-weight: 700; font-size: 1.02em; line-height: 1.35; }
+        .anime-card.has-reminder { border-color: rgba(232,168,56,0.65); }
+        .anime-card-focus {
+            box-shadow: 0 0 0 2px rgba(232,168,56,0.85);
+            border-color: #e8a838;
+        }
+        .anime-card-title-row {
+            display: flex; align-items: flex-start; gap: 8px;
+        }
+        .anime-card-title { font-weight: 700; font-size: 1.02em; line-height: 1.35; flex: 1; }
+        .anime-card-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: #e8a838; flex-shrink: 0; margin-top: 5px;
+            box-shadow: 0 0 0 3px rgba(232,168,56,0.25);
+        }
         .anime-card-status {
             display: inline-flex; align-items: center; gap: 6px;
             font-size: 0.78em; font-weight: 700; letter-spacing: 0.3px;
@@ -579,6 +593,42 @@
             border: 1px dashed var(--line-color); border-radius: 10px;
         }
         .anime-summary-line { font-size: 0.92em; opacity: 0.85; margin: 4px 0 0; }
+        .anime-reminders-section { margin-top: 28px; }
+        .anime-reminders-toolbar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+            margin: 8px 0 12px;
+        }
+        .anime-reminders-filter {
+            display: inline-flex; gap: 0; border: 1px solid var(--line-color);
+            border-radius: 8px; overflow: hidden;
+        }
+        .anime-reminders-filter button {
+            margin: 0; padding: 6px 12px; cursor: pointer; font-size: 0.85em; font-weight: 600;
+            background: transparent; border: none; border-right: 1px solid var(--line-color);
+            color: inherit;
+        }
+        .anime-reminders-filter button:last-child { border-right: none; }
+        .anime-reminders-filter button.active {
+            background: rgba(232,168,56,0.22); color: #e8a838;
+        }
+        .anime-reminder-list { display: flex; flex-direction: column; gap: 10px; }
+        .anime-reminder-row {
+            border: 1px solid var(--line-color); border-radius: 10px;
+            background: var(--theme-background-level2); padding: 12px 14px;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .anime-reminder-row.handled { opacity: 0.62; }
+        .anime-reminder-type {
+            display: inline-block; font-size: 0.78em; font-weight: 700;
+            color: #e8a838; letter-spacing: 0.2px;
+        }
+        .anime-reminder-name { font-weight: 650; font-size: 0.98em; }
+        .anime-reminder-reason { font-size: 0.88em; line-height: 1.55; opacity: 0.9; }
+        .anime-reminder-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+        .anime-reminders-empty {
+            padding: 18px 14px; text-align: center; opacity: 0.65; font-size: 0.92em;
+            border: 1px dashed var(--line-color); border-radius: 10px;
+        }
 
         /* Home Screen tab */
         .hsc-card {
@@ -1551,6 +1601,22 @@
                         </div>
                         <div id="animeCardGrid" class="anime-card-grid"></div>
                         <div id="animeCardEmpty" class="anime-card-empty" style="display:none;margin-top:12px;">还没有结果。启用后点「立即同步」，预览模式会在这里显示合集卡片。</div>
+                    </div>
+
+                    <div id="animeRemindersSection" class="anime-reminders-section">
+                        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                            <h2 class="sectionTitle" style="margin:0;font-size:1.1em;">提醒</h2>
+                            <span class="fieldDescription" id="animeRemindersHint" style="margin:0;"></span>
+                        </div>
+                        <div class="anime-reminders-toolbar">
+                            <div class="anime-reminders-filter" id="animeRemindersFilter" role="group" aria-label="提醒筛选">
+                                <button type="button" data-filter="open" class="active">未处理</button>
+                                <button type="button" data-filter="handled">已处理</button>
+                                <button type="button" data-filter="all">全部</button>
+                            </div>
+                        </div>
+                        <div id="animeReminderList" class="anime-reminder-list"></div>
+                        <div id="animeRemindersEmpty" class="anime-reminders-empty" style="display:none;">暂无提醒。同步时吃不准的合集会出现在这里。</div>
                     </div>
                 </div>
             </div>

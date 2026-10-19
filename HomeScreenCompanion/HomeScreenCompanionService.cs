@@ -16,6 +16,7 @@ using MediaBrowser.Model.Users;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -173,6 +174,20 @@ namespace HomeScreenCompanion
     [Route("/HomeScreenCompanionAnime/Anime/LastRunSummary", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetAnimeLastRunSummaryRequest : IReturn<AnimeLastRunSummary> { }
+
+    [Route("/HomeScreenCompanionAnime/Anime/Reminders/Handled", "POST")]
+    [Authenticated(Roles = "Admin")]
+    public class SetAnimeReminderHandledRequest : IReturn<SetAnimeReminderHandledResponse>
+    {
+        public string Id { get; set; } = "";
+        public bool Handled { get; set; } = true;
+    }
+    public class SetAnimeReminderHandledResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = "";
+        public AnimeLastRunSummary Summary { get; set; } = new AnimeLastRunSummary();
+    }
 
     [Route("/HomeScreenCompanionAnime/TopList/Status", "GET")]
     [Authenticated(Roles = "Admin")]
@@ -936,19 +951,94 @@ public class HomeScreenCompanionService : IService
 
         public object Get(GetAnimeLastRunSummaryRequest request)
         {
+            return LoadAnimeLastRunSummary() ?? new AnimeLastRunSummary();
+        }
+
+        public object Post(SetAnimeReminderHandledRequest request)
+        {
+            try
+            {
+                string id = (request?.Id ?? "").Trim();
+                if (string.IsNullOrEmpty(id))
+                    return new SetAnimeReminderHandledResponse { Success = false, Message = "缺少提醒编号。" };
+
+                var dataDir = Path.Combine(Plugin.Instance!.DataFolderPath, "anime");
+                var path = Path.Combine(dataDir, "last-run-summary.json");
+                if (!File.Exists(path))
+                    return new SetAnimeReminderHandledResponse { Success = false, Message = "还没有同步结果。" };
+
+                var summary = _jsonSerializer.DeserializeFromFile<AnimeLastRunSummary>(path) ?? new AnimeLastRunSummary();
+                if (summary.ReminderItems == null) summary.ReminderItems = new List<AnimeReminder>();
+                var item = summary.ReminderItems.FirstOrDefault(r => r != null && string.Equals(r.Id, id, StringComparison.Ordinal));
+                if (item == null)
+                    return new SetAnimeReminderHandledResponse { Success = false, Message = "找不到这条提醒。" };
+
+                item.Handled = request.Handled;
+                var openKeys = new HashSet<string>(
+                    summary.ReminderItems.Where(r => r != null && !r.Handled && !string.IsNullOrEmpty(r.CollectionKey))
+                        .Select(r => r.CollectionKey),
+                    StringComparer.Ordinal);
+                if (summary.Cards != null)
+                {
+                    foreach (var card in summary.Cards)
+                        if (card != null) card.HasReminder = openKeys.Contains(card.Key ?? "");
+                }
+                if (summary.Owned != null)
+                {
+                    var openNames = new HashSet<string>(
+                        summary.ReminderItems.Where(r => r != null && !r.Handled && !string.IsNullOrWhiteSpace(r.CollectionName))
+                            .Select(r => r.CollectionName.Trim()),
+                        StringComparer.OrdinalIgnoreCase);
+                    foreach (var o in summary.Owned)
+                        if (o != null) o.HasReminder = !string.IsNullOrWhiteSpace(o.Name) && openNames.Contains(o.Name.Trim());
+                }
+                summary.Reminders = summary.ReminderItems.Count(r => r != null && !r.Handled);
+                // Refresh 「提醒 N」 in StatusText without rewriting the whole sync phrase.
+                summary.StatusText = RefreshReminderCountInStatus(summary.StatusText, summary.Reminders);
+
+                Directory.CreateDirectory(dataDir);
+                var tmp = path + ".tmp";
+                File.WriteAllText(tmp, _jsonSerializer.SerializeToString(summary), Encoding.UTF8);
+                if (File.Exists(path)) File.Replace(tmp, path, null);
+                else File.Move(tmp, path);
+
+                return new SetAnimeReminderHandledResponse
+                {
+                    Success = true,
+                    Message = request.Handled ? "已标为已处理。" : "已标为未处理。",
+                    Summary = summary
+                };
+            }
+            catch (Exception ex)
+            {
+                return new SetAnimeReminderHandledResponse { Success = false, Message = "保存失败：" + ex.Message };
+            }
+        }
+
+        private AnimeLastRunSummary? LoadAnimeLastRunSummary()
+        {
             try
             {
                 var dataDir = Path.Combine(Plugin.Instance!.DataFolderPath, "anime");
                 var path = Path.Combine(dataDir, "last-run-summary.json");
-                if (!File.Exists(path))
-                    return new AnimeLastRunSummary();
-                var summary = _jsonSerializer.DeserializeFromFile<AnimeLastRunSummary>(path);
-                return summary ?? new AnimeLastRunSummary();
+                if (!File.Exists(path)) return new AnimeLastRunSummary();
+                return _jsonSerializer.DeserializeFromFile<AnimeLastRunSummary>(path) ?? new AnimeLastRunSummary();
             }
             catch
             {
                 return new AnimeLastRunSummary();
             }
+        }
+
+        private static string RefreshReminderCountInStatus(string? statusText, int openReminders)
+        {
+            string baseText = statusText ?? "";
+            // Strip a trailing 「 · 提醒 N」 segment then re-append when needed.
+            int idx = baseText.LastIndexOf(" · 提醒 ", StringComparison.Ordinal);
+            if (idx >= 0) baseText = baseText.Substring(0, idx).TrimEnd();
+            if (openReminders > 0)
+                return string.IsNullOrEmpty(baseText) ? ("提醒 " + openReminders) : (baseText + " · 提醒 " + openReminders);
+            return baseText;
         }
 
         public object Get(HscGetUserSectionsRequest request)

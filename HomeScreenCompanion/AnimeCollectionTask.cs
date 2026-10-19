@@ -24,7 +24,7 @@ namespace HomeScreenCompanion
     /// datasets can never trigger removal from Emby.
     /// </summary>
 
-    /// <summary>Last anime sync card summary for the Anime tab UI (P0).</summary>
+    /// <summary>Last anime sync card summary for the Anime tab UI (P0/P1).</summary>
     public sealed class AnimeLastRunSummary
     {
         public bool DryRun { get; set; }
@@ -35,9 +35,26 @@ namespace HomeScreenCompanion
         public int Updated { get; set; }
         public int Skipped { get; set; }
         public int Unchanged { get; set; }
+        /// <summary>Unhandled reminder count (for summary line 「提醒 N」).</summary>
         public int Reminders { get; set; }
         public List<AnimeRunCard> Cards { get; set; } = new List<AnimeRunCard>();
         public List<AnimeOwnedCard> Owned { get; set; } = new List<AnimeOwnedCard>();
+        /// <summary>Structured reminders persisted in anime/last-run-summary.json (P1).</summary>
+        public List<AnimeReminder> ReminderItems { get; set; } = new List<AnimeReminder>();
+    }
+
+    /// <summary>One sync reminder (human labels on the anime tab).</summary>
+    public sealed class AnimeReminder
+    {
+        public string Id { get; set; } = "";
+        public string CollectionKey { get; set; } = "";
+        public string CollectionName { get; set; } = "";
+        /// <summary>branch | cross_ip | duplicate | naming | missing_local | cannot_write</summary>
+        public string Type { get; set; } = "";
+        public string TypeLabel { get; set; } = "";
+        public string Reason { get; set; } = "";
+        public bool Handled { get; set; }
+        public string RaisedUtc { get; set; } = "";
     }
 
     public sealed class AnimeRunCard
@@ -50,6 +67,7 @@ namespace HomeScreenCompanion
         public int MemberCount { get; set; }
         public List<string> MemberTitles { get; set; } = new List<string>();
         public int MoreCount { get; set; }
+        public bool HasReminder { get; set; }
     }
 
     public sealed class AnimeOwnedCard
@@ -57,6 +75,21 @@ namespace HomeScreenCompanion
         public long CollectionId { get; set; }
         public string Name { get; set; } = "";
         public int MemberCount { get; set; }
+        public bool HasReminder { get; set; }
+    }
+
+    /// <summary>In-memory result of one sync pass before reminder finalize.</summary>
+    internal sealed class AnimeSyncRunResult
+    {
+        public bool DryRun { get; set; }
+        public int Made { get; set; }
+        public int Updated { get; set; }
+        public int Skipped { get; set; }
+        public int Unchanged { get; set; }
+        public List<AnimeRunCard> Cards { get; set; } = new List<AnimeRunCard>();
+        public List<AnimeReminder> Reminders { get; set; } = new List<AnimeReminder>();
+        public AnimeCollectionState State { get; set; } = new AnimeCollectionState();
+        public List<BaseItem> Existing { get; set; } = new List<BaseItem>();
     }
 
     public sealed class AnimeCollectionTask : IScheduledTask
@@ -141,7 +174,8 @@ namespace HomeScreenCompanion
 
                 var local = ScanLocalAnime(index, log);
                 var seeds = local.SelectMany(x => x.AniListIds).Distinct().ToArray();
-                foreach (var duplicate in AnimeCollectionPolicy.FindDuplicates(local))
+                var duplicates = AnimeCollectionPolicy.FindDuplicates(local);
+                foreach (var duplicate in duplicates)
                     { log.Debug($"疑似重复媒体：{duplicate.Identifier}（{duplicate.EmbyIds.Count} 个项目）。仅提示，不会处理。"); log.Debug($"  重复媒体 {duplicate.Identifier} 的 Emby ID：{string.Join(", ", duplicate.EmbyIds)}"); }
                 int recognized = local.Count(x => x.AniListIds.Count > 0);
                 log.Info($"扫描 {local.Count} 个电影/剧集项目，已识别动漫 {recognized} 部，匹配 {seeds.Length} 条 AniList 记录。");
@@ -191,16 +225,22 @@ namespace HomeScreenCompanion
                 {
                     LastStatus = "没有合集候选";
                     log.Skip("没有符合条件的候选合集，现有合集保持不变。");
-                    WriteEmptyLastRunSummary(dataDir, config, dryRun, "没有合集候选");
                     await AnalyzeCollectionsAsync(config, local, graph.Records, groups, dataDir, cancellationToken, log);
+                    WriteEmptyLastRunSummary(dataDir, config, dryRun, "没有合集候选");
                     return;
                 }
                 var nameById = local.Where(x => x.EmbyId > 0)
                     .GroupBy(x => x.EmbyId).ToDictionary(g => g.Key, g => g.First().Name ?? "");
-                await SyncCollectionsAsync(groups, policy, dataDir, config, dryRun, cancellationToken, log, progress, nameById);
+                var syncResult = await SyncCollectionsAsync(groups, policy, dataDir, config, dryRun,
+                    cancellationToken, log, progress, nameById, duplicates);
                 await AnalyzeCollectionsAsync(config, local, graph.Records, groups, dataDir, cancellationToken, log);
+                EnrichRemindersFromAiAnalysis(dataDir, syncResult.Reminders, groups);
+                SaveLastRunSummary(dataDir, config, syncResult);
                 int writable = groups.Count(g => policy.CanWrite(g, dryRun));
-                LastStatus = dryRun ? $"仅预览：{groups.Count} 个候选" : $"已完成：{writable} 个已批准合集";
+                int openReminders = syncResult.Reminders.Count(r => r != null && !r.Handled);
+                LastStatus = dryRun
+                    ? $"仅预览：{groups.Count} 个候选" + (openReminders > 0 ? $"，提醒 {openReminders}" : "")
+                    : $"已完成：{writable} 个合集" + (openReminders > 0 ? $"，提醒 {openReminders}" : "");
                 log.Ok(LastStatus);
                 progress?.Report(100);
             }
@@ -338,9 +378,10 @@ namespace HomeScreenCompanion
             throw new InvalidOperationException(hint + " 本地仍有旧映射，但本次已中止以免使用过期数据。", last);
         }
 
-        private async Task SyncCollectionsAsync(List<AnimeGroup> groups, AnimeCollectionPolicy policy,
+        private async Task<AnimeSyncRunResult> SyncCollectionsAsync(List<AnimeGroup> groups, AnimeCollectionPolicy policy,
             string dataDir, PluginConfiguration config, bool dryRun, CancellationToken token,
-            RunLog log, IProgress<double>? progress, IReadOnlyDictionary<long, string> nameById)
+            RunLog log, IProgress<double>? progress, IReadOnlyDictionary<long, string> nameById,
+            List<AnimeDuplicate> duplicates)
         {
             string stateFile = Path.Combine(dataDir, "owned-collections.json");
             var state = File.Exists(stateFile)
@@ -358,6 +399,9 @@ namespace HomeScreenCompanion
             }).ToList();
             int made = 0, updated = 0, collisions = 0, blocked = 0, unchanged = 0;
             var cards = new List<AnimeRunCard>();
+            var reminders = new List<AnimeReminder>();
+            var raisedUtc = DateTime.UtcNow.ToString("o");
+            var duplicateByEmby = BuildDuplicateLookup(duplicates);
             var confirmedReassignments = new HashSet<long>(groups.Where(g => policy.CanWrite(g, false)).SelectMany(g => g.EmbyIds));
             // Detect splits against ALL candidates, including denied and review-blocked groups.
             // Filtering to the approved writer set first could strip a denied sibling's members.
@@ -373,12 +417,19 @@ namespace HomeScreenCompanion
                 {
                     log.Skip($"已跳过 [{group.Key}] {group.Name}：{block}");
                     LogMemberTitles(log, group, nameById);
-                    cards.Add(MakeRunCard(group, displayName, "skipped", HumanizeSkipReason(block), nameById));
+                    var skipReason = HumanizeSkipReason(block);
+                    cards.Add(MakeRunCard(group, displayName, "skipped", skipReason, nameById));
+                    reminders.Add(MakeReminder("cannot_write", group.Key, displayName, skipReason, raisedUtc));
                     blocked++;
                     continue;
                 }
                 if (group.ReviewRequired && !group.HasExplicitRule)
+                {
                     log.Debug($"[{group.Key}] {group.Name}: branch present; writing automatic grouping (member rules can override)");
+                    reminders.Add(MakeReminder("branch", group.Key, displayName,
+                        "这个系列有多条续作线，自动归类可能偏宽，建议之后核对成员。", raisedUtc));
+                }
+                AddDuplicateReminders(reminders, group, displayName, duplicateByEmby, raisedUtc);
                 bool mayWrite = policy.CanWrite(group, dryRun);
                 var desired = new HashSet<long>(group.EmbyIds);
                 var matches = state.Collections.Where(c => c.Anchor == group.Anchor || c.ManagedItemIds.Any(desired.Contains)).ToList();
@@ -388,6 +439,7 @@ namespace HomeScreenCompanion
                     log.Warn($"已跳过 [{group.Key}] {group.Name}：{reason}");
                     LogMemberTitles(log, group, nameById);
                     cards.Add(MakeRunCard(group, displayName, "skipped", reason, nameById));
+                    reminders.Add(MakeReminder("cannot_write", group.Key, displayName, reason, raisedUtc));
                     collisions++;
                     continue;
                 }
@@ -398,6 +450,7 @@ namespace HomeScreenCompanion
                     log.Warn($"已跳过 [{group.Key}] {group.Name}：{reason}");
                     LogMemberTitles(log, group, nameById);
                     cards.Add(MakeRunCard(group, displayName, "skipped", reason, nameById));
+                    reminders.Add(MakeReminder("cannot_write", group.Key, displayName, reason, raisedUtc));
                     collisions++;
                     continue;
                 }
@@ -426,6 +479,7 @@ namespace HomeScreenCompanion
                         log.Warn($"已跳过 [{group.Key}] {name}：原合集已不存在，或名称与其他合集重复。手工创建的合集不会被改动。");
                     LogMemberTitles(log, group, nameById);
                     cards.Add(MakeRunCard(group, name, "skipped", reason, nameById));
+                    reminders.Add(MakeReminder("cannot_write", group.Key, name, reason, raisedUtc));
                     collisions++;
                     continue;
                 }
@@ -471,6 +525,7 @@ namespace HomeScreenCompanion
                         log.Warn($"已跳过 [{group.Key}]：{reason}");
                         LogMemberTitles(log, group, nameById);
                         cards.Add(MakeRunCard(group, cardName, "skipped", reason, nameById));
+                        reminders.Add(MakeReminder("cannot_write", group.Key, cardName, reason, raisedUtc));
                         collisions++;
                         continue;
                     }
@@ -504,7 +559,18 @@ namespace HomeScreenCompanion
             int skipped = collisions + blocked;
             log.Ok($"{(dryRun ? "仅预览" : "已完成")}：新建 {made} 个，更新 {updated} 个，冲突 {collisions} 个，跳过 {blocked} 个。");
             log.Debug("不会删除合集，也不会移除手工添加的成员。");
-            SaveLastRunSummary(dataDir, config, dryRun, made, updated, skipped, unchanged, cards, state, existing);
+            return new AnimeSyncRunResult
+            {
+                DryRun = dryRun,
+                Made = made,
+                Updated = updated,
+                Skipped = skipped,
+                Unchanged = unchanged,
+                Cards = cards,
+                Reminders = reminders,
+                State = state,
+                Existing = existing
+            };
         }
 
 
@@ -512,93 +578,320 @@ namespace HomeScreenCompanion
         {
             try
             {
-                Directory.CreateDirectory(dataDir);
-                var pathFile = Path.Combine(dataDir, "last-run-summary.json");
-                AnimeCollectionState? state = null;
-                string stateFile = Path.Combine(dataDir, "owned-collections.json");
-                if (File.Exists(stateFile))
-                {
-                    try { state = _json.DeserializeFromFile<AnimeCollectionState>(stateFile); } catch { }
-                }
-                var owned = new List<AnimeOwnedCard>();
-                if (state?.Collections != null)
-                {
-                    foreach (var c in state.Collections)
-                    {
-                        if (c == null || c.CollectionId <= 0) continue;
-                        owned.Add(new AnimeOwnedCard
-                        {
-                            CollectionId = c.CollectionId,
-                            Name = c.Name ?? "",
-                            MemberCount = c.ManagedItemIds?.Count ?? 0
-                        });
-                    }
-                }
+                var owned = LoadOwnedCards(dataDir, null);
+                var reminders = new List<AnimeReminder>();
+                EnrichRemindersFromAiAnalysis(dataDir, reminders, null);
+                reminders = MergeHandledReminders(dataDir, reminders);
+                int open = reminders.Count(r => !r.Handled);
+                MarkOwnedReminderFlags(owned, reminders);
                 var summary = new AnimeLastRunSummary
                 {
                     DryRun = dryRun,
                     GlobalDryRun = config.DryRunMode,
                     FinishedUtc = DateTime.UtcNow.ToString("o"),
-                    StatusText = statusText ?? "",
-                    Owned = owned
+                    StatusText = open > 0 ? (statusText ?? "") + " · 提醒 " + open : (statusText ?? ""),
+                    Reminders = open,
+                    Owned = owned,
+                    ReminderItems = reminders
                 };
-                var textOut = _json.SerializeToString(summary);
-                var tmp = pathFile + ".tmp";
-                File.WriteAllText(tmp, textOut, Encoding.UTF8);
-                if (File.Exists(pathFile)) File.Replace(tmp, pathFile, null);
-                else File.Move(tmp, pathFile);
+                WriteSummaryFile(dataDir, summary);
             }
             catch { }
         }
 
-        private void SaveLastRunSummary(string dataDir, PluginConfiguration config, bool dryRun,
-            int made, int updated, int skipped, int unchanged, List<AnimeRunCard> cards,
-            AnimeCollectionState state, List<BaseItem> existing)
+        private void SaveLastRunSummary(string dataDir, PluginConfiguration config, AnimeSyncRunResult run)
         {
-            var ownedCards = new List<AnimeOwnedCard>();
-            if (state?.Collections != null)
-            {
-                foreach (var c in state.Collections)
-                {
-                    if (c == null || c.CollectionId <= 0) continue;
-                    var box = existing.FirstOrDefault(x => x.InternalId == c.CollectionId);
-                    ownedCards.Add(new AnimeOwnedCard
-                    {
-                        CollectionId = c.CollectionId,
-                        Name = box?.Name ?? c.Name ?? "",
-                        MemberCount = c.ManagedItemIds?.Count ?? 0
-                    });
-                }
-            }
+            var reminders = MergeHandledReminders(dataDir, run.Reminders ?? new List<AnimeReminder>());
+            var ownedCards = BuildOwnedCards(run.State, run.Existing);
+            var openKeys = new HashSet<string>(
+                reminders.Where(r => r != null && !r.Handled && !string.IsNullOrEmpty(r.CollectionKey))
+                    .Select(r => r.CollectionKey),
+                StringComparer.Ordinal);
+            foreach (var card in run.Cards ?? new List<AnimeRunCard>())
+                if (card != null) card.HasReminder = openKeys.Contains(card.Key ?? "");
+            MarkOwnedReminderFlags(ownedCards, reminders);
+            int open = reminders.Count(r => !r.Handled);
+            string baseStatus = run.DryRun
+                ? $"预览：将新建 {run.Made} · 将更新 {run.Updated} · 跳过 {run.Skipped}"
+                : $"完成：新建 {run.Made} · 更新 {run.Updated} · 跳过 {run.Skipped}";
+            if (open > 0) baseStatus += " · 提醒 " + open;
             var summary = new AnimeLastRunSummary
             {
-                DryRun = dryRun,
+                DryRun = run.DryRun,
                 GlobalDryRun = config.DryRunMode,
                 FinishedUtc = DateTime.UtcNow.ToString("o"),
-                StatusText = dryRun
-                    ? $"预览：将新建 {made} · 将更新 {updated} · 跳过 {skipped}"
-                    : $"完成：新建 {made} · 更新 {updated} · 跳过 {skipped}",
-                Created = made,
-                Updated = updated,
-                Skipped = skipped,
-                Unchanged = unchanged,
-                Reminders = 0,
-                Cards = cards,
-                Owned = ownedCards
+                StatusText = baseStatus,
+                Created = run.Made,
+                Updated = run.Updated,
+                Skipped = run.Skipped,
+                Unchanged = run.Unchanged,
+                Reminders = open,
+                Cards = run.Cards ?? new List<AnimeRunCard>(),
+                Owned = ownedCards,
+                ReminderItems = reminders
             };
-            try
-            {
-                Directory.CreateDirectory(dataDir);
-                var path = Path.Combine(dataDir, "last-run-summary.json");
-                var text = _json.SerializeToString(summary);
-                var tmp = path + ".tmp";
-                File.WriteAllText(tmp, text, Encoding.UTF8);
-                if (File.Exists(path)) File.Replace(tmp, path, null);
-                else File.Move(tmp, path);
-            }
+            try { WriteSummaryFile(dataDir, summary); }
             catch
             {
                 // Card UI is best-effort; never fail the sync because summary write failed.
+            }
+        }
+
+        private void WriteSummaryFile(string dataDir, AnimeLastRunSummary summary)
+        {
+            Directory.CreateDirectory(dataDir);
+            var pathFile = Path.Combine(dataDir, "last-run-summary.json");
+            var textOut = _json.SerializeToString(summary);
+            var tmp = pathFile + ".tmp";
+            File.WriteAllText(tmp, textOut, Encoding.UTF8);
+            if (File.Exists(pathFile)) File.Replace(tmp, pathFile, null);
+            else File.Move(tmp, pathFile);
+        }
+
+        private List<AnimeOwnedCard> LoadOwnedCards(string dataDir, List<BaseItem>? existing)
+        {
+            AnimeCollectionState? state = null;
+            string stateFile = Path.Combine(dataDir, "owned-collections.json");
+            if (File.Exists(stateFile))
+            {
+                try { state = _json.DeserializeFromFile<AnimeCollectionState>(stateFile); } catch { }
+            }
+            return BuildOwnedCards(state, existing);
+        }
+
+        private static List<AnimeOwnedCard> BuildOwnedCards(AnimeCollectionState? state, List<BaseItem>? existing)
+        {
+            var ownedCards = new List<AnimeOwnedCard>();
+            if (state?.Collections == null) return ownedCards;
+            foreach (var c in state.Collections)
+            {
+                if (c == null || c.CollectionId <= 0) continue;
+                var box = existing?.FirstOrDefault(x => x.InternalId == c.CollectionId);
+                ownedCards.Add(new AnimeOwnedCard
+                {
+                    CollectionId = c.CollectionId,
+                    Name = box?.Name ?? c.Name ?? "",
+                    MemberCount = c.ManagedItemIds?.Count ?? 0
+                });
+            }
+            return ownedCards;
+        }
+
+        private static void MarkOwnedReminderFlags(List<AnimeOwnedCard> owned, List<AnimeReminder> reminders)
+        {
+            if (owned == null || reminders == null) return;
+            var openNames = new HashSet<string>(
+                reminders.Where(r => r != null && !r.Handled && !string.IsNullOrWhiteSpace(r.CollectionName))
+                    .Select(r => r.CollectionName.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+            foreach (var o in owned)
+                if (o != null) o.HasReminder = !string.IsNullOrWhiteSpace(o.Name) && openNames.Contains(o.Name.Trim());
+        }
+
+        private List<AnimeReminder> MergeHandledReminders(string dataDir, List<AnimeReminder> fresh)
+        {
+            var previous = new Dictionary<string, AnimeReminder>(StringComparer.Ordinal);
+            try
+            {
+                var pathFile = Path.Combine(dataDir, "last-run-summary.json");
+                if (File.Exists(pathFile))
+                {
+                    var prior = _json.DeserializeFromFile<AnimeLastRunSummary>(pathFile);
+                    if (prior?.ReminderItems != null)
+                    {
+                        foreach (var item in prior.ReminderItems)
+                        {
+                            if (item == null || string.IsNullOrWhiteSpace(item.Id)) continue;
+                            previous[item.Id] = item;
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            var byId = new Dictionary<string, AnimeReminder>(StringComparer.Ordinal);
+            foreach (var item in fresh ?? new List<AnimeReminder>())
+            {
+                if (item == null || string.IsNullOrWhiteSpace(item.Id)) continue;
+                if (previous.TryGetValue(item.Id, out var old) && old.Handled)
+                    item.Handled = true;
+                byId[item.Id] = item;
+            }
+            return byId.Values.OrderBy(r => r.CollectionName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(r => r.TypeLabel, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(r => r.Id, StringComparer.Ordinal)
+                .ToList();
+        }
+
+        private void EnrichRemindersFromAiAnalysis(string dataDir, List<AnimeReminder> reminders, List<AnimeGroup>? groups)
+        {
+            if (reminders == null) return;
+            AnimeAiAnalysis analysis;
+            try { analysis = new AnimeAiAnalysisService(_json).Read(dataDir); }
+            catch { return; }
+            if (analysis?.Suggestions == null || analysis.Suggestions.Count == 0) return;
+
+            var nameByKey = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (groups != null)
+            {
+                foreach (var g in groups)
+                {
+                    if (g == null || string.IsNullOrEmpty(g.Key)) continue;
+                    nameByKey[g.Key] = g.Name ?? "";
+                }
+            }
+            foreach (var rem in reminders)
+            {
+                if (rem == null || string.IsNullOrEmpty(rem.CollectionKey)) continue;
+                if (!string.IsNullOrWhiteSpace(rem.CollectionName))
+                    nameByKey[rem.CollectionKey] = rem.CollectionName;
+            }
+
+            string raisedUtc = DateTime.UtcNow.ToString("o");
+            var existingIds = new HashSet<string>(reminders.Where(r => r != null).Select(r => r.Id), StringComparer.Ordinal);
+
+            foreach (var suggestion in analysis.Suggestions)
+            {
+                if (suggestion == null || string.IsNullOrWhiteSpace(suggestion.GroupKey)) continue;
+                string key = suggestion.GroupKey.Trim();
+                string display = nameByKey.TryGetValue(key, out var n) && !string.IsNullOrWhiteSpace(n)
+                    ? n
+                    : (string.IsNullOrWhiteSpace(suggestion.OriginalName) ? key : suggestion.OriginalName);
+
+                if (suggestion.ReviewIssues != null)
+                {
+                    int idx = 0;
+                    foreach (var issue in suggestion.ReviewIssues)
+                    {
+                        if (issue == null) continue;
+                        string type = MapAiIssueType(issue.IssueType);
+                        if (type == null) continue;
+                        // Branch already covered by ReviewRequired during sync — keep one.
+                        string id = type == "branch"
+                            ? ReminderId(type, key)
+                            : ReminderId(type, key) + "|" + idx.ToString();
+                        idx++;
+                        if (!existingIds.Add(id)) continue;
+                        string reason = string.IsNullOrWhiteSpace(issue.Reason)
+                            ? ReminderTypeLabel(type)
+                            : issue.Reason.Trim();
+                        reminders.Add(MakeReminderWithId(id, type, key, display, reason, raisedUtc));
+                    }
+                }
+
+                if (string.Equals(suggestion.Kind, "naming", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(suggestion.Decision, "suggest", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!string.IsNullOrWhiteSpace(suggestion.SuggestedName) &&
+                        !string.Equals(suggestion.SuggestedName.Trim(), display, StringComparison.OrdinalIgnoreCase))
+                    {
+                        string id = ReminderId("naming", key);
+                        if (existingIds.Add(id))
+                        {
+                            string reason = "建议改用「" + suggestion.SuggestedName.Trim() + "」。"
+                                + (string.IsNullOrWhiteSpace(suggestion.Reason) ? "" : " " + suggestion.Reason.Trim());
+                            reminders.Add(MakeReminderWithId(id, "naming", key, display, reason.Trim(), raisedUtc));
+                        }
+                    }
+                }
+            }
+        }
+
+        private static string? MapAiIssueType(string? issueType)
+        {
+            if (string.IsNullOrWhiteSpace(issueType)) return null;
+            switch (issueType.Trim().ToLowerInvariant())
+            {
+                case "branch": return "branch";
+                case "cross_ip": return "cross_ip";
+                case "duplicate": return "duplicate";
+                case "naming": return "naming";
+                case "missing_local": return "missing_local";
+                default: return null;
+            }
+        }
+
+        private static Dictionary<long, List<AnimeDuplicate>> BuildDuplicateLookup(List<AnimeDuplicate>? duplicates)
+        {
+            var map = new Dictionary<long, List<AnimeDuplicate>>();
+            if (duplicates == null) return map;
+            foreach (var dup in duplicates)
+            {
+                if (dup?.EmbyIds == null || dup.EmbyIds.Count < 2) continue;
+                foreach (var id in dup.EmbyIds)
+                {
+                    if (!map.TryGetValue(id, out var list))
+                    {
+                        list = new List<AnimeDuplicate>();
+                        map[id] = list;
+                    }
+                    list.Add(dup);
+                }
+            }
+            return map;
+        }
+
+        private static void AddDuplicateReminders(List<AnimeReminder> reminders, AnimeGroup group, string displayName,
+            Dictionary<long, List<AnimeDuplicate>> duplicateByEmby, string raisedUtc)
+        {
+            if (group?.EmbyIds == null || duplicateByEmby == null || duplicateByEmby.Count == 0) return;
+            var hits = new List<AnimeDuplicate>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var embyId in group.EmbyIds)
+            {
+                if (!duplicateByEmby.TryGetValue(embyId, out var list)) continue;
+                foreach (var dup in list)
+                {
+                    if (dup == null || string.IsNullOrWhiteSpace(dup.Identifier)) continue;
+                    if (!seen.Add(dup.Identifier)) continue;
+                    // Only when at least two of this group's members share the identity.
+                    int inGroup = dup.EmbyIds.Count(id => group.EmbyIds.Contains(id));
+                    if (inGroup >= 2) hits.Add(dup);
+                }
+            }
+            if (hits.Count == 0) return;
+            string reason = "同一部作品有多份片源（" + string.Join("、", hits.Select(h => h.Identifier).Take(3))
+                + (hits.Count > 3 ? "…" : "") + "）。只提示，不会自动删片。";
+            reminders.Add(MakeReminder("duplicate", group.Key, displayName, reason, raisedUtc));
+        }
+
+        private static AnimeReminder MakeReminder(string type, string collectionKey, string collectionName,
+            string reason, string raisedUtc)
+        {
+            return MakeReminderWithId(ReminderId(type, collectionKey), type, collectionKey, collectionName, reason, raisedUtc);
+        }
+
+        private static AnimeReminder MakeReminderWithId(string id, string type, string collectionKey,
+            string collectionName, string reason, string raisedUtc)
+        {
+            return new AnimeReminder
+            {
+                Id = id,
+                CollectionKey = collectionKey ?? "",
+                CollectionName = collectionName ?? "",
+                Type = type ?? "",
+                TypeLabel = ReminderTypeLabel(type),
+                Reason = reason ?? "",
+                Handled = false,
+                RaisedUtc = raisedUtc ?? ""
+            };
+        }
+
+        private static string ReminderId(string type, string collectionKey) =>
+            (type ?? "") + "|" + (collectionKey ?? "");
+
+        /// <summary>Human labels for reminder types (main UI — no jargon).</summary>
+        internal static string ReminderTypeLabel(string? type)
+        {
+            switch ((type ?? "").Trim().ToLowerInvariant())
+            {
+                case "branch": return "系列结构复杂";
+                case "cross_ip": return "可能混进其它作品";
+                case "duplicate": return "片源重复";
+                case "naming": return "名称不太合适";
+                case "missing_local": return "库里可能还缺";
+                case "cannot_write": return "没法写入";
+                default: return "需要留意";
             }
         }
 
