@@ -131,9 +131,11 @@ namespace HomeScreenCompanion
             return result.OrderBy(g => g.Anchor).ToList();
         }
 
+        // Empty approval list = auto-allow every candidate; non-empty = optional whitelist.
+        // ReviewRequired is informational only and never blocks writes.
         internal bool CanWrite(AnimeGroup group, bool dryRun) =>
-            !dryRun && group.EmbyIds.Count >= 2 && _approved.Contains(group.Key) &&
-            (!group.ReviewRequired || group.HasExplicitRule);
+            !dryRun && group.EmbyIds.Count >= 2 &&
+            (_approved.Count == 0 || _approved.Contains(group.Key));
 
         /// <summary>
         /// Human-readable reason this group cannot be written (ignores dry-run).
@@ -143,10 +145,8 @@ namespace HomeScreenCompanion
         {
             if (group.EmbyIds == null || group.EmbyIds.Count < 2)
                 return "成员不足两部。";
-            if (!_approved.Contains(group.Key))
+            if (_approved.Count > 0 && !_approved.Contains(group.Key))
                 return "未在批准名单中。";
-            if (group.ReviewRequired && !group.HasExplicitRule)
-                return "系列存在分支（多续作/替代版本等），请用明确成员规则确认后再写入。";
             return null;
         }
 

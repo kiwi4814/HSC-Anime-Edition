@@ -337,6 +337,8 @@ namespace HomeScreenCompanion
                     blocked++;
                     continue;
                 }
+                if (group.ReviewRequired && !group.HasExplicitRule)
+                    log.Debug($"[{group.Key}] {group.Name}: branch present; writing automatic grouping (member rules can override)");
                 bool mayWrite = policy.CanWrite(group, dryRun);
                 var desired = new HashSet<long>(group.EmbyIds);
                 var matches = state.Collections.Where(c => c.Anchor == group.Anchor || c.ManagedItemIds.Any(desired.Contains)).ToList();
@@ -363,7 +365,7 @@ namespace HomeScreenCompanion
                 // Ownership points at a collection that no longer exists: drop the row and allow recreate.
                 if (owned != null && box == null)
                 {
-                    log.Warn($"归属记录中的合集（ID {owned.CollectionId} / anilist:{owned.Anchor}）已不存在，已清除记录。若 Key 仍在批准名单中，将按新建处理。");
+                    log.Warn($"归属记录中的合集（ID {owned.CollectionId} / anilist:{owned.Anchor}）已不存在，已清除记录。符合写入条件时将按新建处理。");
                     state.Collections.Remove(owned);
                     SaveState(stateFile, state);
                     owned = null;

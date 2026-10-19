@@ -394,7 +394,7 @@ namespace HomeScreenCompanion
     public class BackupSettings
     {
         public bool AnimeEnabled { get; set; }
-        public bool AnimeDryRun { get; set; } = true;
+        public bool AnimeDryRun { get; set; } = false;
         public bool AnimeIncludeSpinOffs { get; set; } = true;
         public bool AnimeAiReviewOtherEdges { get; set; }
         public string AnimeAiProvider { get; set; } = "OpenAI";

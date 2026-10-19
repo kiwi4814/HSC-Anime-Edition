@@ -30,9 +30,9 @@ namespace HomeScreenCompanion
             "\"type\" (\"movie\" or \"show\"). " +
             "Return exactly the items requested. Do not add any commentary. " +
             "Use only verified identifiers; when uncertain leave the identifier null.";
-        // Anime Edition is opt-in and starts with a separate Dry Run safeguard.
+        // Anime Edition is opt-in; once enabled, collections write unless AnimeDryRun or global DryRunMode is on.
         public bool AnimeEnabled { get; set; } = false;
-        public bool AnimeDryRun { get; set; } = true;
+        public bool AnimeDryRun { get; set; } = false;
         public bool AnimeIncludeSpinOffs { get; set; } = true;
         public bool AnimeAiReviewOtherEdges { get; set; } = false;
         public string AnimeAiProvider { get; set; } = "OpenAICompatible";

@@ -140,7 +140,9 @@ static partial class Program
         Assert(policy.ExplainWriteBlock(new AnimeGroup { Anchor = A, EmbyIds = new() { 101 } }) == "成员不足两部。", "Explain: too few members");
         Assert(policy.ExplainWriteBlock(new AnimeGroup { Anchor = D, EmbyIds = new() { 101, 102 } }) == "未在批准名单中。", "Explain: not approved");
         var branchMsg = policy.ExplainWriteBlock(new AnimeGroup { Anchor = A, EmbyIds = new() { 101, 102 }, ReviewRequired = true });
-        Assert(branchMsg != null && branchMsg.Contains("分支"), "Explain: branch needs rule");
+        Assert(branchMsg == null, "Explain: branch flag alone does not block write");
+        Assert(AnimeCollectionPolicy.Parse("", "", "").ExplainWriteBlock(new AnimeGroup { Anchor = A, EmbyIds = new() { 101, 102 }, ReviewRequired = true }) == null,
+            "Explain: empty approval list does not report not-approved");
         var ok = new AnimeGroup { Anchor = A, EmbyIds = new() { 101, 102 } };
         Assert(policy.ExplainWriteBlock(ok) == null && policy.CanWrite(ok, false), "Explain null when writable");
 
@@ -214,10 +216,10 @@ static partial class Program
             var automatic = AnimeGroupPlanner.Plan(items, BranchRelations(), spinOff);
             var approvalOnly = AnimeCollectionPolicy.Parse("", Key, "");
             var approvedGroup = approvalOnly.Apply(automatic, items).Single();
-            if (spinOff)
-                Assert(approvalOnly.CanWrite(approvedGroup, false), "Approved mainline+spin-off may write without JSON when spin-offs included");
-            else
-                Assert(!approvalOnly.CanWrite(approvedGroup, false), "Whitelist cannot bypass generic branch review");
+            Assert(approvalOnly.CanWrite(approvedGroup, false),
+                spinOff
+                    ? "Approved mainline+spin-off may write without JSON when spin-offs included"
+                    : "Approved key may write even when branch review is flagged");
             var policy = AnimeCollectionPolicy.Parse(Rules, Key, ""); var selected = policy.Apply(automatic, items);
             Assert(selected.Single().EmbyIds.SequenceEqual(new long[] { 101, 102 }), "Exact IncludeIds membership with ExcludeIds precedence");
             Assert(selected[0].HasExplicitRule && policy.CanWrite(selected[0], false), "Explicit approved exact selection may write");
@@ -239,7 +241,7 @@ static partial class Program
         var automatic = AnimeGroupPlanner.Plan(items, new[] { Relation(A, B), Relation(C, D) }, true);
         var empty = AnimeCollectionPolicy.Parse("", "", ""); var defaults = empty.Apply(automatic, items);
         Assert(defaults.Single(g => g.Key == Key).Name == "纸月航线" && defaults.Single(g => g.Anchor == C).Name == "琉璃山谷", "No built-in aliases: deterministic input names remain unchanged");
-        Assert(defaults.All(g => !empty.CanWrite(g, false)), "Empty whitelist blocks all writes");
+        Assert(defaults.All(g => empty.CanWrite(g, false)), "Empty approval list auto-allows all candidate writes");
         var approved = AnimeCollectionPolicy.Parse("", " \r\n " + Key + " \r\n", """{"anilist:1900000101":"用户纸月"}""");
         var groups = approved.Apply(automatic, items); var first = groups.Single(g => g.Key == Key);
         Assert(first.Name == "用户纸月" && approved.CanWrite(first, false), "User-only alias and trimmed exact approval work");
@@ -291,7 +293,8 @@ static partial class Program
         var state = JsonSerializer.Deserialize<AnimeCollectionState>("""{"Collections":[{"CollectionId":901,"Anchor":1900000101,"Name":"星桥纪事","ManagedItemIds":[101,102]}]}""")!;
         var stateAgain = JsonSerializer.Deserialize<AnimeCollectionState>(JsonSerializer.Serialize(state))!;
         Assert(stateAgain.Collections.Single().CollectionId == 901 && stateAgain.Collections[0].Anchor == A && stateAgain.Collections[0].ManagedItemIds.SequenceEqual(new long[] { 101, 102 }), "Legacy owned identity, anchor and membership survive schema round-trip");
-        Assert(!AnimeCollectionPolicy.Parse("", "", "").CanWrite(new AnimeGroup { Anchor = A, EmbyIds = new() { 101, 102 } }, false), "Unapproved legacy ownership cannot authorize writes");
+        Assert(AnimeCollectionPolicy.Parse("", "", "").CanWrite(new AnimeGroup { Anchor = A, EmbyIds = new() { 101, 102 } }, false), "Empty approval list allows write regardless of ownership records");
+        Assert(!AnimeCollectionPolicy.Parse("", "anilist:1900000103", "").CanWrite(new AnimeGroup { Anchor = A, EmbyIds = new() { 101, 102 } }, false), "Non-empty approval list still restricts to listed keys");
     }
 
     static void TestConfigurationCompatibility()
@@ -302,7 +305,8 @@ static partial class Program
         Assert(config.AnimeEnabled && !config.AnimeDryRun && !config.DryRunMode && config.AnimeCollectionPrefix == "旧动漫 · ", "Legacy explicit settings preserved");
         Assert(config.AnimeCollectionRulesJson == "" && config.AnimeApprovedCollectionKeys == "" && config.AnimeCollectionAliasesJson == "", "Missing policy config defaults empty");
         var policy = AnimeCollectionPolicy.Parse("", "", ""); var local = BranchItems();
-        Assert(policy.Apply(AnimeGroupPlanner.Plan(local, BranchRelations(), false), local).All(g => !policy.CanWrite(g, false)), "Legacy non-DryRun config still requires explicit whitelist");
+        Assert(policy.Apply(AnimeGroupPlanner.Plan(local, BranchRelations(), false), local).Where(g => g.EmbyIds.Count >= 2).All(g => policy.CanWrite(g, false)), "Empty approval list auto-allows writes even when branch review is flagged");
+        Assert(!new PluginConfiguration().AnimeDryRun, "AnimeDryRun defaults to false for new installs");
         config.AnimeCollectionRulesJson = Rules; config.AnimeApprovedCollectionKeys = Key + "\nanilist:1900000103"; config.AnimeCollectionAliasesJson = """{"anilist:1900000101":"星桥 · 精选"}""";
         using var xml = new StringWriter(); serializer.Serialize(xml, config); using var xmlReader = new StringReader(xml.ToString());
         var restored = (PluginConfiguration)serializer.Deserialize(xmlReader)!;
