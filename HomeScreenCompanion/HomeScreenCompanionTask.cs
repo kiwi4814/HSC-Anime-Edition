@@ -1499,7 +1499,7 @@ namespace HomeScreenCompanion
                     StringComparer.OrdinalIgnoreCase);
                 foreach (var kvp in tagRemovedByTag.Where(kvp => kvp.Value > 0 && !displayedTagNames.Contains(kvp.Key)))
                 {
-                    _log.Info("[清理]");
+                    _log.Info("[Cleanup]");
                     _log.Skip($"标签 \"{kvp.Key}\" {(dryRun ? "预计移除" : "已移除")} 来自 {RunLog.Plural(kvp.Value, "个条目")} (所属分组已删除或禁用)");
                     _log.Blank();
                 }

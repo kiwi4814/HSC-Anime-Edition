@@ -54,7 +54,7 @@ namespace HomeScreenCompanion
             var config = Plugin.Instance?.Configuration;
             if (config == null) return Task.CompletedTask;
 
-            var log = new RunLog(ExecutionLog, _logger, "[继续观看置顶]", config.ExtendedConsoleOutput);
+            var log = new RunLog(ExecutionLog, _logger, "[CW Bump]", config.ExtendedConsoleOutput);
             log.Rule();
             log.Info($"继续观看置顶  ·  {DateTime.Now:yyyy-MM-dd HH:mm}");
             log.Rule();

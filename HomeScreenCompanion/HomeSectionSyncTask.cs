@@ -53,7 +53,7 @@ namespace HomeScreenCompanion
         {
             _userManager = userManager;
             _logger = logManager.GetLogger("HomeScreenCompanion_HSC");
-            _log = new RunLog(ExecutionLog, _logger, "[首页]", false);
+            _log = new RunLog(ExecutionLog, _logger, "[Home Screen]", false);
         }
 
         public string Key => "HomeSectionSyncTask";
@@ -77,7 +77,7 @@ namespace HomeScreenCompanion
                 if (config == null) return Task.CompletedTask;
 
                 bool debug = config.ExtendedConsoleOutput;
-                _log = new RunLog(ExecutionLog, _logger, "[首页]", debug);
+                _log = new RunLog(ExecutionLog, _logger, "[Home Screen]", debug);
                 var startTime = DateTime.Now;
                 _log.Rule();
                 _log.Info($"首页同步  ·  {startTime:yyyy-MM-dd HH:mm}");

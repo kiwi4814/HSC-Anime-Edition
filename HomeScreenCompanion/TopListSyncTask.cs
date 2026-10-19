@@ -478,7 +478,7 @@ namespace HomeScreenCompanion
                 var libGuid = ResolveLibraryGuid(rawLibId, libraryManager);
                 if (string.IsNullOrEmpty(libGuid))
                 {
-                    logger.Warn($"[访问权限] 无法解析媒体库“{rawLibId}”的 GUID，已跳过。");
+                    logger.Warn($"[Access] 无法解析媒体库“{rawLibId}”的 GUID，已跳过。");
                     continue;
                 }
 
@@ -516,9 +516,9 @@ namespace HomeScreenCompanion
                             .ToArray();
                         policy.EnabledFolders = cleanedFolders.Concat(new[] { libGuid }).ToArray();
                         UpdatePolicy(mgr, user, uid, policy);
-                        logger.Info($"[访问权限] 已向“{user.Name}”授予媒体库“{tl.TagName}”的访问权限。");
+                        logger.Info($"[Access] 已向“{user.Name}”授予媒体库“{tl.TagName}”的访问权限。");
                     }
-                    catch (Exception ex) { logger.Error($"[访问权限] 为“{user.Name}”授予权限失败：{ex.GetBaseException().Message}"); }
+                    catch (Exception ex) { logger.Error($"[Access] 为“{user.Name}”授予权限失败：{ex.GetBaseException().Message}"); }
                 }
 
                 // Revoke: remove access from users NOT assigned to this top-list
@@ -550,9 +550,9 @@ namespace HomeScreenCompanion
                             .ToArray();
 
                         UpdatePolicy(mgr, user, uid, policy);
-                        logger.Info($"[访问权限] 已撤销“{user.Name}”对媒体库“{tl.TagName}”的访问权限。");
+                        logger.Info($"[Access] 已撤销“{user.Name}”对媒体库“{tl.TagName}”的访问权限。");
                     }
-                    catch (Exception ex) { logger.Error($"[访问权限] 撤销“{user.Name}”的权限失败：{ex.GetBaseException().Message}"); }
+                    catch (Exception ex) { logger.Error($"[Access] 撤销“{user.Name}”的权限失败：{ex.GetBaseException().Message}"); }
                 }
             }
         }
@@ -575,7 +575,7 @@ namespace HomeScreenCompanion
                         : current.Where(x => !string.Equals((x ?? "").Replace("-", ""), norm, StringComparison.OrdinalIgnoreCase)).ToArray();
                     userManager.UpdateConfiguration(user, cfg);
                 }
-                catch (Exception ex) { logger.Error($"[访问权限] 设置“{user.Name}”的最新项目排除项失败：{ex.GetBaseException().Message}"); }
+                catch (Exception ex) { logger.Error($"[Access] 设置“{user.Name}”的最新项目排除项失败：{ex.GetBaseException().Message}"); }
             }
         }
 

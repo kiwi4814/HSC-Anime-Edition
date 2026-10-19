@@ -86,12 +86,12 @@ namespace HomeScreenCompanion
                 var oldConfigPath = Path.Combine(configDir, "AutoTag.xml");
                 if (!File.Exists(oldConfigPath)) return;
 
-                _logger.Info("[迁移] 检测到 AutoTag.xml，开始自动迁移……");
+                _logger.Info("[Migration] 检测到 AutoTag.xml，开始自动迁移……");
 
                 var oldConfig = Plugin.XmlSerializer.DeserializeFromFile(typeof(PluginConfiguration), oldConfigPath) as PluginConfiguration;
                 if (oldConfig == null)
                 {
-                    _logger.Warn("[迁移] 无法解析 AutoTag.xml，已跳过迁移。");
+                    _logger.Warn("[Migration] 无法解析 AutoTag.xml，已跳过迁移。");
                     return;
                 }
 
@@ -137,11 +137,11 @@ namespace HomeScreenCompanion
                 }
 
                 File.Move(oldConfigPath, oldConfigPath + ".old");
-                _logger.Info("[迁移] AutoTag 迁移成功。");
+                _logger.Info("[Migration] AutoTag 迁移成功。");
             }
             catch (Exception ex)
             {
-                _logger.Error("[迁移] 迁移失败：" + ex.Message);
+                _logger.Error("[Migration] 迁移失败：" + ex.Message);
             }
         }
 
@@ -194,7 +194,7 @@ namespace HomeScreenCompanion
                     {
                         item.AddTag(tag);
                         changed = true;
-                        _logger.Info($"[实时处理] 已自动为“{item.Name}”添加标签“{tag}”");
+                        _logger.Info($"[Real-Time] 已自动为“{item.Name}”添加标签“{tag}”");
                     }
                 }
 
@@ -259,7 +259,7 @@ namespace HomeScreenCompanion
                         {
                             var primary = originals[0];
                             try { _libraryManager.MergeItems(new[] { primary, current }); }
-                            catch (Exception ex) { _logger.Warn("[榜单] 合并“" + itemName + "”失败：" + ex.Message); }
+                            catch (Exception ex) { _logger.Warn("[TopList] 合并“" + itemName + "”失败：" + ex.Message); }
 
                             // Optional: same collection memberships as the originals.
                             if (TopListCollectionMirror.Enabled)
@@ -268,17 +268,17 @@ namespace HomeScreenCompanion
 
                         // Idempotent — skips if the item already has a runtime.
                         MergeTopListVersionsTask.QueueStrmProbe(_providerManager, _fileSystem, current);
-                        _logger.Info("[榜单] 已关联并探测“" + itemName + "”");
+                        _logger.Info("[TopList] 已关联并探测“" + itemName + "”");
                     }
                     catch (Exception ex)
                     {
-                        _logger.Error("[榜单] 后台处理 STRM 项目失败：" + ex.Message);
+                        _logger.Error("[TopList] 后台处理 STRM 项目失败：" + ex.Message);
                     }
                 });
             }
             catch (Exception ex)
             {
-                _logger.Error("[榜单] 处理 STRM 项目失败：" + ex.Message);
+                _logger.Error("[TopList] 处理 STRM 项目失败：" + ex.Message);
             }
         }
 
@@ -301,7 +301,7 @@ namespace HomeScreenCompanion
                 }
                 catch (Exception ex)
                 {
-                    _logger.Warn("[榜单] 无法更新剧集副本“" + item.Name + "”：" + ex.Message);
+                    _logger.Warn("[TopList] 无法更新剧集副本“" + item.Name + "”：" + ex.Message);
                 }
                 finally
                 {

@@ -38,7 +38,7 @@ namespace HomeScreenCompanion
             if (!(e.Item is CollectionFolder)) return;
 
             var libName = e.Item.Name;
-            _logger.Info($"[媒体库访问权限] 检测到新媒体库“{libName}”（内部 ID={e.Item.InternalId}）。将在 30 秒后同步访问权限，等待 Emby 异步策略恢复完成……");
+            _logger.Info($"[LibraryAccess] 检测到新媒体库“{libName}”（内部 ID={e.Item.InternalId}）。将在 30 秒后同步访问权限，等待 Emby 异步策略恢复完成……");
 
             // Emby runs an async policy restoration after library creation.
             // We wait 30 seconds to ensure Emby has finished before we apply
@@ -53,7 +53,7 @@ namespace HomeScreenCompanion
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error($"[媒体库访问权限] 访问权限同步失败：{ex.GetBaseException().Message}");
+                    _logger.Error($"[LibraryAccess] 访问权限同步失败：{ex.GetBaseException().Message}");
                 }
             });
         }

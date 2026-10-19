@@ -627,7 +627,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
     function getDateRowHtml(interval) {
         var type = interval.Type || 'SpecificDate';
-        if (type === 'EveryYear') console.log('[HSC 计划] 服务器返回的原始时间段:', JSON.stringify(interval));
+        if (type === 'EveryYear') console.log('[HSC schedule] raw interval from server:', JSON.stringify(interval));
         var sDate = interval.Start ? interval.Start.split('T')[0] : '';
         var eDate = interval.End ? interval.End.split('T')[0] : '';
         var sParts = parseDateYMD(interval.Start);
@@ -2717,8 +2717,8 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
 
     // Renders the merged execution log as colour-coded lines. Classification is based on the
-    // leading symbol each server task writes (✔ ⚠ ✖ –) and on the [DEBUG] token, which is
-    // stripped for display. A source badge is shown only when several tasks have output.
+    // leading symbol each server task writes (✔ ⚠ ✖ –) and on the [DEBUG] token (RunLog.Debug), which is
+    // stripped for display. Heading patterns must match the exact heading text the C# tasks emit. A source badge is shown only when several tasks have output.
     function renderLogLines(container, entries, isRunning) {
         var stickToBottom = isRunning && (container.scrollHeight - container.scrollTop - container.clientHeight) < 40;
         var wasEmpty = container.childElementCount === 0;
@@ -2743,7 +2743,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             else if (raw.indexOf('⚠') >= 0) cls = 'log-warn';
             else if (raw.indexOf('✔') >= 0) cls = 'log-ok';
             else if (/^\s{1,3}– /.test(raw)) cls = 'log-skip';
-            else if (/^(»|Results$|Summary$|\[Cleanup\]$|\[\d+\/\d+\] |Home Screen (Companion|Sync) )/.test(raw)) cls = 'log-head';
+            else if (/^(»|结果$|汇总$|\[Cleanup\]$|\[\d+\/\d+\] |Home Screen Companion |首页同步 )/.test(raw)) cls = 'log-head';
 
             var line = document.createElement('div');
             line.className = 'log-line' + (cls ? ' ' + cls : '');

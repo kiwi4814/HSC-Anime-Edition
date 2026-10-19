@@ -51,7 +51,7 @@
 | `HomeScreenCompanion/ListFetcher.cs` | 移除各 provider 的重复 HTTP helper，改用共享客户端 | 既有列表选择仍沿用；共同超时/令牌上限改变旧路径语义 |
 | `HomeScreenCompanion/ServerEntryPoint.cs` | 禁止调用旧 AutoTag 自动迁移，另有日志汉化 | 防止迁移/删除其他插件数据；保留现有监听及镜像逻辑 |
 | `HomeScreenCompanion/HomeScreenCompanionTask.cs` | 主要汉化状态/日志及格式 helper 调用 | 大文件与状态前缀/计数调用；不丢失原同步逻辑 |
-| `HomeScreenCompanion/RunLog.cs` | 中文时间/调试标记、`Plural(count, unit)` 签名 | 所有调用点与状态解析须一致，不只是翻译 |
+| `HomeScreenCompanion/RunLog.cs` | 中文耗时格式、`Plural(count, unit)` 签名；`[DEBUG]` 标记与各任务的服务器日志前缀保持官方英文 | 前端日志着色按 `[DEBUG]`、✔⚠✖– 与标题文本（`结果`/`汇总`/`[Cleanup]` 等）识别，改日志标题须同步 `configPage.js` 的 `renderLogLines` |
 | `HomeScreenCompanion/ContinueWatchingBumpEntryPoint.cs` | 日志汉化 | 事件、去抖与处理逻辑保持 |
 | `HomeScreenCompanion/ContinueWatchingBumpTask.cs` | 任务显示名/描述/日志汉化 | 原内部 Key/调度保持 |
 | `HomeScreenCompanion/ContinueWatchingBumper.cs` | 提示/结果日志汉化 | 原 LastPlayedDate 与 Dry Run 行为保持 |

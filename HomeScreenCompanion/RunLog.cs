@@ -60,7 +60,7 @@ namespace HomeScreenCompanion
         public void Debug(string message)
         {
             if (!Extended) return;
-            Add($"[{DateTime.Now:HH:mm:ss}] [调试] {message}");
+            Add($"[{DateTime.Now:HH:mm:ss}] [DEBUG] {message}");
         }
 
         /// <summary>Debug section divider, e.g. "── Tags ────────".</summary>

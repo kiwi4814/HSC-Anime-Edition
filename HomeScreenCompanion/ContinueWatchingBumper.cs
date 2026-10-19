@@ -103,7 +103,7 @@ namespace HomeScreenCompanion
                     string label = $"用户 {user.Name} 的“{series.Name}”（新集 {EpisodeCode(nextUp)}）";
                     if (config.DryRunMode)
                     {
-                        log.Skip($"[模拟运行] 将置顶{label}");
+                        log.Skip($"[Dry run] 将置顶{label}");
                         continue;
                     }
 

@@ -72,7 +72,7 @@ namespace HomeScreenCompanion
             }
             catch (Exception ex)
             {
-                _logger.Error("[继续观看置顶] 处理新增项目失败：" + ex.Message);
+                _logger.Error("[CW Bump] 处理新增项目失败：" + ex.Message);
             }
         }
 
@@ -97,7 +97,7 @@ namespace HomeScreenCompanion
                     var users = ContinueWatchingBumper.ResolveUsers(config, _userManager);
                     if (users.Count == 0) return;
 
-                    var log = new RunLog(ContinueWatchingBumpTask.ExecutionLog, _logger, "[继续观看置顶]", config.ExtendedConsoleOutput);
+                    var log = new RunLog(ContinueWatchingBumpTask.ExecutionLog, _logger, "[CW Bump]", config.ExtendedConsoleOutput);
                     foreach (var id in seriesIds)
                     {
                         if (_libraryManager.GetItemById(id) is Series series)
@@ -106,7 +106,7 @@ namespace HomeScreenCompanion
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error("[继续观看置顶] 批量处理失败：" + ex.Message);
+                    _logger.Error("[CW Bump] 批量处理失败：" + ex.Message);
                 }
             });
         }

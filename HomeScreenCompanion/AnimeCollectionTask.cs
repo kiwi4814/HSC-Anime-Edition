@@ -66,7 +66,7 @@ namespace HomeScreenCompanion
             LastStartedUtc = DateTime.UtcNow;
             lock (ExecutionLog) ExecutionLog.Clear();
             var config = Plugin.Instance?.Configuration;
-            var log = new RunLog(ExecutionLog, _logger, "[动漫]", config?.ExtendedConsoleOutput ?? false);
+            var log = new RunLog(ExecutionLog, _logger, "[Anime]", config?.ExtendedConsoleOutput ?? false);
             try
             {
                 log.Info("动漫 IP 合集同步 · " + DateTime.Now.ToString("yyyy-MM-dd HH:mm"));

@@ -74,7 +74,7 @@ namespace HomeScreenCompanion
             IsRunning = true;
             lock (ExecutionLog) { ExecutionLog.Clear(); }
             var startTime = DateTime.Now;
-            _log = new RunLog(ExecutionLog, _logger, "[榜单合并]", Plugin.Instance?.Configuration?.ExtendedConsoleOutput ?? false);
+            _log = new RunLog(ExecutionLog, _logger, "[Top-list merge]", Plugin.Instance?.Configuration?.ExtendedConsoleOutput ?? false);
             try
             {
                 _log.Info($"» 合并榜单与媒体库版本  ·  {startTime:yyyy-MM-dd HH:mm}");
