@@ -1,0 +1,43 @@
+name: Refactor toolchain
+on:
+  push:
+    branches: [refactor/anime-api-v5-20261019]
+    paths: [.github/workflows/refactor-toolchain.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare isolated compiler and package cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/hsc-tools"
+          mkdir -p "$root/refs" "$root/packages"
+          curl --fail --silent --show-error --location https://dot.net/v1/dotnet-install.sh -o "$RUNNER_TEMP/dotnet-install.sh"
+          bash "$RUNNER_TEMP/dotnet-install.sh" --channel 8.0 --install-dir "$root/dotnet"
+          "$root/dotnet/dotnet" --info > "$root/environment.txt"
+          "$root/dotnet/dotnet" restore HomeScreenCompanion/HomeScreenCompanion.csproj --packages "$root/packages"
+          curl --fail --silent --show-error --location https://github.com/MediaBrowser/Emby.Releases/releases/download/4.10.1.0/emby-server-deb_4.10.1.0_amd64.deb -o "$RUNNER_TEMP/emby.deb"
+          echo '9be753b074e8cf9d8874dabc82942e175feb6337aa9803da232c370172e905ed  '"$RUNNER_TEMP/emby.deb" | sha256sum -c -
+          dpkg-deb -x "$RUNNER_TEMP/emby.deb" "$RUNNER_TEMP/emby-ref"
+          for name in MediaBrowser.Common MediaBrowser.Controller MediaBrowser.Model; do
+            path=$(find "$RUNNER_TEMP/emby-ref" -name "$name.dll" -type f | head -n 1)
+            test -n "$path"
+            cp "$path" "$root/refs/"
+          done
+          sha256sum "$root/refs/"*.dll >> "$root/environment.txt"
+          tar -C "$root" -czf "$RUNNER_TEMP/hsc-toolchain.tar.gz" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hsc-toolchain-linux-x64
+          path: ${{ runner.temp }}/hsc-toolchain.tar.gz
+          retention-days: 1
+          compression-level: 0
