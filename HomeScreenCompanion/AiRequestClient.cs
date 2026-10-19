@@ -69,7 +69,7 @@ namespace HomeScreenCompanion
                 case "GEMINI": return c.GeminiModel ?? "";
                 case "CLAUDE": return c.ClaudeModel ?? "";
                 case "OLLAMA": return c.OllamaModel ?? "";
-                default: throw new AiRequestException("configuration", "不支持所选 AI 提供方。");
+                default: throw new AiRequestException("configuration", "不支持所选 AI 提供商。");
             }
         }
 
@@ -79,7 +79,7 @@ namespace HomeScreenCompanion
             provider = (provider ?? "").Trim();
             var model = Model(c, provider);
             if (string.IsNullOrWhiteSpace(model)) throw new AiRequestException("configuration", "尚未配置 AI 模型。");
-            if (maxTokens <= 0) throw new AiRequestException("configuration", "AI 输出令牌上限必须大于零。");
+            if (maxTokens <= 0) throw new AiRequestException("configuration", "AI 输出 Token 上限必须大于零。");
             var messages = new[] { new { role = "system", content = system }, new { role = "user", content = user } };
             Uri endpoint;
             object body;
@@ -110,9 +110,9 @@ namespace HomeScreenCompanion
                     endpoint = ollamaEndpoint;
                     body = new { model, messages, stream = false, options = new { num_predict = maxTokens } };
                     break;
-                default: throw new AiRequestException("configuration", "不支持所选 AI 提供方。");
+                default: throw new AiRequestException("configuration", "不支持所选 AI 提供商。");
             }
-            if (kind != "OLLAMA" && string.IsNullOrWhiteSpace(key)) throw new AiRequestException("configuration", "尚未配置所选 AI 提供方的 API 密钥。");
+            if (kind != "OLLAMA" && string.IsNullOrWhiteSpace(key)) throw new AiRequestException("configuration", "尚未配置所选 AI 提供商的 API 密钥。");
             try
             {
                 using (var linked = CancellationTokenSource.CreateLinkedTokenSource(token))

@@ -65,7 +65,7 @@ namespace HomeScreenCompanion
         public string Key => "MergeTopListVersionsTask";
         public string Name => "合并榜单与媒体库版本";
         public string Description => "将榜单 .strm 项目关联为对应媒体库电影的其他版本（如 1080p/4K），避免界面重复显示；启用合集同步时，也会同步其合集归属。请在媒体库扫描并索引新增榜单项目后运行。";
-        public string Category => "首页助手";
+        public string Category => "Home Screen Companion 动漫版";
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers() => Array.Empty<TaskTriggerInfo>();
 

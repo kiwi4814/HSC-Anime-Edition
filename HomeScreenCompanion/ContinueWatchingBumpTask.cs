@@ -37,7 +37,7 @@ namespace HomeScreenCompanion
         public string Key => "ContinueWatchingBumpTask";
         public string Name => "继续观看置顶";
         public string Description => "已看完的剧集有新集上线时，将其移至“继续观看”前列。";
-        public string Category => "首页助手";
+        public string Category => "Home Screen Companion 动漫版";
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {

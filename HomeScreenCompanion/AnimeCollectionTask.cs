@@ -79,7 +79,7 @@ namespace HomeScreenCompanion
                 var policy = AnimeCollectionPolicy.Parse(config.AnimeCollectionRulesJson,
                     config.AnimeApprovedCollectionKeys, config.AnimeCollectionAliasesJson);
                 bool dryRun = config.DryRunMode || config.AnimeDryRun;
-                if (dryRun) log.Warn("预演模式：不会修改任何 Emby 合集或合集归属记录。");
+                if (dryRun) log.Warn("仅预览：不会修改任何 Emby 合集或合集归属记录。");
                 var dataDir = Path.Combine(Plugin.Instance!.DataFolderPath, "anime");
                 Directory.CreateDirectory(dataDir);
 
@@ -93,7 +93,7 @@ namespace HomeScreenCompanion
                 var seeds = local.SelectMany(x => x.AniListIds).Distinct().ToArray();
                 foreach (var duplicate in AnimeCollectionPolicy.FindDuplicates(local))
                     log.Warn($"疑似重复媒体 [{duplicate.Identifier}]：Emby {string.Join("、", duplicate.EmbyIds)}。仅提示，不会合并或删除媒体。");
-                log.Info($"扫描 {local.Count} 个电影/剧集条目，匹配 {seeds.Length} 条 AniList 记录。");
+                log.Info($"扫描 {local.Count} 个电影/剧集项目，匹配 {seeds.Length} 条 AniList 记录。");
                 progress?.Report(30);
                 var client = new AnimeAniListClient(_json, dataDir);
                 var graph = await client.ExpandAsync(seeds,
@@ -110,7 +110,7 @@ namespace HomeScreenCompanion
                 progress?.Report(60);
 
                 var groups = policy.Apply(AnimeGroupPlanner.Plan(local, graph.Records, config.AnimeIncludeSpinOffs), local);
-                log.Info($"规划 {groups.Count} 个合集候选；每个合集仍须通过精确批准列表和分支审核。");
+                log.Info($"规划 {groups.Count} 个合集候选；每个合集仍须通过精确批准名单和分支审核。");
                 if (groups.Count == 0)
                 {
                     LastStatus = "没有合集候选";
@@ -121,7 +121,7 @@ namespace HomeScreenCompanion
                 await SyncCollectionsAsync(groups, policy, dataDir, config, dryRun, cancellationToken, log, progress);
                 await AnalyzeCollectionsAsync(config, local, graph.Records, groups, dataDir, cancellationToken, log);
                 int writable = groups.Count(g => policy.CanWrite(g, dryRun));
-                LastStatus = dryRun ? $"预演：{groups.Count} 个候选" : $"处理完成：{writable} 个获批候选（冲突会跳过）";
+                LastStatus = dryRun ? $"仅预览：{groups.Count} 个候选" : $"处理完成：{writable} 个获批候选（冲突会跳过）";
                 log.Ok(LastStatus);
                 progress?.Report(100);
             }
@@ -297,7 +297,7 @@ namespace HomeScreenCompanion
                 }
                 if (owned == null)
                 {
-                    log.Info($"{(mayWrite ? "创建" : "预演创建")} [{group.Key}]“{name}”（{desired.Count} 部）。");
+                    log.Info($"{(mayWrite ? "创建" : "预计创建")} [{group.Key}]“{name}”（{desired.Count} 部）。");
                     if (mayWrite)
                     {
                         var created = await _collections.CreateCollection(new CollectionCreationOptions
@@ -336,7 +336,7 @@ namespace HomeScreenCompanion
                     }
                     if (toAdd.Length > 0 || toRemove.Length > 0)
                     {
-                        log.Info($"{(mayWrite ? "更新" : "预演更新")} [{group.Key}]“{box.Name}”：+{toAdd.Length}，-{toRemove.Length}。");
+                        log.Info($"{(mayWrite ? "更新" : "预计更新")} [{group.Key}]“{box.Name}”：+{toAdd.Length}，-{toRemove.Length}。");
                         if (mayWrite)
                         {
                             if (toAdd.Length > 0) await _collections.AddToCollection(box.InternalId, toAdd);
@@ -353,7 +353,7 @@ namespace HomeScreenCompanion
                 }
                 progress?.Report(65.0 + 35.0 * (i + 1) / groups.Count);
             }
-            log.Ok($"{(dryRun ? "预演" : "处理完成")}：新建 {made} 个，更新 {updated} 个，冲突 {collisions} 个，安全拦截 {blocked} 个。");
+            log.Ok($"{(dryRun ? "仅预览" : "处理完成")}：新建 {made} 个，更新 {updated} 个，冲突 {collisions} 个，安全拦截 {blocked} 个。");
             log.Info("保留手工合集及手工添加的成员；孤立合集和少于两部的显式规则结果不会自动删除或清空。");
         }
 

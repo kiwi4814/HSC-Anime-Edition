@@ -16,7 +16,7 @@ namespace HomeScreenCompanion
 
         public override Guid Id => new Guid("b5bca829-e903-4af4-9fb2-451d72a487e6");
 
-        public override string Description => "Auto-tagging, collection management and home screen sync for Emby.";
+        public override string Description => "为 Emby 自动添加标签、维护合集和同步主屏幕，并按作品系列整理动漫合集。";
 
         public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
             : base(applicationPaths, xmlSerializer)

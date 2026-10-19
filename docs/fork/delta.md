@@ -41,7 +41,7 @@
 
 | 官方路径 | 相对官方的本地改动 | 冲突重点 |
 |---|---|---|
-| `HomeScreenCompanion/Plugin.cs` | 独立插件 GUID/名称/设置页资源名 | Fork 身份与事件/合集镜像行为共同保留 |
+| `HomeScreenCompanion/Plugin.cs` | 独立插件 GUID/名称/设置页资源名；插件描述汉化 | Fork 身份与事件/合集镜像行为共同保留 |
 | `HomeScreenCompanion/HomeScreenCompanion.csproj` | 独立程序集/产品名、4.3.0.3、PathMap、外置 EmbyReferenceDir；移除旧绝对引用和构建时 HTML 版本注入 | 不还原官方程序集身份，不引入机器路径 |
 | `HomeScreenCompanion/PluginConfiguration.cs` | Compatible AI 与动漫配置、空默认策略、独立预算 | 新装默认与已有配置/旧备份分别处理 |
 | `HomeScreenCompanion/Configuration/configPage.html` | 新动漫/AI 控件、独立 controller、广泛汉化 | ID、控件绑定及技术标识；页面仍有指向官方 Issues 的链接 |
@@ -68,6 +68,7 @@
 - 相对官方 GUID 与主要 API 前缀已经改变，**不是官方配置可无条件原位接管**。后续维护应保留的是既有 Anime Edition 身份与兼容性。
 - 主服务使用 `/HomeScreenCompanionAnime/`，但还存在下面登记的旧 DTO 路由，不宣称全部完成隔离。
 - 原有任务 Key 保留；新动漫任务 Key 为 `HscAnimeEditionCollections`。显示名翻译不等于内部 Key 迁移。
+- 全部计划任务的显示分类统一为 `Home Screen Companion 动漫版`（官方为 `Home Screen Companion`）；分类只影响 Emby 计划任务页分组，不影响 Key 或调度。界面用语见 `CONTEXT.md`「界面用语（zh-CN）」。
 - `ServerEntryPoint.Run()` 不调用 `RunAutoMigration()`；方法仍在源码，不意味着允许重新启用。
 
 ## 4. 验证、构建与文档差异

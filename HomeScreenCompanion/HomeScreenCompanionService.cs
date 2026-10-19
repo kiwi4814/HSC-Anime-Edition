@@ -689,7 +689,7 @@ public class HomeScreenCompanionService : IService
 
                 if (items == null || items.Count == 0)
                 {
-                    return new TestUrlResponse { Success = false, Message = "未找到条目，请检查地址与 API 密钥。" };
+                    return new TestUrlResponse { Success = false, Message = "未找到项目，请检查地址与 API 密钥。" };
                 }
 
                 var library = BuildTestLibraryIndex();
@@ -702,7 +702,7 @@ public class HomeScreenCompanionService : IService
                     Count = items.Count,
                     InLibraryCount = inLibrary,
                     Items = results,
-                    Message = $"已找到 {items.Count} 个条目，其中 {inLibrary} 个已入库。"
+                    Message = $"已找到 {items.Count} 个项目，其中 {inLibrary} 个已入库。"
                 };
             }
             catch (Exception ex)
@@ -773,7 +773,7 @@ public class HomeScreenCompanionService : IService
         public async Task<object> Post(RunEntryRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.EntryName))
-                return new RunEntryResponse { Success = false, Message = "请提供条目名称。" };
+                return new RunEntryResponse { Success = false, Message = "请提供分组名称。" };
             var task = HomeScreenCompanionTask.Instance;
             if (task == null)
                 return new RunEntryResponse { Success = false, Message = "任务尚未初始化。" };
@@ -854,7 +854,7 @@ public class HomeScreenCompanionService : IService
                     CancellationToken.None);
 
                 if (aiItems == null || aiItems.Count == 0)
-                    return new TestAiSourceResponse { Success = false, Message = "AI 未返回条目，请检查密钥与提示词。" };
+                    return new TestAiSourceResponse { Success = false, Message = "AI 未返回项目，请检查密钥与提示词。" };
 
                 var preview = aiItems.Take(5)
                     .Select(i => string.IsNullOrEmpty(i.imdb_id) ? i.title : $"{i.title} — {i.imdb_id}")
@@ -871,7 +871,7 @@ public class HomeScreenCompanionService : IService
                     Count = aiItems.Count,
                     InLibraryCount = inLibrary,
                     Items = results,
-                    Message = $"AI 返回了 {aiItems.Count} 个条目，其中 {inLibrary} 个已入库。",
+                    Message = $"AI 返回了 {aiItems.Count} 个项目，其中 {inLibrary} 个已入库。",
                     Preview = preview
                 };
             }
@@ -988,7 +988,7 @@ public class HomeScreenCompanionService : IService
                     .Select(s => s.Id)
                     .ToArray();
 
-                string moveDebug = "首页区块排序完成";
+                string moveDebug = "主屏幕栏目排序完成";
                 try
                 {
                     dynamic mgr = _userManager;
@@ -1004,9 +1004,9 @@ public class HomeScreenCompanionService : IService
                         for (int i = 0; i < orderedIds.Length; i++)
                             mgr.MoveHomeSections(internalId, new[] { orderedIds[i] }, i);
                     }
-                    catch (Exception ex) { moveDebug = $"首页区块排序回退失败：{ex.Message}"; }
+                    catch (Exception ex) { moveDebug = $"主屏幕栏目排序回退失败：{ex.Message}"; }
                 }
-                catch (Exception ex) { moveDebug = $"首页区块排序失败：{ex.Message}"; }
+                catch (Exception ex) { moveDebug = $"主屏幕栏目排序失败：{ex.Message}"; }
 
                 // 3. Ta bort tracking för raderade sektioner så att task re-skapar dem vid behov
                 if (toDelete.Length > 0)
@@ -1052,13 +1052,13 @@ public class HomeScreenCompanionService : IService
                     return new HscApplyTagHomeSectionsResponse { Success = false, Message = $"未找到标签“{request.TagName}”。" };
 
                 if (!tc.EnableHomeSection)
-                    return new HscApplyTagHomeSectionsResponse { Success = true, Message = "此标签尚未启用首页区块。" };
+                    return new HscApplyTagHomeSectionsResponse { Success = true, Message = "此标签尚未启用主屏幕栏目。" };
 
                 var realTracked = (tc.HomeSectionTracked ?? new System.Collections.Generic.List<HomeSectionTracking>())
                     .Where(t => !string.IsNullOrEmpty(t.SectionId) && !t.SectionId.StartsWith("hsc__"))
                     .ToList();
                 if (realTracked.Count == 0)
-                    return new HscApplyTagHomeSectionsResponse { Success = true, Message = "没有已跟踪的区块，无需应用。" };
+                    return new HscApplyTagHomeSectionsResponse { Success = true, Message = "没有已跟踪的栏目，无需应用。" };
 
                 // Deserialize settings
                 var settingsDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -2176,7 +2176,7 @@ public class HomeScreenCompanionService : IService
                 var second = TryFetchImages(refreshed, httpClient, tempDir);
                 var result = (second.Poster ?? first.Poster, second.Thumb ?? first.Thumb);
                 if (result.Item1 == null || result.Item2 == null)
-                    log?.Invoke($"榜单：刷新后仍未找到“{item.Name}”的{(result.Item1 == null ? "海报" : "缩略图或背景图")}，请检查媒体库图片提供方");
+                    log?.Invoke($"榜单：刷新后仍未找到“{item.Name}”的{(result.Item1 == null ? "海报" : "缩略图或背景图")}，请检查媒体库图片提供程序");
                 return result;
             }
             catch (Exception ex)
@@ -2490,7 +2490,7 @@ public class HomeScreenCompanionService : IService
                     settingsDict["SectionType"] = "items";
 
                 if (string.IsNullOrEmpty(tl.HomeSectionLibraryId) || tl.HomeSectionLibraryId == "auto")
-                    return new PrepareTopListHomeSectionsResponse { Success = false, Message = "首页区块媒体库尚未设置，媒体库可能尚未就绪。" };
+                    return new PrepareTopListHomeSectionsResponse { Success = false, Message = "主屏幕栏目媒体库尚未设置，媒体库可能尚未就绪。" };
 
                 var resolvedLibraryId = tl.HomeSectionLibraryId;
 
@@ -2924,7 +2924,7 @@ public class HomeScreenCompanionService : IService
                     foreach (var t in config.Tags)
                     {
                         var label = string.IsNullOrEmpty(t.Name) ? t.Tag : t.Name;
-                        PruneUnknownUsers(t.HomeSectionUserIds, knownUsers, response.Warnings, $"分组“{label}”的首页区块");
+                        PruneUnknownUsers(t.HomeSectionUserIds, knownUsers, response.Warnings, $"分组“{label}”的主屏幕栏目");
                         PruneUnknownUsers(t.PlaylistUserIds, knownUsers, response.Warnings, $"分组“{label}”的播放列表");
                         t.HomeSectionTracked.RemoveAll(x => !IsKnownUser(knownUsers, x.UserId));
                         t.PlaylistMappings.RemoveAll(x => !IsKnownUser(knownUsers, x.UserId));
@@ -2960,10 +2960,10 @@ public class HomeScreenCompanionService : IService
                         if (config.HomeSyncEnabled)
                         {
                             config.HomeSyncEnabled = false;
-                            response.Warnings.Add("首页同步：来源用户不在此服务端，已暂停同步，请重新选择来源用户。");
+                            response.Warnings.Add("主屏幕同步：来源用户不在此服务端，已暂停同步，请重新选择来源用户。");
                         }
                     }
-                    PruneUnknownUsers(config.HomeSyncTargetUserIds, knownUsers, response.Warnings, "首页同步目标用户");
+                    PruneUnknownUsers(config.HomeSyncTargetUserIds, knownUsers, response.Warnings, "主屏幕同步目标用户");
                     if (h.ContinueWatchingBumpEnabled.HasValue)  config.ContinueWatchingBumpEnabled  = h.ContinueWatchingBumpEnabled.Value;
                     if (!string.IsNullOrEmpty(h.ContinueWatchingBumpMode)) config.ContinueWatchingBumpMode = h.ContinueWatchingBumpMode!;
                     if (h.ContinueWatchingBumpAllUsers.HasValue) config.ContinueWatchingBumpAllUsers = h.ContinueWatchingBumpAllUsers.Value;
@@ -2972,7 +2972,7 @@ public class HomeScreenCompanionService : IService
                         config.ContinueWatchingBumpUserIds = h.ContinueWatchingBumpUserIds.ToList();
                         PruneUnknownUsers(config.ContinueWatchingBumpUserIds, knownUsers, response.Warnings, "继续观看置顶用户");
                     }
-                    response.Applied.Add("首页同步");
+                    response.Applied.Add("主屏幕同步");
                 }
 
                 if (request.TopLists && Has("TopLists") && backup.TopLists != null)

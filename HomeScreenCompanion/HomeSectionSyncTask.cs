@@ -57,9 +57,9 @@ namespace HomeScreenCompanion
         }
 
         public string Key => "HomeSectionSyncTask";
-        public string Name => "首页同步";
-        public string Description => "将来源用户的首页栏目同步到所有选定的目标用户。";
-        public string Category => "Home Screen Companion";
+        public string Name => "主屏幕同步";
+        public string Description => "将来源用户的主屏幕栏目同步到所有选定的目标用户。";
+        public string Category => "Home Screen Companion 动漫版";
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {
@@ -80,12 +80,12 @@ namespace HomeScreenCompanion
                 _log = new RunLog(ExecutionLog, _logger, "[Home Screen]", debug);
                 var startTime = DateTime.Now;
                 _log.Rule();
-                _log.Info($"首页同步  ·  {startTime:yyyy-MM-dd HH:mm}");
+                _log.Info($"主屏幕同步  ·  {startTime:yyyy-MM-dd HH:mm}");
                 _log.Rule();
 
                 if (!config.HomeSyncEnabled)
                 {
-                    _log.Skip("设置中未启用首页同步 — 无需操作");
+                    _log.Skip("设置中未启用主屏幕同步 — 无需操作");
                     return Task.CompletedTask;
                 }
 
@@ -113,8 +113,8 @@ namespace HomeScreenCompanion
 
                 if (sourceSections?.Sections == null || sourceSections.Sections.Length == 0)
                 {
-                    _log.Warn($"来源用户 {sourceName} 没有首页栏目 — 无可复制内容");
-                    LastSyncResult = "来源用户没有首页栏目。";
+                    _log.Warn($"来源用户 {sourceName} 没有主屏幕栏目 — 无可复制内容");
+                    LastSyncResult = "来源用户没有主屏幕栏目。";
                     return Task.CompletedTask;
                 }
 
@@ -127,7 +127,7 @@ namespace HomeScreenCompanion
                 int totalCopied = 0, failedUsers = 0;
                 int targetCount = config.HomeSyncTargetUserIds.Count;
                 _log.Blank();
-                _log.Info("» 复制首页");
+                _log.Info("» 复制主屏幕");
 
                 for (int i = 0; i < targetCount; i++)
                 {
@@ -165,7 +165,7 @@ namespace HomeScreenCompanion
                     catch (Exception ex)
                     {
                         failedUsers++;
-                        _log.Error($"{targetName}: 无法复制首页 — {ex.Message}");
+                        _log.Error($"{targetName}: 无法复制主屏幕 — {ex.Message}");
                     }
 
                     progress.Report(20 + (int)(80.0 * (i + 1) / targetCount));

@@ -938,7 +938,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         HDR:        [['HDR', 'HDR（任意）'], ['DolbyVision', 'Dolby Vision'], ['HDR10', 'HDR10']],
         AudioFormat: [['Atmos', 'Dolby Atmos'], ['TrueHD', 'Dolby TrueHD'], ['DtsHdMa', 'DTS-HD MA'], ['DTS', 'DTS'], ['AC3', 'Dolby Digital / AC3'], ['AAC', 'AAC']],
         AudioChannels: [['7.1', '7.1+ 环绕声'], ['5.1', '5.1 环绕声'], ['Stereo', '立体声'], ['Mono', '单声道']],
-        MediaType: [['Movie', '电影'], ['Series', '剧集'], ['Episode', '单集'], ['Audio', '音乐曲目（音频）'], ['MusicVideo', '音乐视频'], ['MusicAlbum', '音乐专辑'], ['MusicArtist', '音乐艺人']],
+        MediaType: [['Movie', '电影'], ['Series', '剧集'], ['Episode', '单集'], ['Audio', '音乐曲目（音频）'], ['MusicVideo', '音乐视频'], ['MusicAlbum', '音乐专辑'], ['MusicArtist', '音乐艺术家']],
         IsPlayed: [['Watched', '已观看'], ['Unwatched', '未观看']]
     };
     var MI_NUMERIC_PROPS = ['CommunityRating', 'Year', 'Runtime', 'DateAdded', 'DateModified', 'FileSize', 'LastPlayed', 'PlayCount', 'BitRate', 'SampleRate', 'BitsPerSample', 'TrackNumber', 'DiscNumber', 'WatchedByCount'];
@@ -1018,7 +1018,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             { label: '视频', props: [['Resolution','分辨率'], ['VideoCodec','视频编码'], ['HDR','HDR']] },
             { label: '音频', props: [['AudioFormat','音频格式'], ['AudioChannels','音频声道'], ['AudioLanguage','音频语言']] },
             { label: '内容', props: [['MediaType','媒体类型'], ['Tag','标签'], ['Title','标题'], ['EpisodeTitle','标题（单集）'], ['Overview','简介'], ['Studio','制作公司'], ['Genre','类型'], ['Actor','演员'], ['Director','导演'], ['Writer','编剧'], ['ContentRating','内容分级'], ['ImdbId','IMDB ID'], ['TvdbId','TVDB ID'], ['Country','国家'], ['Collection','所属合集'], ['Playlist','所属播放列表']] },
-            { label: '音乐', props: [['Artist','艺人'], ['Album','专辑'], ['BitRate','比特率（kbps）'], ['SampleRate','采样率（Hz）'], ['BitsPerSample','位深'], ['TrackNumber','曲目编号'], ['DiscNumber','碟片编号']] },
+            { label: '音乐', props: [['Artist','艺术家'], ['Album','专辑'], ['BitRate','比特率（kbps）'], ['SampleRate','采样率（Hz）'], ['BitsPerSample','位深'], ['TrackNumber','曲目编号'], ['DiscNumber','碟片编号']] },
             { label: '指标', props: [['CommunityRating','社区评分'], ['Year','年份'], ['Runtime','时长（分钟）'], ['DateAdded','添加日期'], ['DateModified','修改日期'], ['FileSize','文件大小（MB）'], ['FolderPath','文件夹路径']] },
             { label: '活动', props: [['IsPlayed','已观看 / 未观看'], ['LastPlayed','上次播放'], ['PlayCount','播放次数'], ['WatchedByCount','已观看用户数']] }
         ];
@@ -1283,7 +1283,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             }
             line(target, '更新时间：', data.UpdatedUtc ? new Date(data.UpdatedUtc).toLocaleString('zh-CN') : '尚无记录');
             line(target, '已用调用数：', data.CallsUsed || 0);
-            line(target, '已预留令牌：', data.TokensReserved || 0);
+            line(target, '已预留 Token：', data.TokensReserved || 0);
             (data.Warnings || []).forEach(function (warning) { line(target, '警告：', warning); });
             var kinds = { relation: '关系复核', naming: '中文命名', review: '合集审查', mapping: '映射检索方向' };
             var decisions = { same_ip: '同一作品系列', different_ip: '不同作品系列', uncertain: '无法判断', suggest: '命名建议', keep: '保留', split: '建议拆分', search: '检索方向（未确认映射）' };
@@ -1478,7 +1478,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             'External':          { icon: 'language',        title: '外部列表' },
             'LocalCollection':   { icon: 'folder_special',  title: '本地合集' },
             'LocalPlaylist':     { icon: 'playlist_play',   title: '本地播放列表' },
-            'MediaInfo':         { icon: 'tune',            title: '智能播放列表' },
+            'MediaInfo':         { icon: 'tune',            title: '智能列表' },
                 'AI':              { icon: 'auto_awesome',   title: 'AI 创建的列表' }
         };
         var e = map[st];
@@ -1565,7 +1565,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             indicatorsHtml += `<span class="tag-indicator collection"><i class="md-icon" style="font-size:1.1em;">library_books</i> 合集</span>`;
         }
         if (tagConfig.EnableHomeSection) {
-            indicatorsHtml += `<span class="tag-indicator homescreen"><i class="md-icon" style="font-size:1.1em;">home</i> 首页分区</span>`;
+            indicatorsHtml += `<span class="tag-indicator homescreen"><i class="md-icon" style="font-size:1.1em;">home</i> 主屏幕栏目</span>`;
         }
         if (tagConfig.EnableTag) {
             indicatorsHtml += `<span class="tag-indicator tag"><i class="md-icon" style="font-size:1.1em;">label</i> 标签</span>`;
@@ -1616,7 +1616,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                     <div class="tag-tab" data-tab="playlist" style="padding: 8px 0; cursor: pointer; opacity: 0.6; font-weight: bold; border-bottom: 2px solid transparent;">播放列表</div>
                     <div class="tag-tab" data-tab="schedule" style="padding: 8px 0; cursor: pointer; opacity: 0.6; font-weight: bold; border-bottom: 2px solid transparent;">计划</div>
                     <div class="tag-tab" data-tab="advanced" style="padding: 8px 0; cursor: pointer; opacity: 0.6; font-weight: bold; border-bottom: 2px solid transparent;">黑名单</div>
-                    <div class="tag-tab" data-tab="homescreen" style="padding: 8px 0; cursor: pointer; opacity: 0.6; font-weight: bold; border-bottom: 2px solid transparent;">首页</div>
+                    <div class="tag-tab" data-tab="homescreen" style="padding: 8px 0; cursor: pointer; opacity: 0.6; font-weight: bold; border-bottom: 2px solid transparent;">主屏幕</div>
                 </div>
                 
                 <div class="tab-content general-tab">
@@ -1629,14 +1629,14 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                             <option value="External" ${sourceType === 'External' ? 'selected' : ''}>外部列表 (Trakt/MDBList/TMDb)</option>
                             <option value="LocalCollection" ${sourceType === 'LocalCollection' ? 'selected' : ''}>本地合集</option>
                             <option value="LocalPlaylist" ${sourceType === 'LocalPlaylist' ? 'selected' : ''}>本地播放列表</option>
-                            <option value="MediaInfo" ${sourceType === 'MediaInfo' ? 'selected' : ''}>本地媒体信息（智能播放列表）</option>
+                            <option value="MediaInfo" ${sourceType === 'MediaInfo' ? 'selected' : ''}>本地媒体信息（智能列表）</option>
                             <option value="AI" ${sourceType === 'AI' ? 'selected' : ''}>AI 创建的列表</option>
                         </select>
                         <p class="source-type-hint" style="margin:6px 0 0 0; font-size:1em; opacity:0.8; line-height:1.4;">${(function(st) {
                             if (st === 'External')         return '使用外部列表，为媒体库中匹配的项目添加标签或创建合集。';
-                            if (st === 'LocalCollection') return '为所选合集中的每个项目添加配置的标签，或将其加入新合集。也可将精选的合集列表设为首页分区。';
+                            if (st === 'LocalCollection') return '为所选合集中的每个项目添加配置的标签，或将其加入新合集。也可将精选的合集列表设为主屏幕栏目。';
                             if (st === 'LocalPlaylist')   return '为所选播放列表中的每个项目添加配置的标签，或将其加入新合集。';
-                            if (st === 'MediaInfo')       return '筛选自己的媒体库，选择要添加标签或创建合集的电影或剧集。这也称为智能播放列表。';
+                            if (st === 'MediaInfo')       return '筛选自己的媒体库，选择要添加标签或创建合集的电影或剧集。这也称为智能列表。';
                             if (st === 'AI')              return '使用 AI 创建列表。输入提示词，AI 将据此生成列表。';
                             return '';
                         })(sourceType)}</p>
@@ -1813,13 +1813,13 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 <div class="tab-content schedule-tab" style="display:none;">
                     <p style="margin:0 0 15px 0; font-size:0.9em; opacity:0.8;">设置此标签的生效时间。留空则始终生效。</p>
                     <div class="date-list-container">${intervals.map(i => getDateRowHtml(i)).join('')}</div>
-                    <button is="emby-button" type="button" class="btnAddDate" style="width:100%; background:transparent; border:2px dashed rgba(128,128,128,0.4); color:var(--theme-text-secondary); margin-top:10px;"><i class="md-icon" style="margin-right:5px;">event</i>添加定时规则</button>
+                    <button is="emby-button" type="button" class="btnAddDate" style="width:100%; background:transparent; border:2px dashed rgba(128,128,128,0.4); color:var(--theme-text-secondary); margin-top:10px;"><i class="md-icon" style="margin-right:5px;">event</i>添加计划规则</button>
                     <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:16px; ${intervals.length === 0 ? 'opacity:0.4;' : ''}">
                         <label>
                             <input is="emby-checkbox" type="checkbox" class="chkOverrideWhenActive" ${overrideChecked} ${intervals.length === 0 ? 'disabled' : ''} />
                             <span>生效时优先覆盖</span>
                         </label>
-                        <div class="fieldDescription">此条目处于计划生效时间内时，使用相同标签或合集的其他条目将被抑制，只有此条目的项目会保留该标签及合集归属。</div>
+                        <div class="fieldDescription">此分组处于计划生效时间内时，使用相同标签或合集的其他分组会暂停生效，只有此分组的项目保留该标签和合集。</div>
                     </div>
                 </div>
 
@@ -1939,9 +1939,9 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label>
                             <input is="emby-checkbox" class="chkEnableHomeSection" type="checkbox" ${enableHomeSection} ${disableHomeSection}/>
-                            <span>添加为首页分区</span>
+                            <span>添加为主屏幕栏目</span>
                         </label>
-                        <div class="fieldDescription">每次同步时，都会为所选用户管理一个首页分区。</div>
+                        <div class="fieldDescription">每次同步时，都会为所选用户管理一个主屏幕栏目。</div>
                         <div class="hse-disabled-hint" style="font-size:0.9em; color:#e07070; margin-top:4px; display:${(tagConfig.EnableTag === false && !tagConfig.EnableCollection) ? 'block' : 'none'};">需要启用<strong>应用标签</strong>或<strong>创建合集</strong>。</div>
                     </div>
                     <div class="hse-details" style="display:${enableHomeSection ? 'block' : 'none'}; margin-top:15px;">
@@ -1950,7 +1950,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                             <div class="hse-user-list-inner"><em style="opacity:0.5">正在加载用户...</em></div>
                         </div>
                         <div>
-                            <p style="margin:0 0 8px 0; font-size:0.9em; font-weight:bold; opacity:0.7;">分区设置</p>
+                            <p style="margin:0 0 8px 0; font-size:0.9em; font-weight:bold; opacity:0.7;">栏目设置</p>
                             <div class="hse-fields-inner"><em style="opacity:0.5">正在加载设置...</em></div>
                         </div>
                     </div>
@@ -2026,14 +2026,14 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             if (hasSchedule) {
                 var schedPriorityClass = hasOverride ? ' priority-active' : '';
                 var schedActiveClass = isScheduleCurrentlyActive(readIntervalsFromRow(row)) ? ' schedule-active' : '';
-                var schedText = hasOverride ? '定时优先' : '定时';
+                var schedText = hasOverride ? '计划优先' : '计划';
                 html += `<span class="tag-indicator schedule${schedPriorityClass}${schedActiveClass}"><i class="md-icon" style="font-size:1.1em;">calendar_today</i> ${schedText}</span>`;
             }
             if (hasCollection) {
                 html += `<span class="tag-indicator collection"><i class="md-icon" style="font-size:1.1em;">library_books</i> 合集</span>`;
             }
             if (hasHomeSection) {
-                html += `<span class="tag-indicator homescreen"><i class="md-icon" style="font-size:1.1em;">home</i> 首页分区</span>`;
+                html += `<span class="tag-indicator homescreen"><i class="md-icon" style="font-size:1.1em;">home</i> 主屏幕栏目</span>`;
             }
             if (hasTag) {
                 html += `<span class="tag-indicator tag"><i class="md-icon" style="font-size:1.1em;">label</i> 标签</span>`;
@@ -2082,9 +2082,9 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 if (_hint) {
                     var _hints = {
                         'External':         '使用外部列表，为媒体库中匹配的项目添加标签或创建合集。',
-                        'LocalCollection':  '为所选合集中的每个项目添加指定标签，或将其加入新合集。也可将精选的合集列表设为首页分区。',
+                        'LocalCollection':  '为所选合集中的每个项目添加指定标签，或将其加入新合集。也可将精选的合集列表设为主屏幕栏目。',
                         'LocalPlaylist':    '为所选播放列表中的每个项目添加指定标签，或将其加入新合集。',
-                        'MediaInfo':        '筛选自己的媒体库，选择要添加标签或创建合集的电影或剧集。此功能也称为智能播放列表。',
+                        'MediaInfo':        '筛选自己的媒体库，选择要添加标签或创建合集的电影或剧集。此功能也称为智能列表。',
                         'AI':               '使用 AI 创建列表。输入提示词，AI 将据此生成列表。'
                     };
                     _hint.textContent = _hints[type] || '';
@@ -2427,7 +2427,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
             if (e.target.closest('.btnRunEntry')) {
                 var entryName = row.querySelector('.txtEntryLabel').value || row.querySelector('.txtTagName').value;
-                if (!entryName) { window.Dashboard.alert('条目没有名称或标签。'); return; }
+                if (!entryName) { window.Dashboard.alert('分组没有名称或标签。'); return; }
                 var doRun = function () {
                     var view = row.closest('#HomeScreenCompanionConfigPage');
                     var btn = row.querySelector('.btnRunEntry');
@@ -2743,7 +2743,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             else if (raw.indexOf('⚠') >= 0) cls = 'log-warn';
             else if (raw.indexOf('✔') >= 0) cls = 'log-ok';
             else if (/^\s{1,3}– /.test(raw)) cls = 'log-skip';
-            else if (/^(»|结果$|汇总$|\[Cleanup\]$|\[\d+\/\d+\] |Home Screen Companion |首页同步 )/.test(raw)) cls = 'log-head';
+            else if (/^(»|结果$|汇总$|\[Cleanup\]$|\[\d+\/\d+\] |Home Screen Companion |主屏幕同步 )/.test(raw)) cls = 'log-head';
 
             var line = document.createElement('div');
             line.className = 'log-line' + (cls ? ' ' + cls : '');
@@ -3143,7 +3143,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var html = '';
 
         var st = s.SectionType || defaultSectionType || (collEnabled ? 'boxset' : 'items');
-        html += '<div style="margin-bottom:12px;"><label class="selectLabel">分区类型</label>';
+        html += '<div style="margin-bottom:12px;"><label class="selectLabel">栏目类型</label>';
         html += '<select is="emby-select" class="selHseSectionType hse-field-str" data-field="SectionType" style="width:100%;">';
         var sectionTypeOptions = [];
         if (collEnabled) sectionTypeOptions.push(['boxset', '单个合集']);
@@ -3154,11 +3154,11 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         html += '</select></div>';
 
         var displayModeVal = s.DisplayMode || '';
-        html += '<div style="margin-bottom:12px;"><label class="selectLabel">显示此分区</label>';
+        html += '<div style="margin-bottom:12px;"><label class="selectLabel">显示此栏目</label>';
         html += '<select is="emby-select" class="hse-field-str" data-field="DisplayMode" style="width:100%;">';
         html += '<option value=""'              + (displayModeVal === ''               ? ' selected' : '') + '>始终</option>';
-        html += '<option value="tv"'            + (displayModeVal === 'tv'             ? ' selected' : '') + '>电视显示模式开启时</option>';
-        html += '<option value="mobile,desktop"'+ (displayModeVal === 'mobile,desktop' ? ' selected' : '') + '>电视显示模式关闭时</option>';
+        html += '<option value="tv"'            + (displayModeVal === 'tv'             ? ' selected' : '') + '>电视模式开启时</option>';
+        html += '<option value="mobile,desktop"'+ (displayModeVal === 'mobile,desktop' ? ' selected' : '') + '>电视模式关闭时</option>';
         html += '</select></div>';
 
         var savedItemTypes = [];
@@ -5057,7 +5057,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         })
         .then(function (ctx2) {
             // Step 5: Create home sections immediately
-            saveBtn.innerHTML = '正在创建首页版块 <span class="tc-dot-loader"><span></span><span></span><span></span></span>';
+            saveBtn.innerHTML = '正在创建主屏幕栏目 <span class="tc-dot-loader"><span></span><span></span><span></span></span>';
             var tok5 = window.ApiClient.accessToken ? window.ApiClient.accessToken() : '';
             return fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/TopList/SyncHomeSections'), {
                 method: 'POST',
@@ -5066,7 +5066,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             })
             .then(function (r) { return r.json(); })
             .then(function (syncResult) {
-                if (!syncResult.Success) throw new Error(syncResult.Message || '创建首页版块失败。');
+                if (!syncResult.Success) throw new Error(syncResult.Message || '创建主屏幕栏目失败。');
                 return ctx2;
             });
         })
@@ -5223,7 +5223,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var cardActive = cardBase + 'border-color:#52B54B;';
         var cardInactive = cardBase + 'border-color:var(--line-color,rgba(255,255,255,0.12));';
         return '<div style="margin-bottom:16px;">' +
-            '<span style="font-size:0.82em;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;opacity:0.65;display:block;margin-bottom:8px;">徽章样式</span>' +
+            '<span style="font-size:0.82em;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;opacity:0.65;display:block;margin-bottom:8px;">角标样式</span>' +
             '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
             _badgeStyles.map(function (s) {
                 var active = s.val === sel;
@@ -5296,11 +5296,11 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 '</div>' +
 
                 '<div style="' + fieldStyle + '">' +
-                '<label style="' + labelStyle + '">显示此版块</label>' +
+                '<label style="' + labelStyle + '">显示此栏目</label>' +
                 '<select is="emby-select" class="tlm-display-mode" style="width:100%;">' +
                 '<option value="">始终</option>' +
-                '<option value="tv">开启电视显示模式时</option>' +
-                '<option value="mobile,desktop">关闭电视显示模式时</option>' +
+                '<option value="tv">电视模式开启时</option>' +
+                '<option value="mobile,desktop">电视模式关闭时</option>' +
                 '</select></div>' +
 
                 '<div style="' + fieldStyle + '">' +
@@ -5447,8 +5447,8 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
             var displayOptions = [
                 { val: '',               label: '始终' },
-                { val: 'tv',             label: '开启电视显示模式时' },
-                { val: 'mobile,desktop', label: '关闭电视显示模式时' }
+                { val: 'tv',             label: '电视模式开启时' },
+                { val: 'mobile,desktop', label: '电视模式关闭时' }
             ].map(function (o) {
                 return '<option value="' + escAttr(o.val) + '"' + (o.val === presetDisplay ? ' selected' : '') + '>' + escHtml(o.label) + '</option>';
             }).join('');
@@ -5477,21 +5477,21 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
                 // LEFT column: home section settings
                 '<div style="flex:1;min-width:0;padding-right:20px;border-right:1px solid var(--line-color);">' +
-                '<div style="' + colHeaderStyle + '"><i class="md-icon" style="font-size:0.9em;vertical-align:middle;margin-right:5px;">home</i>首页版块设置</div>' +
+                '<div style="' + colHeaderStyle + '"><i class="md-icon" style="font-size:0.9em;vertical-align:middle;margin-right:5px;">home</i>主屏幕栏目设置</div>' +
 
                 '<div style="' + fieldStyle + '">' +
                 '<label style="' + labelStyle + '">列表名称</label>' +
                 '<input type="text" class="mtlListName" style="' + inputStyle + '" placeholder="例如：我的收藏"' + (isEdit ? ' readonly style="' + inputStyle + 'opacity:0.6;cursor:not-allowed;"' : '') + ' value="' + escAttr(presetName) + '" /></div>' +
 
                 '<div style="' + fieldStyle + '">' +
-                '<label style="' + labelStyle + '">自定义标题 <span style="font-weight:400;text-transform:none;letter-spacing:0;opacity:0.7;">（显示在首页）</span></label>' +
+                '<label style="' + labelStyle + '">自定义标题 <span style="font-weight:400;text-transform:none;letter-spacing:0;opacity:0.7;">（显示在主屏幕）</span></label>' +
                 '<input type="text" class="mtlCustomName" style="' + inputStyle + '" placeholder="默认为列表名称" value="' + escAttr(presetCustomName) + '" /></div>' +
 
                 '<div style="' + fieldStyle + '"><span style="' + labelStyle + '">目标用户</span>' +
                 '<div>' + usersHtml + '</div></div>' +
 
                 '<div style="' + fieldStyle + '">' +
-                '<label style="' + labelStyle + '">显示此版块</label>' +
+                '<label style="' + labelStyle + '">显示此栏目</label>' +
                 '<select is="emby-select" class="mtlDisplayMode" style="width:100%;">' + displayOptions + '</select></div>' +
 
                 '<div style="' + fieldStyle + '">' +
@@ -5767,8 +5767,8 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
                 var displayOptions = [
                     { val: '',               label: '始终' },
-                    { val: 'tv',             label: '开启电视显示模式时' },
-                    { val: 'mobile,desktop', label: '关闭电视显示模式时' }
+                    { val: 'tv',             label: '电视模式开启时' },
+                    { val: 'mobile,desktop', label: '电视模式关闭时' }
                 ].map(function (o) {
                     return '<option value="' + escAttr(o.val) + '"' + (o.val === presetDisplay ? ' selected' : '') + '>' + escHtml(o.label) + '</option>';
                 }).join('');
@@ -5786,17 +5786,17 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                     '<div style="display:flex;gap:0;align-items:stretch;">' +
 
                     '<div style="flex:1;min-width:0;padding-right:20px;border-right:1px solid var(--line-color);">' +
-                    '<div style="' + colHeaderStyle + '"><i class="md-icon" style="font-size:0.9em;vertical-align:middle;margin-right:5px;">home</i>首页分区设置</div>' +
+                    '<div style="' + colHeaderStyle + '"><i class="md-icon" style="font-size:0.9em;vertical-align:middle;margin-right:5px;">home</i>主屏幕栏目设置</div>' +
 
                     '<div style="' + fieldStyle + '">' +
-                    '<label style="' + labelStyle + '">自定义标题 <span style="font-weight:400;text-transform:none;letter-spacing:0;opacity:0.7;">（显示在首页）</span></label>' +
+                    '<label style="' + labelStyle + '">自定义标题 <span style="font-weight:400;text-transform:none;letter-spacing:0;opacity:0.7;">（显示在主屏幕）</span></label>' +
                     '<input type="text" class="mtlCustomName" style="' + inputStyle + '" placeholder="默认为榜单名称" value="' + escAttr(presetCustomName) + '" /></div>' +
 
                     '<div style="' + fieldStyle + '"><span style="' + labelStyle + '">目标用户</span>' +
                     '<div>' + usersHtml + '</div></div>' +
 
                     '<div style="' + fieldStyle + '">' +
-                    '<label style="' + labelStyle + '">显示此分区</label>' +
+                    '<label style="' + labelStyle + '">显示此栏目</label>' +
                     '<select is="emby-select" class="mtlDisplayMode" style="width:100%;">' + displayOptions + '</select></div>' +
 
                     '<div style="' + fieldStyle + '">' +
@@ -5997,11 +5997,11 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                     '</div>' +
 
                     '<div style="' + fieldStyle + '">' +
-                    '<label style="' + labelStyle + '">显示此分区</label>' +
+                    '<label style="' + labelStyle + '">显示此栏目</label>' +
                     '<select is="emby-select" class="tlm-display-mode" style="width:100%;">' +
                     '<option value="">始终</option>' +
-                    '<option value="tv">开启电视显示模式时</option>' +
-                    '<option value="mobile,desktop">关闭电视显示模式时</option>' +
+                    '<option value="tv">电视模式开启时</option>' +
+                    '<option value="mobile,desktop">电视模式关闭时</option>' +
                     '</select></div>' +
 
                     '<div style="' + fieldStyle + '">' +
@@ -6254,10 +6254,10 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
     var _backupSections = [
         { key: 'Settings',     label: '常规设置',          desc: 'AI 模型、系统提示词、日志、仅预览、结果为空时保留。' },
         { key: 'ApiKeys',      label: 'API 密钥',                  desc: 'Trakt、MDBList、TMDB、OpenAI、Gemini、Claude。以明文存储在文件中。' },
-        { key: 'Tags',         label: '标签与合集分组',   desc: '所有来源分组，包括计划、黑名单、筛选器、合集设置、首页栏目和播放列表。' },
+        { key: 'Tags',         label: '标签与合集分组',   desc: '所有来源分组，包括计划、黑名单、筛选器、合集设置、主屏幕栏目和播放列表。' },
         { key: 'SavedFilters', label: '已保存的媒体信息筛选器',  desc: '您保存的筛选预设。' },
         { key: 'TopLists',     label: '榜单',                 desc: '榜单设置，以及手动榜单中的电影和剧集列表。' },
-        { key: 'HomeSync',     label: '首页同步',          desc: '来源用户、目标用户、媒体库顺序同步以及“继续观看”置顶。' }
+        { key: 'HomeSync',     label: '主屏幕同步',          desc: '来源用户、目标用户、媒体库顺序同步以及“继续观看”置顶。' }
     ];
 
     function buildBackupModalShell() {
@@ -6454,12 +6454,12 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             html += '<div style="border:1px solid rgba(224,160,48,0.5);background:rgba(224,160,48,0.08);border-radius:6px;padding:12px 14px;margin-bottom:14px;font-size:0.9em;line-height:1.5;">' +
                 '<strong>' + pending.length + ' 个榜单' + (pending.length !== 1 ? '' : '') + '需要' + (pending.length === 1 ? '' : '') + ' Emby 媒体库：</strong> ' +
                 pending.map(function (p) { return escHtml(p.CustomName || p.TagName); }).join(', ') + '.<br/>' +
-                '其设置和文件已恢复，但此服务器上尚无对应的媒体库。您可以立即创建（与<em>+ 新建</em>一样创建媒体库、首页栏目和访问权限），也可以稍后在“榜单”选项卡中逐一打开榜单并点击“保存”。' +
+                '其设置和文件已恢复，但此服务器上尚无对应的媒体库。您可以立即创建（与<em>+ 新建</em>一样创建媒体库、主屏幕栏目和访问权限），也可以稍后在“榜单”选项卡中逐一打开榜单并点击“保存”。' +
                 '<div class="restore-tl-progress" style="margin-top:8px;font-size:0.88em;opacity:0.8;"></div>' +
                 '</div>';
         }
 
-        html += '<p style="' + _backupHintStyle + '">之后请运行一次同步，以根据恢复的配置重建标签、合集、播放列表和首页栏目。</p>' +
+        html += '<p style="' + _backupHintStyle + '">之后请运行一次同步，以根据恢复的配置重建标签、合集、播放列表和主屏幕栏目。</p>' +
             '<div style="display:flex;gap:10px;justify-content:flex-end;align-items:center;padding-top:14px;border-top:1px solid var(--line-color);">' +
             (pending.length > 0 ? '<button type="button" class="btnRestoreCreateLibs" style="' + _backupBtnPrimary + '"><i class="md-icon" style="font-size:1em;vertical-align:middle;margin-right:6px;">library_add</i>立即创建媒体库</button>' : '') +
             '<button type="button" class="btnRestoreDone" style="' + (pending.length > 0 ? _backupBtnSecondary : _backupBtnPrimary) + '">关闭</button>' +
@@ -6654,7 +6654,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 '</button>' +
                 '</div>' +
                 '<div style="margin-bottom:16px;font-size:0.9em;color:var(--theme-text-secondary);line-height:1.5;">' +
-                '使用插件管理的标签，或自行挑选的电影或剧集创建榜单首页栏目。每个榜单都有独立的隐藏媒体库，海报带有排名编号。' +
+                '使用插件管理的标签，或自行挑选的电影或剧集创建榜单主屏幕栏目。每个榜单都有独立的隐藏媒体库，海报带有排名编号。' +
                 '</div>' +
                 '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">' +
                 '<input type="text" id="tlSearch" placeholder="搜索…" style="' + searchInputStyle + '" />' +
@@ -6833,7 +6833,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 container.innerHTML = [
                     '<div class="hsc-card">',
                     '<h3 class="hsc-section-title">管理主屏幕</h3>',
-                    '<p class="textMuted" style="font-size:0.88em;margin-bottom:16px;">选择用户以查看和管理其主屏幕分区。拖动行调整顺序，然后点击保存或应用（更改将立即生效）。</p>',
+                    '<p class="textMuted" style="font-size:0.88em;margin-bottom:16px;">选择用户以查看和管理其主屏幕栏目。拖动行调整顺序，然后点击保存或应用（更改将立即生效）。</p>',
                     '<div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:20px;">',
                     '<div style="flex-grow:1;">',
                     '<select is="emby-select" id="selManageUser" label="用户">',
@@ -6913,7 +6913,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var listEl = container.querySelector('#manSectionList');
         if (!listEl) return;
 
-        listEl.innerHTML = '<p class="textMuted" style="padding:10px 0;">正在加载分区...</p>';
+        listEl.innerHTML = '<p class="textMuted" style="padding:10px 0;">正在加载栏目...</p>';
         container.querySelector('#btnApplyManage').disabled = true;
 
         var headers = {};
@@ -6927,7 +6927,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 renderManageSections(view);
             })
             .catch(function () {
-                listEl.innerHTML = '<p class="textMuted" style="padding:10px 0;color:#cc3333;">加载分区失败。</p>';
+                listEl.innerHTML = '<p class="textMuted" style="padding:10px 0;color:#cc3333;">加载栏目失败。</p>';
             });
     }
 
@@ -6938,17 +6938,17 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         if (!listEl) return;
 
         if (currentManageSections.length === 0) {
-            listEl.innerHTML = '<p class="textMuted" style="padding:10px 0;">未找到此用户的分区。</p>';
+            listEl.innerHTML = '<p class="textMuted" style="padding:10px 0;">未找到此用户的栏目。</p>';
             return;
         }
 
         listEl.innerHTML = currentManageSections.map(function (s, i) {
-            var name = s.CustomName || s.Name || s.SectionType || ('分区 ' + (i + 1));
+            var name = s.CustomName || s.Name || s.SectionType || ('栏目 ' + (i + 1));
             return [
                 '<div class="man-section-row" draggable="false" data-section-index="' + i + '">',
                 '<span class="drag-handle"><i class="md-icon">drag_indicator</i></span>',
                 '<span style="flex-grow:1;">' + name + '</span>',
-                '<button type="button" is="emby-button" class="man-btn-delete raised" data-section-index="' + i + '" title="移除分区">',
+                '<button type="button" is="emby-button" class="man-btn-delete raised" data-section-index="' + i + '" title="移除栏目">',
                 '<i class="md-icon">delete</i>',
                 '</button>',
             ].join('') + '</div>';
@@ -7281,7 +7281,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                                 <label class="filter-chk-row"><input type="checkbox" id="chkFilterTag" /><span>标签</span></label>
                                 <label class="filter-chk-row"><input type="checkbox" id="chkFilterCollection" /><span>合集</span></label>
                                 <label class="filter-chk-row"><input type="checkbox" id="chkFilterSchedule" /><span>计划</span></label>
-                                <label class="filter-chk-row"><input type="checkbox" id="chkFilterHomeScreen" /><span>首页分区</span></label>
+                                <label class="filter-chk-row"><input type="checkbox" id="chkFilterHomeScreen" /><span>主屏幕栏目</span></label>
                                 <div class="filter-dropdown-divider"></div>
                                 <div class="filter-dropdown-label">来源</div>
                                 <label class="filter-chk-row"><input type="checkbox" id="chkFilterSrcExternal" /><span>外部</span></label>
@@ -7607,7 +7607,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         });
 
         view.querySelector('#btnDialHomeScreen').addEventListener('click', function () {
-            runTask('HomeSectionSyncTask', '首页同步');
+            runTask('HomeSectionSyncTask', '主屏幕同步');
         });
 
         view.querySelector('#btnDialFullSync').addEventListener('click', function () {

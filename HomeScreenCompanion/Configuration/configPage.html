@@ -1110,10 +1110,10 @@
                             <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxCalls" label="每次运行最多 AI 调用数" />
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
-                            <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxTokensPerCall" label="单次 AI 调用令牌上限" />
+                            <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxTokensPerCall" label="单次 AI 调用 Token 上限" />
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
-                            <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxTokensPerRun" label="每次运行 AI 令牌总上限" />
+                            <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxTokensPerRun" label="每次运行 AI Token 总上限" />
                             <div class="fieldDescription">统一预算：默认 15 次、每次 800 令牌、每次运行共 4000 令牌。任一项为 0 即不调用 AI；令牌预算不等于费用保证。</div>
                         </div>
                         <button is="emby-button" type="button" id="btnTestAnimeAiConnection" class="raised btn-neutral">测试 AI 连接</button>
@@ -1405,7 +1405,7 @@
                                 <input is="emby-checkbox" type="checkbox" id="chkTopListMirrorCollections" />
                                 <span>在榜单项目中显示所属合集</span>
                             </label>
-                            <div class="fieldDescription">将每部榜单电影添加到原版所在的合集，以便从榜单打开电影时也能显示“收录于 &lt;collection&gt;”。注意：根据排序方式，合集可能会显示带排名徽章海报的榜单版本。</div>
+                            <div class="fieldDescription">将每部榜单电影添加到原版所在的合集，以便从榜单打开电影时也能看到它所属的合集。注意：根据排序方式，合集可能会显示带排名角标海报的榜单版本。</div>
                         </div>
                     </div>
                 </div>
@@ -1682,11 +1682,11 @@
                     <i class="md-icon help-section-icon">input</i>
                     <span>来源类型</span>
                 </div>
-                <div class="step-text" style="margin-bottom:12px;font-size:0.92em;"><strong>来源</strong>是插件获取电影或剧集列表的地方。每个来源都关联一个<strong>标签</strong>；插件获取列表后，会为 Emby 媒体库中匹配的条目添加该标签。请按您构建列表的方式选择来源类型：</div>
+                <div class="step-text" style="margin-bottom:12px;font-size:0.92em;"><strong>来源</strong>是插件获取电影或剧集列表的地方。每个来源都关联一个<strong>标签</strong>；插件获取列表后，会为 Emby 媒体库中匹配的项目添加该标签。请按您构建列表的方式选择来源类型：</div>
                 <div class="src-cards">
                     <div class="src-card">
                         <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">public</i> 外部</div>
-                        粘贴 <strong>Trakt</strong>、<strong>MDBList</strong> 或 <strong>TMDb</strong> 的列表 URL。插件会下载列表，并为媒体库中找到的所有匹配条目添加标签。同一来源可添加多个 URL，它们将合并为一个列表。
+                        粘贴 <strong>Trakt</strong>、<strong>MDBList</strong> 或 <strong>TMDb</strong> 的列表 URL。插件会下载列表，并为媒体库中找到的所有匹配项目添加标签。同一来源可添加多个 URL，它们将合并为一个列表。
                         <div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(128,128,128,0.3);font-size:0.92em;">
                             <strong>TMDb</strong> 有两种用法：
                             <ul style="margin:4px 0 0;padding-left:16px;line-height:1.8;">
@@ -1697,7 +1697,7 @@
                     </div>
                     <div class="src-card">
                         <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">video_library</i> 本地</div>
-                        使用 Emby 中已有的<strong>播放列表</strong>或<strong>合集</strong>作为来源。列表中的每个条目都会添加配置的标签。您也可以用它将合集显示为主页上的一行，详见下方的<em>主页分区 — 合集模式</em>。
+                        使用 Emby 中已有的<strong>播放列表</strong>或<strong>合集</strong>作为来源。列表中的每个项目都会添加配置的标签。您也可以用它将合集显示为主屏幕上的一个栏目，详见下方的<em>主屏幕栏目 — 合集模式</em>。
                     </div>
                     <div class="src-card">
                         <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">tune</i> MediaInfo</div>
@@ -1716,7 +1716,7 @@
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">toggle_on</i>
-                    <div><strong>启用开关</strong> — 每个来源卡片顶部的复选框可启用或停用来源，而无需删除它。停用后，同步时会跳过该来源，并自动从所有条目中移除其标签和合集。适合临时暂停来源（例如季节性列表）。</div>
+                    <div><strong>启用开关</strong> — 每个来源卡片顶部的复选框可启用或停用来源，而无需删除它。停用后，同步时会跳过该来源，并自动从所有项目中移除其标签和合集。适合临时暂停来源（例如季节性列表）。</div>
                 </div>
                 <div class="help-feature-row" style="margin-bottom:12px;">
                     <i class="md-icon help-feat-icon">badge</i>
@@ -1725,15 +1725,15 @@
                 <div class="src-cards" style="grid-template-columns: repeat(3, 1fr);">
                     <div class="src-card">
                         <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">input</i> 来源选项卡</div>
-                        选择来源类型并添加 URL 或本地来源。设置<strong>最大条目数</strong>以限制获取数量（0 = 不限）。
+                        选择来源类型并添加 URL 或本地来源。设置<strong>最大项目数</strong>以限制获取数量（0 = 不限）。
                     </div>
                     <div class="src-card">
                         <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">label</i> 标签选项卡</div>
-                        启用或禁用标签，并设置<strong>标签名称</strong>，即应用于 Emby 中每个匹配条目的隐藏标签。
+                        启用或禁用标签，并设置<strong>标签名称</strong>，即应用于 Emby 中每个匹配项目的隐藏标签。
                     </div>
                     <div class="src-card">
                         <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">collections_bookmark</i> 合集选项卡</div>
-                        可将匹配条目归入 Emby 合集，并自定义名称、简介和海报。启用<em>仅合集</em>可跳过标签，仅维护合集。
+                        可将匹配项目归入 Emby 合集，并自定义名称、简介和海报。启用<em>仅合集</em>可跳过标签，仅维护合集。
                     </div>
                     <div class="src-card">
                         <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">calendar_month</i> 计划选项卡</div>
@@ -1744,8 +1744,8 @@
                         输入始终要从此来源排除的 IMDB ID（每行一个），无论列表内容如何。
                     </div>
                     <div class="src-card">
-                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">tv</i> 主页选项卡</div>
-                        让此来源自动作为一行显示在指定用户的主页上，每次同步时更新。选择<em>媒体类型：合集</em>可显示合集行，而非单个条目。
+                        <div class="src-card-title"><i class="md-icon" style="font-size:1.1em;color:#52B54B;">tv</i> 主屏幕选项卡</div>
+                        让此来源自动作为一个栏目显示在指定用户的主屏幕上，每次同步时更新。选择<em>媒体类型：合集</em>可显示合集栏目，而非单个项目。
                     </div>
                 </div>
 
@@ -1755,15 +1755,15 @@
                     <span>标签与合集</span>
                 </div>
                 <div style="background:rgba(128,128,128,0.06);border:1px solid var(--line-color);border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:0.9em;line-height:1.6;">
-                    <strong>什么是标签？</strong> — 标签是 Emby 可附加到电影或剧集上的隐藏标记。正常浏览时不会看到它，但插件通过它判断条目属于哪个列表。主页行依靠标签运作：一行会显示带有特定标签的所有条目。
+                    <strong>什么是标签？</strong> — 标签是 Emby 可附加到电影或剧集上的隐藏标记。正常浏览时不会看到它，但插件通过它判断项目属于哪个列表。主屏幕栏目依靠标签运作：一行会显示带有特定标签的所有项目。
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">label</i>
-                    <div><strong>标签</strong> — 插件会为列表中的每个条目添加标签。当条目不再出现在列表中时（例如 Trakt 列表已更新），下次同步会自动移除该标签。</div>
+                    <div><strong>标签</strong> — 插件会为列表中的每个项目添加标签。当项目不再出现在列表中时（例如 Trakt 列表已更新），下次同步会自动移除该标签。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">collections_bookmark</i>
-                    <div><strong>合集</strong> — 除添加标签外（或替代标签），插件还可维护 Emby 合集。与标签一样，每次同步时都会自动添加和移除条目。</div>
+                    <div><strong>合集</strong> — 除添加标签外（或替代标签），插件还可维护 Emby 合集。与标签一样，每次同步时都会自动添加和移除项目。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">check_box_outline_blank</i>
@@ -1775,11 +1775,11 @@
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">tv</i>
-                    <div><strong>按来源设置主页分区</strong> — 每个来源都可为指定用户设置独立的主页行。在各来源卡片的<em>主页</em>选项卡中配置。此功能独立于主页复制功能。</div>
+                    <div><strong>按来源设置主屏幕栏目</strong> — 每个来源都可为指定用户设置独立的主屏幕栏目。在各来源卡片的<em>主屏幕</em>选项卡中配置。此功能独立于主屏幕复制功能。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">collections</i>
-                    <div><strong>主页分区 — 合集模式</strong> — 想将整个合集显示为一行（而非单部电影）？使用<em>本地合集</em>来源，设置标签名称，并在<em>主页</em>选项卡中选择<em>媒体类型：合集</em>。插件会为<strong>合集本身</strong>添加标签，而非其中的电影，让 Emby 将其显示为合集行。此模式不会为合集内的单部电影添加标签。</div>
+                    <div><strong>主屏幕栏目 — 合集模式</strong> — 想将整个合集显示为一行（而非单部电影）？使用<em>本地合集</em>来源，设置标签名称，并在<em>主屏幕</em>选项卡中选择<em>媒体类型：合集</em>。插件会为<strong>合集本身</strong>添加标签，而非其中的电影，让 Emby 将其显示为合集行。此模式不会为合集内的单部电影添加标签。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">block</i>
@@ -1859,24 +1859,24 @@
                 <!-- 7. HOME SCREEN -->
                 <div id="help-sec-7" class="help-section">
                     <i class="md-icon help-section-icon">home</i>
-                    <span>主页</span>
+                    <span>主屏幕</span>
                 </div>
-                <div class="step-text" style="margin-bottom:10px; font-size:0.92em;"><strong>主页</strong>选项卡有三个独立子分区：<strong>管理</strong>（基于来源的行）、<strong>复制与同步</strong>（将一个用户的布局复制给其他用户）和<strong>主页调整</strong>（调整 Emby 内置行）。</div>
+                <div class="step-text" style="margin-bottom:10px; font-size:0.92em;"><strong>主屏幕</strong>选项卡有三个独立的子页：<strong>管理</strong>（基于来源的行）、<strong>复制与同步</strong>（将一个用户的布局复制给其他用户）和<strong>主屏幕调整</strong>（调整 Emby 内置行）。</div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">view_list</i>
-                    <div><strong>管理</strong> — 创建并持续更新自定义主页行。每行关联一个来源，每次同步时都会为所选用户自动刷新。要为来源设置主页行，请打开该来源卡片并前往其<em>主页</em>选项卡。</div>
+                    <div><strong>管理</strong> — 创建并持续更新自定义主屏幕栏目。每行关联一个来源，每次同步时都会为所选用户自动刷新。要为来源设置主屏幕栏目，请打开该来源卡片并前往其<em>主屏幕</em>选项卡。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">copy_all</i>
-                    <div><strong>复制与同步</strong> — 将一个用户的完整主页布局复制给一个或多个其他用户。适合希望所有用户布局一致的情况。此功能独立于标签和合集同步运行。</div>
+                    <div><strong>复制与同步</strong> — 将一个用户的完整主屏幕布局复制给一个或多个其他用户。适合希望所有用户布局一致的情况。此功能独立于标签和合集同步运行。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">tune</i>
-                    <div><strong>主页调整</strong> — <em>继续观看</em>：已追完的剧集有新一集加入时，将该剧集移至“继续观看 / 接下来”的最前面。不会更改观看状态。添加新集时会自动运行，也可通过计划任务<em>继续观看置顶</em>运行。</div>
+                    <div><strong>主屏幕调整</strong> — <em>继续观看</em>：已追完的剧集有新一集加入时，将该剧集移至“继续观看 / 接下来”的最前面。不会更改观看状态。添加新集时会自动运行，也可通过计划任务<em>继续观看置顶</em>运行。</div>
                 </div>
                 <div class="help-feature-row" style="margin-bottom:0;">
                     <i class="md-icon help-feat-icon">sync</i>
-                    <div><strong>自动与手动</strong> — 两项功能都会作为计划任务的一部分运行，也可随时通过<strong>运行</strong>按钮 → <em>仅同步主页</em>触发。</div>
+                    <div><strong>自动与手动</strong> — 两项功能都会作为计划任务的一部分运行，也可随时通过<strong>运行</strong>按钮 → <em>同步主屏幕</em>触发。</div>
                 </div>
 
                 <!-- 7b. TOP-LIST -->
@@ -1885,19 +1885,19 @@
                     <span>榜单</span>
                 </div>
                 <div class="step-text" style="margin-bottom:10px; font-size:0.92em;">
-                    <strong>榜单</strong>是主页上按名次排列的电影或剧集行，例如“我的十佳电影”。每张海报上都有数字徽标（1、2、3…），表示其排名。插件会创建独立的 Emby 媒体库，其中包含上榜条目的快捷方式（不会复制或移动实际文件），并将该媒体库显示为专属主页分区。可在<strong>榜单</strong>选项卡中找到。
+                    <strong>榜单</strong>是主屏幕上按名次排列的电影或剧集行，例如“我的十佳电影”。每张海报上都有数字角标（1、2、3…），表示其排名。插件会创建独立的 Emby 媒体库，其中包含上榜项目的快捷方式（不会复制或移动实际文件），并将该媒体库显示为专属主屏幕栏目。可在<strong>榜单</strong>选项卡中找到。
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">create_new_folder</i>
-                    <div><strong>从标签创建榜单</strong> — 选择<em>电影</em>或<em>剧集</em>，选择由插件管理的标签，然后点击<em>创建榜单</em>。插件会构建排名媒体库，并为所选用户设置主页分区。排名遵循来源列表的原始顺序（例如 Trakt 列表中的顺序）。插件每次同步该标签时，榜单都会自动更新。</div>
+                    <div><strong>从标签创建榜单</strong> — 选择<em>电影</em>或<em>剧集</em>，选择由插件管理的标签，然后点击<em>创建榜单</em>。插件会构建排名媒体库，并为所选用户设置主屏幕栏目。排名遵循来源列表的原始顺序（例如 Trakt 列表中的顺序）。插件每次同步该标签时，榜单都会自动更新。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">edit_note</i>
-                    <div><strong>手动榜单</strong> — 点击<em>创建手动榜单</em>，即可自行挑选电影并排序，无需已有标签。搜索媒体库，拖动条目调整顺序，然后保存。</div>
+                    <div><strong>手动榜单</strong> — 点击<em>创建手动榜单</em>，即可自行挑选电影并排序，无需已有标签。搜索媒体库，拖动项目调整顺序，然后保存。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">block</i>
-                    <div><strong>自动排除</strong> — 榜单中的电影会自动从其他所有基于标签的主页行中隐藏，避免同一部带排名徽标的电影出现在其他行中。</div>
+                    <div><strong>自动排除</strong> — 榜单中的电影会自动从其他所有基于标签的主屏幕栏目中隐藏，避免同一部带排名角标的电影出现在其他行中。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">tv</i>
@@ -1905,7 +1905,7 @@
                 </div>
                 <div class="help-feature-row" style="margin-bottom:0;">
                     <i class="md-icon help-feat-icon">build</i>
-                    <div><strong>榜单分区同步</strong> — 添加新的 Emby 媒体库后，如果主页行出现同步异常，请运行<em>榜单分区同步</em>任务（通过<strong>运行</strong>按钮或 Emby 的计划任务页面），重建所有排除设置。</div>
+                    <div><strong>同步榜单栏目</strong> — 添加新的 Emby 媒体库后，如果主屏幕栏目出现同步异常，请运行<em>同步榜单栏目</em>任务（通过<strong>运行</strong>按钮或 Emby 的计划任务页面），重建所有排除设置。</div>
                 </div>
 
                 <!-- 8. SETTINGS & UTILITIES -->
@@ -1939,7 +1939,7 @@
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">play_circle</i>
-                    <div><strong>运行按钮</strong> — 随时手动触发同步。提供三个选项：<em>完整同步</em>（所有内容）、<em>仅同步主屏幕</em>（仅更新主屏幕各行，不更改标签）和<em>仅同步标签和合集</em>（更新标签和合集，跳过主屏幕）。</div>
+                    <div><strong>运行按钮</strong> — 随时手动触发同步。提供三个选项：<em>完整同步</em>（所有内容）、<em>同步主屏幕</em>（仅更新主屏幕栏目，不更改标签）和<em>同步标签和合集</em>（更新标签和合集，跳过主屏幕）。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">science</i>

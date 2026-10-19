@@ -39,8 +39,8 @@ namespace HomeScreenCompanion
 
         public string Key => "TopListSyncTask";
         public string Name => "同步榜单栏目";
-        public string Description => "手动创建媒体库后运行。确保每个首页榜单栏目仅显示其对应媒体库的项目，且常规首页栏目不包含榜单媒体库。";
-        public string Category => "首页助手";
+        public string Description => "手动创建媒体库后运行。确保每个主屏幕榜单栏目仅显示其对应媒体库的项目，且常规主屏幕栏目不包含榜单媒体库。";
+        public string Category => "Home Screen Companion 动漫版";
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers() => Array.Empty<TaskTriggerInfo>();
 
@@ -356,7 +356,7 @@ namespace HomeScreenCompanion
                 if (tlUpdated > 0 || tlRemoved > 0)
                     _log.Ok($"榜单“{tlName}”：已更新 {RunLog.Plural(tlUpdated, "个栏目")}{(tlRemoved > 0 ? $"，已移除 {tlRemoved} 个" : "")}");
                 else
-                    _log.Skip($"榜单“{tlName}”：没有需要更新的首页栏目");
+                    _log.Skip($"榜单“{tlName}”：没有需要更新的主屏幕栏目");
             }
 
             // Ensure ALL top-list libraries are excluded from every TAG items-type section.

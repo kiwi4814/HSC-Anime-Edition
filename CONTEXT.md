@@ -39,3 +39,30 @@ _Avoid_：整个文件系统只读。
 
 **AI 分析建议**：基于现有候选和证据生成的命名、审查、关系或检索方向，不是自动执行的业务决定。
 _Avoid_：AI 自动批准、AI 已确认映射。
+
+## 界面用语（zh-CN）
+
+界面、日志和任务名称按下表统一，优先采用 Emby 官方简体中文用语。原英文仅为对照，不是要求界面显示英文。
+
+| 英文原文 | 统一译法 | 不再使用 |
+|---|---|---|
+| Home Screen | 主屏幕 | 主页、首页 |
+| Home section / row（主屏幕上的一栏） | 栏目（完整称呼"主屏幕栏目"） | 分区、版块、区块、主页行 |
+| Collection | 合集 | 收藏集、集合 |
+| Item（媒体项目） | 项目 | 条目 |
+| Entry / group（插件里的一个来源配置） | 分组 | 条目 |
+| Dry run（设置项与日志正文） | 仅预览 | 试运行、预演、模拟运行 |
+| Schedule | 计划 | 定时 |
+| Scheduled task | 计划任务 | — |
+| Top list | 榜单 | — |
+| Rank badge | 角标（排名角标、数字角标） | 徽章、徽标 |
+| Artist | 艺术家 | 艺人 |
+| TV mode | 电视模式 | 电视显示模式 |
+| Smart Playlist（MediaInfo 来源） | 智能列表 | 智能播放列表（它产生的是标签/合集，不是 Emby 播放列表） |
+| AI provider | AI 提供商 | AI 提供方 |
+| Token（AI 计量） | Token | 令牌（TMDb 的"API 读取访问令牌"是另一种凭据，保留原译） |
+| Approved keys | 批准名单 | 批准列表 |
+
+保留英文的技术标记：日志级别与标记 `[DEBUG]`、`[Cleanup]`、`[Dry run]`，服务器日志组件前缀（如 `[TopList]`、`[Anime]`），以及 API、ID、JSON、URL、IMDb/TMDb/AniList 等通用名称。日志查看器靠这些标记和 ✔⚠✖– 符号着色，不要翻译或删除。
+
+所有计划任务统一归入 Emby 计划任务分类 `Home Screen Companion 动漫版`。

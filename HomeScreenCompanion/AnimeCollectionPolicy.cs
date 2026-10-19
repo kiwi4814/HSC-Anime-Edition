@@ -67,7 +67,7 @@ namespace HomeScreenCompanion
                 var key = raw.Trim();
                 if (key.Length == 0) continue;
                 ValidateKey(key);
-                if (!policy._approved.Add(key)) throw Invalid("批准列表 Key 重复：" + key);
+                if (!policy._approved.Add(key)) throw Invalid("批准名单 Key 重复：" + key);
             }
             if (!string.IsNullOrWhiteSpace(aliasesJson))
             {

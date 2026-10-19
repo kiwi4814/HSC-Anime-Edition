@@ -199,7 +199,7 @@ namespace HomeScreenCompanion
                     continue;
                 }
                 if (!budget.TryReserve(SystemPrompt, input, out var maxTokens))
-                { AddWarning(result, "AI 分析已达到本轮调用或令牌预算上限；未处理的项目保留确定性结果。", warn); break; }
+                { AddWarning(result, "AI 分析已达到本轮调用或 Token 预算上限；未处理的项目保留确定性结果。", warn); break; }
                 try
                 {
                     var raw = await _complete(config, SystemPrompt, input, maxTokens, token).ConfigureAwait(false);
