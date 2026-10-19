@@ -1242,20 +1242,29 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
     function updateCompatibleAiVisibility(view) {
         var provider = selectedAnimeAiProvider(view);
-        var compat = provider === 'OpenAICompatible';
-        var fields = view.querySelector('#compatibleAiFields');
         var hint = view.querySelector('#animeAiProviderHint');
-        if (fields) fields.style.display = compat ? '' : 'none';
-        if (hint) hint.style.display = compat ? 'none' : '';
+        if (!hint) return;
+        hint.style.display = '';
+        if (provider === 'OpenAICompatible') {
+            hint.textContent = '请到下方「AI 设置 → OpenAI 兼容接口」填写地址、模型和密钥。不配也能自动分组。';
+        } else {
+            hint.textContent = '使用「设置 → AI 设置」中对应服务的密钥与模型。不配也能自动分组。';
+        }
+    }
+
+    function updateCompatibleAiHttpWarning(view) {
+        var input = view.querySelector('#txtCompatibleAiBaseUrl');
+        var url = input ? input.value : '';
+        var warn = view.querySelector('#compatibleAiHttpWarning');
+        if (warn) warn.style.display = /^http:\/\//i.test((url || '').trim()) ? '' : 'none';
     }
 
     function updateAiHttpWarning(view) {
         updateCompatibleAiVisibility(view);
+        updateCompatibleAiHttpWarning(view);
         var provider = selectedAnimeAiProvider(view);
-        var url = provider === 'Ollama' ? view.querySelector('#txtOllamaBaseUrl').value
-            : provider === 'OpenAICompatible' ? view.querySelector('#txtCompatibleAiBaseUrl').value : '';
-        var warn = view.querySelector('#compatibleAiHttpWarning');
-        if (warn) warn.style.display = (provider === 'OpenAICompatible' && /^http:\/\//i.test((url || '').trim())) ? '' : 'none';
+        // Ollama HTTP is local by design; no extra banner here.
+        void provider;
     }
 
     function animeAiRequest(path, configuration) {
@@ -1282,7 +1291,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var target = view.querySelector('#animeAiAnalysis');
         var button = view.querySelector('#btnRefreshAnimeAiAnalysis');
         button.disabled = true;
-        target.textContent = '正在加载分析建议…';
+        target.textContent = '正在加载改名建议…';
         return animeAiRequest('Analysis').then(function (data) {
             target.textContent = '';
             function line(parent, label, value) {
@@ -1306,19 +1315,33 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                     .filter(function (n) { if (!n || seen[n]) return false; seen[n] = true; return true; }).join('、');
             }
             var suggestions = data.Suggestions || [];
-            if (!suggestions.length) line(target, '', '暂无分析建议。启用所需 AI 功能后运行动漫合集任务，再刷新查看。');
+            if (!suggestions.length) line(target, '', '暂无改名建议。若需要，可在上方打开命名建议开关，到 AI 设置填好供应商，再同步一次后刷新。不配也能自动分组。');
             suggestions.forEach(function (suggestion) {
                 var item = document.createElement('section');
                 item.style.cssText = 'border-top:1px solid var(--line-color);margin-top:12px;padding-top:10px;';
                 line(item, '建议类型：', label(kinds, suggestion.Kind));
-                line(item, '合集 Key：', suggestion.GroupKey);
+                line(item, '合集：', suggestion.OriginalName || suggestion.GroupKey);
                 line(item, '当前名称：', suggestion.OriginalName);
                 line(item, '涉及作品：', names((suggestion.InputItems || []).concat(suggestion.InputTitles || [])));
                 line(item, '建议名称：', suggestion.SuggestedName);
+                if (suggestion.SuggestedName && suggestion.GroupKey) {
+                    var adoptBtn = document.createElement('button');
+                    adoptBtn.type = 'button';
+                    adoptBtn.setAttribute('is', 'emby-button');
+                    adoptBtn.className = 'raised button-submit';
+                    adoptBtn.style.marginTop = '6px';
+                    adoptBtn.textContent = '采用建议显示名';
+                    adoptBtn.addEventListener('click', function () {
+                        adoptAnimeSuggestedName(view, {
+                            CollectionKey: suggestion.GroupKey,
+                            SuggestedName: suggestion.SuggestedName
+                        }, adoptBtn);
+                    });
+                    item.appendChild(adoptBtn);
+                }
                 line(item, '名称来源：', label(nameEvidence, suggestion.NameEvidenceStatus));
                 line(item, '结论：', label(decisions, suggestion.Decision));
                 line(item, '理由：', suggestion.Reason);
-                line(item, '置信度：', suggestion.Confidence);
                 (suggestion.ReviewIssues || []).forEach(function (issue) {
                     var details = document.createElement('div');
                     details.style.cssText = 'margin:8px 0;padding-left:12px;border-left:2px solid var(--line-color);';
@@ -1332,7 +1355,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 target.appendChild(item);
             });
         }).catch(function (error) {
-            target.textContent = '加载分析建议失败：' + (error.message || '网络或响应异常。');
+            target.textContent = '暂时无法加载建议：' + (error.message || '网络或响应异常。可稍后重试。');
         }).then(function () { button.disabled = false; });
     }
 
@@ -3066,7 +3089,16 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             });
             if (empty) empty.style.display = 'none';
         } else {
-            if (empty) empty.style.display = '';
+            if (empty) {
+                empty.style.display = '';
+                if (!summary || (!summary.StatusText && !(summary.Cards || []).length && !(summary.Owned || []).length)) {
+                    empty.textContent = '还没有合集结果。先打开「启用动漫合集」，再点「立即同步」。选「先预览」时，这里会显示预计会建哪些合集。';
+                } else if (dry) {
+                    empty.textContent = '这次预览没有合集候选。确认已启用，或先同步一次让关系数据准备好。';
+                } else {
+                    empty.textContent = '当前没有可显示的合集。启用后点「立即同步」即可生成。';
+                }
+            }
         }
 
         renderAnimeReminders(view, summary);
@@ -3145,6 +3177,27 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 focusAnimeReminderTarget(view, item);
             });
             actions.appendChild(goBtn);
+
+            var suggested = (item.SuggestedName || '').trim();
+            if (!suggested && item.Type === 'naming' && item.Reason) {
+                var m = /建议改用「([^」]+)」/.exec(item.Reason);
+                if (m) suggested = m[1];
+            }
+            if (suggested && item.CollectionKey) {
+                var adoptRemBtn = document.createElement('button');
+                adoptRemBtn.type = 'button';
+                adoptRemBtn.setAttribute('is', 'emby-button');
+                adoptRemBtn.className = 'raised button-submit';
+                adoptRemBtn.textContent = '采用建议显示名';
+                adoptRemBtn.addEventListener('click', function () {
+                    adoptAnimeSuggestedName(view, {
+                        Id: item.Id || '',
+                        CollectionKey: item.CollectionKey,
+                        SuggestedName: suggested
+                    }, adoptRemBtn);
+                });
+                actions.appendChild(adoptRemBtn);
+            }
 
             var markBtn = document.createElement('button');
             markBtn.type = 'button';
@@ -3705,6 +3758,48 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     }
 
+    function adoptAnimeSuggestedName(view, payload, button) {
+        if (!payload || !payload.CollectionKey || !payload.SuggestedName) return;
+        if (button) button.disabled = true;
+        var tok = window.ApiClient.accessToken();
+        var headers = { 'Content-Type': 'application/json' };
+        if (tok) headers['X-MediaBrowser-Token'] = tok;
+        fetch(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/Reminders/AdoptName'), {
+            method: 'POST',
+            headers: headers,
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                Id: payload.Id || '',
+                CollectionKey: payload.CollectionKey,
+                SuggestedName: payload.SuggestedName
+            })
+        }).then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        }).then(function (result) {
+            if (!(result && result.Success)) {
+                if (window.Dashboard && window.Dashboard.alert) {
+                    window.Dashboard.alert((result && result.Message) || '无法采用建议名称。');
+                }
+                if (button) button.disabled = false;
+                return;
+            }
+            if (typeof result.AnimeCollectionAliasesJson === 'string') {
+                applyAnimeEditorConfigToForm(view, result);
+            }
+            if (result.Summary) renderAnimeCards(view, result.Summary);
+            if (window.Dashboard && window.Dashboard.alert) {
+                window.Dashboard.alert(result.Message || '已采用建议显示名。');
+            }
+            try { loadAnimeAiAnalysis(view); } catch (e) { }
+        }).catch(function (err) {
+            if (window.Dashboard && window.Dashboard.alert) {
+                window.Dashboard.alert('无法采用建议名称：' + (err && err.message ? err.message : err));
+            }
+            if (button) button.disabled = false;
+        });
+    }
+
     function setAnimeReminderHandled(view, id, handled, button) {
         if (!id) return;
         if (button) button.disabled = true;
@@ -3744,6 +3839,11 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             })
             .catch(function () {
                 renderAnimeCards(view, null);
+                var empty = view.querySelector('#animeCardEmpty');
+                if (empty) {
+                    empty.style.display = '';
+                    empty.textContent = '合集结果暂时无法加载。可刷新页面或稍后再试；不影响你改设置。';
+                }
             });
     }
 
@@ -3753,6 +3853,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             current.AnimeEnabled = ui.AnimeEnabled;
             current.AnimeDryRun = ui.AnimeDryRun;
             current.AnimeIncludeSpinOffs = ui.AnimeIncludeSpinOffs;
+            current.AnimeSkipWriteWhenReminders = !!ui.AnimeSkipWriteWhenReminders;
             current.AnimeCollectionPrefix = ui.AnimeCollectionPrefix;
             current.AnimeMaxRequestsPerRun = ui.AnimeMaxRequestsPerRun;
             current.AnimeCollectionRulesJson = ui.AnimeCollectionRulesJson;
@@ -4724,6 +4825,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             AnimeEnabled: view.querySelector('#chkAnimeEnabled').checked,
             AnimeDryRun: view.querySelector('#chkAnimeDryRun').checked,
             AnimeIncludeSpinOffs: view.querySelector('#chkAnimeIncludeSpinOffs').checked,
+            AnimeSkipWriteWhenReminders: !!(view.querySelector('#chkAnimeSkipWriteWhenReminders') || {}).checked,
             AnimeAiReviewOtherEdges: view.querySelector('#chkAnimeAiOther').checked,
             AnimeAiNamingEnabled: view.querySelector('#chkAnimeAiNaming').checked,
             AnimeAiCollectionReviewEnabled: view.querySelector('#chkAnimeAiCollectionReview').checked,
@@ -7169,12 +7271,13 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
     // Sections mirror the server's BackupFile. Only configuration is exported; everything the
     // sync tasks generate (tags, collections, playlists, top-list files, images) is rebuilt on run.
     var _backupSections = [
-        { key: 'Settings',     label: '常规设置',          desc: 'AI 模型、系统提示词、日志、仅预览、结果为空时保留；含动漫批准名单、成员规则与别名。' },
-        { key: 'ApiKeys',      label: 'API 密钥',                  desc: 'Trakt、MDBList、TMDB、OpenAI、Gemini、Claude。以明文存储在文件中。' },
+        { key: 'Settings',     label: '常规设置',          desc: 'AI 模型、系统提示词、日志、仅预览、结果为空时保留；含动漫策略（启用、前缀、提醒跳过写入、建议开关、别名与成员规则）。' },
+        { key: 'ApiKeys',      label: 'API 密钥',                  desc: 'Trakt、MDBList、TMDB、OpenAI、Gemini、Claude、OpenAI 兼容接口。以明文存储在文件中。' },
         { key: 'Tags',         label: '标签与合集分组',   desc: '所有来源分组，包括计划、黑名单、筛选器、合集设置、主屏幕栏目和播放列表。' },
         { key: 'SavedFilters', label: '已保存的媒体信息筛选器',  desc: '您保存的筛选预设。' },
         { key: 'TopLists',     label: '榜单',                 desc: '榜单设置，以及手动榜单中的电影和剧集列表。' },
-        { key: 'HomeSync',     label: '主屏幕同步',          desc: '来源用户、目标用户、媒体库顺序同步以及“继续观看”置顶。' }
+        { key: 'HomeSync',     label: '主屏幕同步',          desc: '来源用户、目标用户、媒体库顺序同步以及“继续观看”置顶。' },
+        { key: 'AnimeReminders', label: '动漫提醒状态',     desc: '上次同步留下的提醒与已处理标记。不含合集本身，合集由下次同步重建。' }
     ];
 
     function buildBackupModalShell() {
@@ -8659,6 +8762,8 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 view.querySelector('#chkAnimeEnabled').checked = config.AnimeEnabled || false;
                 view.querySelector('#chkAnimeDryRun').checked = !!config.AnimeDryRun;
                 view.querySelector('#chkAnimeIncludeSpinOffs').checked = config.AnimeIncludeSpinOffs !== false;
+                var skipRem = view.querySelector('#chkAnimeSkipWriteWhenReminders');
+                if (skipRem) skipRem.checked = !!config.AnimeSkipWriteWhenReminders;
                 syncAnimeModeFromCheckbox(view);
                 view.querySelector('#chkAnimeAiOther').checked = config.AnimeAiReviewOtherEdges || false;
                 view.querySelector('#selAnimeAiProvider').value = config.AnimeAiProvider || 'OpenAICompatible';

@@ -1255,20 +1255,26 @@
                             本版与官方插件的计划任务名称相同，两边同时装开时，运行菜单可能点到错误的任务。迁移建议：先导出本插件备份 → 卸官方插件 → 安装本版 → 再导入备份。
                         </div>
 
-                        <div style="font-size:0.75em;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;opacity:0.45;margin:8px 0;">可选：改名与审查建议</div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:8px;">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiOther" /><span>用 AI 复核关系不明确的作品</span></label>
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeSkipWriteWhenReminders" /><span>有提醒的合集先不写入</span></label>
+                            <div class="fieldDescription">默认关闭。开启后，本次同步里带提醒的合集会跳过写入，其它合集照常处理。处理完提醒或关掉此选项后再同步即可写入。</div>
+                        </div>
+
+                        <div style="font-size:0.75em;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;opacity:0.45;margin:18px 0 8px;">可选：改名与审查建议</div>
+                        <div class="fieldDescription" style="margin-bottom:10px;line-height:1.6;">只用下面开关决定要不要出建议。密钥、地址和模型请到下方「AI 设置」配置；不配也能自动分组。</div>
+                        <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:8px;">
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiOther" /><span>复核关系不明确的作品</span></label>
                             <div class="fieldDescription">默认关闭。只提供建议，不会自动修改合集。</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
                             <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiNaming" /><span>中文命名建议</span></label>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
-                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiCollectionReview" /><span>合集审查建议</span></label>
+                            <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiCollectionReview" /><span>合集检查建议</span></label>
                             <div class="fieldDescription">默认关闭。不开启也能正常分组。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
-                            <label class="inputLabel" for="selAnimeAiProvider">AI 服务</label>
+                            <label class="inputLabel" for="selAnimeAiProvider">用哪个 AI 出建议</label>
                             <select is="emby-select" id="selAnimeAiProvider" class="emby-select-withcolor">
                                 <option value="OpenAICompatible">OpenAI 兼容接口</option>
                                 <option value="OpenAI">OpenAI</option>
@@ -1277,22 +1283,7 @@
                                 <option value="Ollama">Ollama</option>
                             </select>
                         </div>
-                        <div id="animeAiProviderHint" class="fieldDescription" style="display:none;margin-top:8px;">使用「设置 → API 密钥」中对应服务的密钥与模型。</div>
-                        <div id="compatibleAiFields">
-                            <div class="inputContainer" style="margin-top:12px;">
-                                <input is="emby-input" type="url" id="txtCompatibleAiBaseUrl" label="兼容接口地址" placeholder="https://example.com/v1" />
-                            </div>
-                            <div class="inputContainer" style="margin-top:12px;">
-                                <input is="emby-input" type="text" id="txtCompatibleAiModel" label="兼容接口模型" />
-                            </div>
-                            <div class="inputContainer" style="margin-top:12px;">
-                                <input is="emby-input" type="password" id="txtCompatibleAiApiKey" label="兼容接口密钥" autocomplete="new-password" />
-                                <label style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;">
-                                    <input type="checkbox" class="chkShowApiKey" data-target="txtCompatibleAiApiKey" /> 显示
-                                </label>
-                            </div>
-                            <div id="compatibleAiHttpWarning" role="status" style="display:none;color:#e8a838;margin:12px 0;">未加密连接会明文传输内容和密钥。请只在本机或可信局域网中使用。</div>
-                        </div>
+                        <div id="animeAiProviderHint" class="fieldDescription" style="margin-top:8px;">使用「设置 → AI 设置」里已配置的供应商。不配也能自动分组。</div>
                         <div class="inputContainer" style="margin-top:12px;">
                             <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxCalls" label="每次运行最多建议调用数" />
                         </div>
@@ -1306,7 +1297,7 @@
                         <button is="emby-button" type="button" id="btnTestAnimeAiConnection" class="raised btn-neutral">测试连接</button>
                         <div id="animeAiConnectionResult" role="status" aria-live="polite" style="margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere;"></div>
                         <div style="margin-top:16px;">
-                            <strong>建议（只读）</strong>
+                            <strong>改名建议</strong>
                             <button is="emby-button" type="button" id="btnRefreshAnimeAiAnalysis" class="raised btn-neutral">刷新建议</button>
                             <div id="animeAiAnalysis" role="status" aria-live="polite" style="margin-top:10px;overflow-wrap:anywhere;">尚未加载建议。</div>
                         </div>
@@ -1530,6 +1521,33 @@
                             </div>
                         </div>
 
+
+                        <!-- OpenAI Compatible -->
+                        <div class="advanced-section settings-panel" style="border: 1px solid rgba(128,128,128,0.2); border-radius: 4px; margin-bottom: 8px;">
+                            <div class="advanced-header settings-panel-toggle" style="padding: 10px 14px; cursor: pointer; user-select: none; display: flex; align-items: center;">
+                                <i class="md-icon" style="margin-right: 8px; font-size: 1.1em; opacity: 0.65;">hub</i>
+                                <span style="font-size: 0.9em; font-weight: 600; opacity: 0.85;">OpenAI 兼容接口</span>
+                                <i class="md-icon settings-panel-chevron" style="margin-left: auto; transition: transform 0.2s; font-size: 1.1em; opacity: 0.65;">expand_more</i>
+                            </div>
+                            <div class="settings-panel-body" style="display:none; padding: 0 14px 14px;" id="compatibleAiFields">
+                                <div class="fieldDescription" style="margin-bottom:10px;">适用于任何兼容 OpenAI Chat Completions 的服务（含自建网关）。动漫合集建议与其它 AI 列表共用这一套配置。</div>
+                                <div class="inputContainer">
+                                    <input is="emby-input" type="url" id="txtCompatibleAiBaseUrl" label="接口地址" placeholder="https://example.com/v1" />
+                                    <div class="fieldDescription">通常以 <code>/v1</code> 结尾。</div>
+                                </div>
+                                <div class="inputContainer" style="margin-top: 12px;">
+                                    <input is="emby-input" type="text" id="txtCompatibleAiModel" label="模型" />
+                                </div>
+                                <div class="inputContainer" style="margin-top: 12px;">
+                                    <input is="emby-input" type="password" id="txtCompatibleAiApiKey" label="API 密钥" autocomplete="new-password" />
+                                    <label style="display:inline-flex; align-items:center; gap:5px; font-size:0.85em; opacity:0.75; margin-top:4px; cursor:pointer;">
+                                        <input type="checkbox" class="chkShowApiKey" data-target="txtCompatibleAiApiKey" style="margin:0;" /> 显示
+                                    </label>
+                                </div>
+                                <div id="compatibleAiHttpWarning" role="status" style="display:none;color:#e8a838;margin:12px 0;">未加密连接会明文传输内容和密钥。请只在本机或可信局域网中使用。</div>
+                            </div>
+                        </div>
+
                         <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-top: 18px; margin-bottom: 8px;">AI 高级设置</div>
 
                         <!-- Edit system prompt -->
@@ -1615,7 +1633,7 @@
                 <hr style="border-color: var(--line-color); margin: 25px 0;" />
 
                 <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1.05em; color: #52B54B; text-transform: uppercase; letter-spacing: 1px;">备份与恢复</h3>
-                <p class="textMuted" style="font-size:0.9em; margin-bottom:15px;">将所选配置（设置、API 密钥、标签与合集组、已保存的筛选器、榜单、主屏幕同步）导出为 JSON 文件，或从备份恢复。不包含标签、合集、播放列表、榜单文件及图片等生成的数据 &ndash; 插件会在下次同步时重新创建这些数据。</p>
+                <p class="textMuted" style="font-size:0.9em; margin-bottom:15px;">将所选配置（设置、API 密钥、标签与合集组、已保存的筛选器、榜单、主屏幕同步、动漫提醒状态）导出为 JSON 文件，或从备份恢复。不包含标签、合集、播放列表、榜单文件及图片等生成的数据 &ndash; 插件会在下次同步时重新创建这些数据。</p>
                 <div style="display:flex; gap:10px;">
                     <button is="emby-button" type="button" id="btnBackupConfig" class="raised btn-neutral">
                         <i class="md-icon" style="margin-right:5px;">download</i>下载备份
@@ -1692,7 +1710,7 @@
                             <span class="fieldDescription" id="animeCardsHint" style="margin:0;"></span>
                         </div>
                         <div id="animeCardGrid" class="anime-card-grid"></div>
-                        <div id="animeCardEmpty" class="anime-card-empty" style="display:none;margin-top:12px;">还没有结果。启用后点「立即同步」，预览模式会在这里显示合集卡片。</div>
+                        <div id="animeCardEmpty" class="anime-card-empty" style="display:none;margin-top:12px;">还没有合集结果。先打开「启用动漫合集」，再点「立即同步」。选「先预览」时，这里会显示预计会建哪些合集。</div>
                     </div>
 
                     <div id="animeRemindersSection" class="anime-reminders-section">

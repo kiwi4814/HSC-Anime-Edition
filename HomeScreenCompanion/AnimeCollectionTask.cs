@@ -53,6 +53,8 @@ namespace HomeScreenCompanion
         public string Type { get; set; } = "";
         public string TypeLabel { get; set; } = "";
         public string Reason { get; set; } = "";
+        /// <summary>Optional suggested display name (naming reminders); empty otherwise.</summary>
+        public string SuggestedName { get; set; } = "";
         public bool Handled { get; set; }
         public string RaisedUtc { get; set; } = "";
     }
@@ -488,6 +490,18 @@ namespace HomeScreenCompanion
                     collisions++;
                     continue;
                 }
+                bool hasReminderForGroup = reminders.Any(r => r != null
+                        && string.Equals(r.CollectionKey, group.Key, StringComparison.Ordinal)
+                        && !r.Handled);
+                if (config.AnimeSkipWriteWhenReminders && hasReminderForGroup)
+                {
+                    string skipReason = "按设置：有提醒的合集先不写入。处理完提醒后再同步，或到设置里关掉该选项。";
+                    log.Skip($"已跳过 [{group.Key}] {name}：{skipReason}");
+                    LogMemberTitles(log, group, nameById);
+                    cards.Add(MakeRunCard(group, name, "skipped", skipReason, nameById, localById));
+                    blocked++;
+                    continue;
+                }
                 if (owned == null)
                 {
                     log.Info($"{(mayWrite ? "创建" : "预计创建")} [{group.Key}]“{name}”（{desired.Count} 部）。");
@@ -719,8 +733,12 @@ namespace HomeScreenCompanion
             foreach (var item in fresh ?? new List<AnimeReminder>())
             {
                 if (item == null || string.IsNullOrWhiteSpace(item.Id)) continue;
-                if (previous.TryGetValue(item.Id, out var old) && old.Handled)
-                    item.Handled = true;
+                if (previous.TryGetValue(item.Id, out var old))
+                {
+                    if (old.Handled) item.Handled = true;
+                    if (string.IsNullOrWhiteSpace(item.SuggestedName) && !string.IsNullOrWhiteSpace(old.SuggestedName))
+                        item.SuggestedName = old.SuggestedName;
+                }
                 byId[item.Id] = item;
             }
             return byId.Values.OrderBy(r => r.CollectionName, StringComparer.OrdinalIgnoreCase)
@@ -794,9 +812,12 @@ namespace HomeScreenCompanion
                         string id = ReminderId("naming", key);
                         if (existingIds.Add(id))
                         {
-                            string reason = "建议改用「" + suggestion.SuggestedName.Trim() + "」。"
+                            string suggested = suggestion.SuggestedName.Trim();
+                            string reason = "建议改用「" + suggested + "」。"
                                 + (string.IsNullOrWhiteSpace(suggestion.Reason) ? "" : " " + suggestion.Reason.Trim());
-                            reminders.Add(MakeReminderWithId(id, "naming", key, display, reason.Trim(), raisedUtc));
+                            var namingReminder = MakeReminderWithId(id, "naming", key, display, reason.Trim(), raisedUtc);
+                            namingReminder.SuggestedName = suggested;
+                            reminders.Add(namingReminder);
                         }
                     }
                 }

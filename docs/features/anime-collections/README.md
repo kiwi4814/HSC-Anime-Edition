@@ -56,6 +56,14 @@ anilist:1900000104
 
 无作品专属内置别名。别名仅用于新建合集；已有合集保留原名，未验证的 Emby 重命名 API 不自动调用。
 
+
+### P4 策略与 AI 归位
+
+- `AnimeSkipWriteWhenReminders`（默认 `false`）：开启后，本趟同步为某合集产生提醒时跳过该合集写入；其它合集照常。不削弱默认全自动写入。
+- OpenAI 兼容接口（BaseURL / 模型 / 密钥）仅在「设置 → AI 设置」；动漫面板只保留「要不要出建议」开关与供应商选择，共用 `CompatibleAi*` 字段。
+- 命名提醒可一键「采用建议显示名」→ 写入 `AnimeCollectionAliasesJson`；不自动改已有 Emby 合集名。
+- 备份分区 `AnimeReminders`（BackupVersion ≥ 4）保存提醒与已处理标记；旧备份仍可读。
+
 ## Data and interfaces
 
 任务内部 Key 为 `HscAnimeEditionCollections`，显示名“动漫合集同步”，分类“Home Screen Companion 动漫版”，默认每日 05:00。动漫任务与已有 HSC 任务独立。

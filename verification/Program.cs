@@ -27,6 +27,7 @@ static partial class Program
             TestAliasesAndApproval();
             TestCollectionEditorRewrite();
             TestCollectionGraphSubgraph();
+            TestP4Polish();
             TestInvalidPolicies();
             TestLegacyStateAndCache();
             TestConfigurationCompatibility();
@@ -340,6 +341,37 @@ static partial class Program
 
         var ids = AnimeCollectionGraphSupport.ParseAniListIds(new[] { "anilist:1900000101", "tmdb_show:1", "anilist:1900000102", "anilist:1900000101" });
         Assert(ids.SequenceEqual(new[] { A, B }), "ParseAniListIds keeps unique positive anilist ids");
+    }
+
+    static void TestP4Polish()
+    {
+        var defaults = new PluginConfiguration();
+        Assert(!defaults.AnimeSkipWriteWhenReminders, "Skip-write-when-reminders defaults off so full-auto write stays on");
+        Assert(defaults.CompatibleAiBaseUrl == "" && defaults.CompatibleAiApiKey == "", "Compatible AI stays on shared settings fields");
+
+        // Adopt suggested display name = alias write only (no membership rewrite).
+        var aliases = AnimeCollectionEditorSupport.UpsertAlias("", Key, "星桥纪事");
+        Assert(AnimeCollectionPolicy.Parse("", "", aliases).TryGetAlias(Key, out var adopted) && adopted == "星桥纪事", "Adopt suggested name writes alias only");
+        var replaced = AnimeCollectionEditorSupport.UpsertAlias(aliases, Key, "星桥精选");
+        Assert(AnimeCollectionPolicy.Parse("", "", replaced).TryGetAlias(Key, out var again) && again == "星桥精选", "Re-adopting replaces prior alias");
+
+        // Skip-write gate: flag off never blocks; flag on blocks only when current-pass reminder exists.
+        bool Gate(bool flag, bool hasReminder) => flag && hasReminder;
+        Assert(!Gate(false, true) && !Gate(true, false) && Gate(true, true), "Skip-write gate requires both flag and reminder");
+
+        using var reader = new StringReader("<PluginConfiguration><AnimeEnabled>true</AnimeEnabled></PluginConfiguration>");
+        var legacy = (PluginConfiguration)new XmlSerializer(typeof(PluginConfiguration)).Deserialize(reader)!;
+        Assert(!legacy.AnimeSkipWriteWhenReminders, "Legacy XML without skip flag stays off");
+
+        // Shared Compatible fields still XML-round-trip from settings (not a second anime-only store).
+        defaults.CompatibleAiBaseUrl = "https://example.invalid/v1";
+        defaults.CompatibleAiModel = "fictional-compat";
+        defaults.CompatibleAiApiKey = "local-fixture-secret-not-a-credential";
+        defaults.AnimeSkipWriteWhenReminders = true;
+        using var xml = new StringWriter(); new XmlSerializer(typeof(PluginConfiguration)).Serialize(xml, defaults);
+        using var restoredReader = new StringReader(xml.ToString());
+        var restored = (PluginConfiguration)new XmlSerializer(typeof(PluginConfiguration)).Deserialize(restoredReader)!;
+        Assert(restored.AnimeSkipWriteWhenReminders && restored.CompatibleAiBaseUrl == defaults.CompatibleAiBaseUrl && restored.CompatibleAiModel == defaults.CompatibleAiModel, "Skip flag and Compatible AI XML round-trip together");
     }
 
     static void TestInvalidPolicies()

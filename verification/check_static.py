@@ -29,7 +29,7 @@ new_guid = 'b5bca829-e903-4af4-9fb2-451d72a487e6'
 assert original_guid not in plugin and original_guid not in js
 assert new_guid in plugin and new_guid in js
 assert 'HscAnimeEditionCollections' in (SRC / 'AnimeCollectionTask.cs').read_text(encoding='utf-8')
-assert 'private const int BackupFormatVersion = 3' in service
+assert 'private const int BackupFormatVersion = 4' in service
 for field in ('AnimeCollectionRulesJson', 'AnimeApprovedCollectionKeys', 'AnimeCollectionAliasesJson'):
     assert f'public string? {field}' in service or f'public string {field}' in service, field
     assert f'{field}   = config.{field}' in service or f'{field} = config.{field}' in service or f'{field} =' in service, 'export '+field
@@ -45,6 +45,7 @@ controls = {
     'chkAnimeEnabled': 'AnimeEnabled',
     'chkAnimeDryRun': 'AnimeDryRun',
     'chkAnimeIncludeSpinOffs': 'AnimeIncludeSpinOffs',
+    'chkAnimeSkipWriteWhenReminders': 'AnimeSkipWriteWhenReminders',
     'chkAnimeAiOther': 'AnimeAiReviewOtherEdges',
     'selAnimeAiProvider': 'AnimeAiProvider',
     'txtAnimePrefix': 'AnimeCollectionPrefix',
@@ -140,6 +141,30 @@ graph = html.split('id="animeEditorGraphSection"', 1)[1].split('id="btnAnimeEdit
 for banned in ('批准名单', '成员规则', 'Key', 'Anchor', 'JSON', 'Dry Run', 'Provider', 'Token', 'SEQUEL', 'PREQUEL', 'SPIN_OFF', '赋能', '闭环'):
     assert banned not in graph, 'banned on graph section: ' + banned
 print('PASS: P3 collection relation graph wiring')
+
+assert 'AnimeSkipWriteWhenReminders' in model
+assert 'chkAnimeSkipWriteWhenReminders' in html and '#chkAnimeSkipWriteWhenReminders' in js
+assert 'Reminders/AdoptName' in service
+assert 'adoptAnimeSuggestedName' in js
+assert '采用建议显示名' in js
+assert 'SuggestedName' in (SRC / 'AnimeCollectionTask.cs').read_text(encoding='utf-8')
+assert '按设置：有提醒的合集先不写入' in (SRC / 'AnimeCollectionTask.cs').read_text(encoding='utf-8')
+assert 'AnimeReminders' in service and "key: 'AnimeReminders'" in js
+# Compatible AI inputs live under AI settings, not the anime studio main tab.
+assert 'txtCompatibleAiBaseUrl' in html
+anime_tab = html.split('id="tabAnimeCollections"', 1)[1].split('id="tabCleanup"', 1)[0]
+assert 'txtCompatibleAiBaseUrl' not in anime_tab
+assert 'txtCompatibleAiApiKey' not in anime_tab
+# Anime settings panel must not re-host Compatible credential inputs.
+anime_settings_start = html.find('id="animeSettingsPanel"')
+ai_settings_title = html.find('AI 设置</span>', anime_settings_start)
+assert anime_settings_start >= 0 and ai_settings_title > anime_settings_start
+anime_settings = html[anime_settings_start:ai_settings_title]
+assert 'txtCompatibleAiBaseUrl' not in anime_settings
+assert 'compatibleAiFields' in html[ai_settings_title:]
+assert '不配也能自动分组' in html
+print('PASS: P4 skip-write / adopt-name / backup reminders / Compatible AI under AI settings')
+
 
 
 print('NOT_TESTED by this script: C# build/smoke, runtime authentication/backup HTTP, browser rendering, real AI providers or Emby runtime; consult separate logs')

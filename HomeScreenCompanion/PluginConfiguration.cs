@@ -38,6 +38,8 @@ namespace HomeScreenCompanion
         public string AnimeAiProvider { get; set; } = "OpenAICompatible";
         public bool AnimeAiNamingEnabled { get; set; } = false;
         public bool AnimeAiCollectionReviewEnabled { get; set; } = false;
+        /// <summary>When true, collections with open reminders are not written (default off).</summary>
+        public bool AnimeSkipWriteWhenReminders { get; set; } = false;
         public int AnimeAiMaxCallsPerRun { get; set; } = 15;
         public int AnimeAiMaxTokensPerCall { get; set; } = 800;
         public int AnimeAiMaxTokensPerRun { get; set; } = 4000;

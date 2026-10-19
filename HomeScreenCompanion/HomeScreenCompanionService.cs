@@ -189,6 +189,22 @@ namespace HomeScreenCompanion
         public AnimeLastRunSummary Summary { get; set; } = new AnimeLastRunSummary();
     }
 
+    [Route("/HomeScreenCompanionAnime/Anime/Reminders/AdoptName", "POST")]
+    [Authenticated(Roles = "Admin")]
+    public class AdoptAnimeSuggestedNameRequest : IReturn<AdoptAnimeSuggestedNameResponse>
+    {
+        public string Id { get; set; } = "";
+        public string CollectionKey { get; set; } = "";
+        public string SuggestedName { get; set; } = "";
+    }
+    public class AdoptAnimeSuggestedNameResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = "";
+        public string AnimeCollectionAliasesJson { get; set; } = "";
+        public AnimeLastRunSummary Summary { get; set; } = new AnimeLastRunSummary();
+    }
+
     [Route("/HomeScreenCompanionAnime/Anime/CollectionEditor", "GET")]
     [Authenticated(Roles = "Admin")]
     public class GetAnimeCollectionEditorRequest : IReturn<AnimeCollectionEditorResponse>
@@ -513,6 +529,7 @@ namespace HomeScreenCompanion
         public bool SavedFilters { get; set; } = true;
         public bool TopLists { get; set; } = true;
         public bool HomeSync { get; set; } = true;
+        public bool AnimeReminders { get; set; } = true;
     }
 
     public class BackupFile
@@ -527,6 +544,8 @@ namespace HomeScreenCompanion
         public List<SavedMediaInfoFilter>? SavedFilters { get; set; }
         public List<BackupTopList>? TopLists { get; set; }
         public BackupHomeSync? HomeSync { get; set; }
+        /// <summary>Open/handled reminder rows from last-run-summary (P4).</summary>
+        public List<AnimeReminder>? AnimeReminders { get; set; }
     }
 
     public class BackupSettings
@@ -540,6 +559,7 @@ namespace HomeScreenCompanion
         public string? CompatibleAiModel { get; set; }
         public bool? AnimeAiNamingEnabled { get; set; }
         public bool? AnimeAiCollectionReviewEnabled { get; set; }
+        public bool? AnimeSkipWriteWhenReminders { get; set; }
         public int? AnimeAiMaxCallsPerRun { get; set; }
         public int? AnimeAiMaxTokensPerCall { get; set; }
         public int? AnimeAiMaxTokensPerRun { get; set; }
@@ -549,6 +569,7 @@ namespace HomeScreenCompanion
         public string? AnimeCollectionRulesJson { get; set; }
         public string? AnimeApprovedCollectionKeys { get; set; }
         public string? AnimeCollectionAliasesJson { get; set; }
+        public string? AnimeMappingUrl { get; set; }
         public string OpenAiModel { get; set; } = "";
         public string GeminiModel { get; set; } = "";
         public string ClaudeModel { get; set; } = "";
@@ -613,6 +634,7 @@ namespace HomeScreenCompanion
         public bool SavedFilters { get; set; } = true;
         public bool TopLists { get; set; } = true;
         public bool HomeSync { get; set; } = true;
+        public bool AnimeReminders { get; set; } = true;
     }
 
     public class ImportBackupResponse
@@ -1134,6 +1156,112 @@ public class HomeScreenCompanionService : IService
             }
         }
 
+        public object Post(AdoptAnimeSuggestedNameRequest request)
+        {
+            try
+            {
+                string key = (request?.CollectionKey ?? "").Trim();
+                string suggested = (request?.SuggestedName ?? "").Trim();
+                string reminderId = (request?.Id ?? "").Trim();
+
+                var dataDir = Path.Combine(Plugin.Instance!.DataFolderPath, "anime");
+                var path = Path.Combine(dataDir, "last-run-summary.json");
+                AnimeLastRunSummary summary = File.Exists(path)
+                    ? (_jsonSerializer.DeserializeFromFile<AnimeLastRunSummary>(path) ?? new AnimeLastRunSummary())
+                    : new AnimeLastRunSummary();
+                if (summary.ReminderItems == null) summary.ReminderItems = new List<AnimeReminder>();
+
+                AnimeReminder? item = null;
+                if (!string.IsNullOrEmpty(reminderId))
+                    item = summary.ReminderItems.FirstOrDefault(r => r != null && string.Equals(r.Id, reminderId, StringComparison.Ordinal));
+
+                if (item != null)
+                {
+                    if (string.IsNullOrEmpty(key)) key = (item.CollectionKey ?? "").Trim();
+                    if (string.IsNullOrEmpty(suggested))
+                    {
+                        suggested = (item.SuggestedName ?? "").Trim();
+                        if (string.IsNullOrEmpty(suggested) && !string.IsNullOrEmpty(item.Reason))
+                        {
+                            int a = item.Reason.IndexOf('「');
+                            int b = item.Reason.IndexOf('」');
+                            if (a >= 0 && b > a) suggested = item.Reason.Substring(a + 1, b - a - 1).Trim();
+                        }
+                    }
+                }
+
+                if (string.IsNullOrEmpty(key) || !AnimeCollectionPolicy.IsIdentifier(key) ||
+                    !key.StartsWith("anilist:", StringComparison.Ordinal))
+                    return new AdoptAnimeSuggestedNameResponse { Success = false, Message = "缺少合集编号。" };
+                if (string.IsNullOrEmpty(suggested))
+                    return new AdoptAnimeSuggestedNameResponse { Success = false, Message = "没有可用的建议名称。" };
+
+                var config = Plugin.Instance?.Configuration;
+                if (config == null)
+                    return new AdoptAnimeSuggestedNameResponse { Success = false, Message = "插件配置不可用。" };
+
+                string aliases = AnimeCollectionEditorSupport.UpsertAlias(config.AnimeCollectionAliasesJson, key, suggested);
+                config.AnimeCollectionAliasesJson = aliases;
+                Plugin.Instance!.SaveConfiguration();
+
+                if (item != null) item.Handled = true;
+                else
+                {
+                    // Mark any open naming reminder for this key.
+                    foreach (var r in summary.ReminderItems)
+                    {
+                        if (r == null || r.Handled) continue;
+                        if (!string.Equals(r.CollectionKey, key, StringComparison.Ordinal)) continue;
+                        if (string.Equals(r.Type, "naming", StringComparison.OrdinalIgnoreCase))
+                            r.Handled = true;
+                    }
+                }
+
+                RefreshAnimeReminderFlags(summary);
+                Directory.CreateDirectory(dataDir);
+                var tmp = path + ".tmp";
+                File.WriteAllText(tmp, _jsonSerializer.SerializeToString(summary), Encoding.UTF8);
+                if (File.Exists(path)) File.Replace(tmp, path, null);
+                else File.Move(tmp, path);
+
+                return new AdoptAnimeSuggestedNameResponse
+                {
+                    Success = true,
+                    Message = "已采用建议显示名「" + suggested + "」。下次同步新建合集时会用这个名字；已有合集仍保留原名。",
+                    AnimeCollectionAliasesJson = aliases,
+                    Summary = summary
+                };
+            }
+            catch (Exception ex)
+            {
+                return new AdoptAnimeSuggestedNameResponse { Success = false, Message = "保存失败：" + ex.Message };
+            }
+        }
+
+        private static void RefreshAnimeReminderFlags(AnimeLastRunSummary summary)
+        {
+            if (summary.ReminderItems == null) summary.ReminderItems = new List<AnimeReminder>();
+            var openKeys = new HashSet<string>(
+                summary.ReminderItems.Where(r => r != null && !r.Handled && !string.IsNullOrEmpty(r.CollectionKey))
+                    .Select(r => r.CollectionKey),
+                StringComparer.Ordinal);
+            if (summary.Cards != null)
+            {
+                foreach (var card in summary.Cards)
+                    if (card != null) card.HasReminder = openKeys.Contains(card.Key ?? "");
+            }
+            if (summary.Owned != null)
+            {
+                var openNames = new HashSet<string>(
+                    summary.ReminderItems.Where(r => r != null && !r.Handled && !string.IsNullOrWhiteSpace(r.CollectionName))
+                        .Select(r => r.CollectionName.Trim()),
+                    StringComparer.OrdinalIgnoreCase);
+                foreach (var o in summary.Owned)
+                    if (o != null) o.HasReminder = !string.IsNullOrWhiteSpace(o.Name) && openNames.Contains(o.Name.Trim());
+            }
+            summary.Reminders = summary.ReminderItems.Count(r => r != null && !r.Handled);
+            summary.StatusText = RefreshReminderCountInStatus(summary.StatusText, summary.Reminders);
+        }
 
         public object Get(GetAnimeCollectionEditorRequest request)
         {
@@ -3513,7 +3641,7 @@ public class HomeScreenCompanionService : IService
         // (tags, collections, playlists, top-list strm/nfo/jpg files, caches, rank files) is
         // rebuilt on the next run and deliberately left out.
 
-        private const int BackupFormatVersion = 3;
+        private const int BackupFormatVersion = 4;
 
         public object Post(ExportBackupRequest request)
         {
@@ -3549,6 +3677,7 @@ public class HomeScreenCompanionService : IService
                     CompatibleAiModel         = config.CompatibleAiModel,
                     AnimeAiNamingEnabled      = config.AnimeAiNamingEnabled,
                     AnimeAiCollectionReviewEnabled = config.AnimeAiCollectionReviewEnabled,
+                    AnimeSkipWriteWhenReminders = config.AnimeSkipWriteWhenReminders,
                     AnimeAiMaxCallsPerRun      = config.AnimeAiMaxCallsPerRun,
                     AnimeAiMaxTokensPerCall    = config.AnimeAiMaxTokensPerCall,
                     AnimeAiMaxTokensPerRun     = config.AnimeAiMaxTokensPerRun,
@@ -3557,6 +3686,7 @@ public class HomeScreenCompanionService : IService
                     AnimeCollectionRulesJson   = config.AnimeCollectionRulesJson ?? "",
                     AnimeApprovedCollectionKeys = config.AnimeApprovedCollectionKeys ?? "",
                     AnimeCollectionAliasesJson = config.AnimeCollectionAliasesJson ?? "",
+                    AnimeMappingUrl            = config.AnimeMappingUrl ?? "",
                     PreserveTagsOnEmptyResult = config.PreserveTagsOnEmptyResult,
                     TopListMirrorCollections  = config.TopListMirrorCollections
                 };
@@ -3633,6 +3763,38 @@ public class HomeScreenCompanionService : IService
                 file.Sections.Add("HomeSync");
             }
 
+            if (request.AnimeReminders)
+            {
+                try
+                {
+                    var dataDir = Path.Combine(Plugin.Instance!.DataFolderPath, "anime");
+                    var path = Path.Combine(dataDir, "last-run-summary.json");
+                    if (File.Exists(path))
+                    {
+                        var summary = _jsonSerializer.DeserializeFromFile<AnimeLastRunSummary>(path);
+                        if (summary?.ReminderItems != null && summary.ReminderItems.Count > 0)
+                        {
+                            file.AnimeReminders = summary.ReminderItems
+                                .Where(r => r != null)
+                                .Select(r => new AnimeReminder
+                                {
+                                    Id = r.Id ?? "",
+                                    CollectionKey = r.CollectionKey ?? "",
+                                    CollectionName = r.CollectionName ?? "",
+                                    Type = r.Type ?? "",
+                                    TypeLabel = r.TypeLabel ?? "",
+                                    Reason = r.Reason ?? "",
+                                    SuggestedName = r.SuggestedName ?? "",
+                                    Handled = r.Handled,
+                                    RaisedUtc = r.RaisedUtc ?? ""
+                                }).ToList();
+                            file.Sections.Add("AnimeReminders");
+                        }
+                    }
+                }
+                catch { /* Missing summary is fine — section simply omitted. */ }
+            }
+
             return file;
         }
 
@@ -3682,12 +3844,14 @@ public class HomeScreenCompanionService : IService
                         if (s.CompatibleAiModel != null) config.CompatibleAiModel = s.CompatibleAiModel;
                         if (s.AnimeAiNamingEnabled.HasValue) config.AnimeAiNamingEnabled = s.AnimeAiNamingEnabled.Value;
                         if (s.AnimeAiCollectionReviewEnabled.HasValue) config.AnimeAiCollectionReviewEnabled = s.AnimeAiCollectionReviewEnabled.Value;
+                        if (s.AnimeSkipWriteWhenReminders.HasValue) config.AnimeSkipWriteWhenReminders = s.AnimeSkipWriteWhenReminders.Value;
                         if (s.AnimeAiMaxCallsPerRun.HasValue) config.AnimeAiMaxCallsPerRun = Math.Max(0, s.AnimeAiMaxCallsPerRun.Value);
                         if (s.AnimeAiMaxTokensPerCall.HasValue) config.AnimeAiMaxTokensPerCall = Math.Max(0, s.AnimeAiMaxTokensPerCall.Value);
                         if (s.AnimeAiMaxTokensPerRun.HasValue) config.AnimeAiMaxTokensPerRun = Math.Max(0, s.AnimeAiMaxTokensPerRun.Value);
                         if (s.AnimeCollectionRulesJson != null) config.AnimeCollectionRulesJson = s.AnimeCollectionRulesJson;
                         if (s.AnimeApprovedCollectionKeys != null) config.AnimeApprovedCollectionKeys = s.AnimeApprovedCollectionKeys;
                         if (s.AnimeCollectionAliasesJson != null) config.AnimeCollectionAliasesJson = s.AnimeCollectionAliasesJson;
+                        if (s.AnimeMappingUrl != null) config.AnimeMappingUrl = s.AnimeMappingUrl;
                     }
                     config.PreserveTagsOnEmptyResult = s.PreserveTagsOnEmptyResult;
                     mirrorChanged = config.TopListMirrorCollections != s.TopListMirrorCollections;
@@ -3763,6 +3927,43 @@ public class HomeScreenCompanionService : IService
                         PruneUnknownUsers(config.ContinueWatchingBumpUserIds, knownUsers, response.Warnings, "继续观看置顶用户");
                     }
                     response.Applied.Add("主屏幕同步");
+                }
+
+                if (request.AnimeReminders && Has("AnimeReminders") && backup.AnimeReminders != null)
+                {
+                    try
+                    {
+                        var dataDir = Path.Combine(plugin.DataFolderPath, "anime");
+                        Directory.CreateDirectory(dataDir);
+                        var path = Path.Combine(dataDir, "last-run-summary.json");
+                        var summary = File.Exists(path)
+                            ? (_jsonSerializer.DeserializeFromFile<AnimeLastRunSummary>(path) ?? new AnimeLastRunSummary())
+                            : new AnimeLastRunSummary();
+                        summary.ReminderItems = backup.AnimeReminders
+                            .Where(r => r != null && !string.IsNullOrWhiteSpace(r.Id))
+                            .Select(r => new AnimeReminder
+                            {
+                                Id = r.Id ?? "",
+                                CollectionKey = r.CollectionKey ?? "",
+                                CollectionName = r.CollectionName ?? "",
+                                Type = r.Type ?? "",
+                                TypeLabel = string.IsNullOrWhiteSpace(r.TypeLabel) ? AnimeCollectionTask.ReminderTypeLabel(r.Type) : r.TypeLabel!,
+                                Reason = r.Reason ?? "",
+                                SuggestedName = r.SuggestedName ?? "",
+                                Handled = r.Handled,
+                                RaisedUtc = r.RaisedUtc ?? ""
+                            }).ToList();
+                        RefreshAnimeReminderFlags(summary);
+                        var tmp = path + ".tmp";
+                        File.WriteAllText(tmp, _jsonSerializer.SerializeToString(summary), Encoding.UTF8);
+                        if (File.Exists(path)) File.Replace(tmp, path, null);
+                        else File.Move(tmp, path);
+                        response.Applied.Add($"动漫提醒状态（{summary.ReminderItems.Count}）");
+                    }
+                    catch (Exception ex)
+                    {
+                        response.Warnings.Add("动漫提醒状态未能恢复：" + ex.Message);
+                    }
                 }
 
                 if (request.TopLists && Has("TopLists") && backup.TopLists != null)
