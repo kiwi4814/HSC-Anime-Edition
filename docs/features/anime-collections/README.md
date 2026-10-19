@@ -106,20 +106,18 @@ anilist:1900000104
 
 API（Admin）：`GET .../Anime/CollectionEditor`、`GET .../Anime/MediaSearch`、`POST .../Anime/CollectionEditor/Save`、`POST .../Anime/CollectionEditor/ClearRule`。
 
-### 合集关系图（P3）
+### 手动同步：预览确认框
 
-编辑合集子视图内提供只读 **关系图**：
+- 「立即同步」**始终**先跑仅预览（不写库），再打开「确认创建」面板：改名 / 废弃 / 可选去掉成员 →「一键创建」才写入未废弃项。
+- 页上「定时自动写入」对应配置 `AnimeDryRun` 取反：开=计划任务直接写；关=计划任务也只记预览摘要。手动路径不被该开关短路。
+- 废弃写入 `AnimeDiscardedCollectionKeys`（内部合集 Key，界面不展示）；之后预览与写入都跳过。
+- API（Admin）：`POST .../Anime/ManualPreview`、`POST .../Anime/Discard`、`POST .../Anime/ConfirmCreate`。
 
-- 数据来自 `anime/anime-anilist-relations.json`（同步时写入的关系缓存）+ 本地库命中标题 + 当前编辑成员选中态。
-- 只读 API：`GET .../Anime/CollectionGraph?Key=anilist:…`，返回节点（含是否在库/是否在合集、简单坐标）与边（**人话标签**：前传/续作/外传/母作品/衍生/另一版本）。
-- 布局为按故事线分层的静态摆放，不做力导向动画；节点过多时截断并提示。
-- 编辑模式下点选节点 → 与成员列表勾选联动；**保存仍走 P2** `CollectionEditor/Save`。
-- 库中没有的节点灰显并标注「库中没有」，仍可点选记入成员（等有片源后再对上）。
-
+编辑合集子视图**不再**提供关系图 UI；成员仍用勾选列表。
 
 ### 合集 Key 稳定性与归属恢复
 
-- 合集 Key 仍为 `anilist:{Anchor}`。`Anchor` 取连通分量中**本地媒体 ∪ 关系图节点**的最小 AniList ID（不再仅取库内最小 ID），避免补更早一季后 Key 悄悄变化。
+- 合集 Key 仍为 `anilist:{Anchor}`。`Anchor` 取连通分量中**本地媒体 ∪ AniList 关系扩展节点**的最小 AniList ID（不再仅取库内最小 ID），避免补更早一季后 Key 悄悄变化。
 - 若归属记录与候选成员有交集但 Anchor 不同，同步时**沿用归属中的 Anchor**（粘滞），已批准的 Key 继续有效。
 - 仅批准、从未成功写入（无归属）的配置，若图内 min 与旧「仅本地 min」不同，升级后可能需改批准名单/别名一次；日志会提示。
 - 归属指向的 Emby 合集已不存在时，自动清除该归属行；若 Key 仍在批准名单中，将按新建处理。同名其他合集仍跳过，不会自动认领。
@@ -133,7 +131,7 @@ API（Admin）：`GET .../Anime/CollectionEditor`、`GET .../Anime/MediaSearch`�
 ### AniList 配额与上限
 
 - 默认每次最多新增 **300** 次 AniList 请求（设置页可调 10–600）；请求间隔约 2.1 秒。
-- 关系图节点硬上限 **8000**；触顶时状态为「失败：作品关系超过上限」，不会写入合集。
+- AniList 关系扩展节点硬上限 **8000**；触顶时状态为「失败：作品关系超过上限」，不会写入合集。
 - 配额用尽时状态为「等待：AniList 请求配额已用完，请再次运行」，可再次运行继续灌缓存。
 - 关系缓存新鲜度仍为 **14 天**（本批未改）。
 - 对 AniList 的 429/5xx/超时最多重试 3 次（退避 5s→15s→45s，尊重 Retry-After，上限约 120s）。
@@ -142,14 +140,14 @@ Anime Edition 身份与官方插件不同；后续保持既有 Fork GUID、程�
 
 ### 备份
 
-勾选「设置」导出/导入时，备份格式仍为 v3，并包含 `AnimeCollectionRulesJson`、`AnimeApprovedCollectionKeys`、`AnimeCollectionAliasesJson`。旧备份缺这三项时保留目标机现值。`owned-collections.json`（合集归属）**仍不在**设置备份中；换机后需重新预览/批准。可选 `AnimeMappingUrl` 写入插件配置（随设置备份）；留空使用内置 AniBridge GitHub 地址。
+勾选「设置」导出/导入时，备份格式为 **v5**，设置区含规则/批准/别名/`AnimeDiscardedCollectionKeys`；v4 及更旧备份仍可读，缺字段时保留目标机现值。`owned-collections.json`（合集归属）**仍不在**设置备份中；换机后需重新预览/批准。可选 `AnimeMappingUrl` 写入插件配置（随设置备份）；留空使用内置 AniBridge GitHub 地址。
 
 ## Code and test entry points
 
 - [AnimeCollectionTask.cs](../../../HomeScreenCompanion/AnimeCollectionTask.cs)：扫描、映射下载、规划与 Emby 写入协调。
 - [AnimeMappingIndex.cs](../../../HomeScreenCompanion/AnimeMappingIndex.cs)、[AnimeAniListClient.cs](../../../HomeScreenCompanion/AnimeAniListClient.cs)、[AnimeGraphExpansion.cs](../../../HomeScreenCompanion/AnimeGraphExpansion.cs)：身份与关系数据。
 - [AnimeRelations.cs](../../../HomeScreenCompanion/AnimeRelations.cs)、[AnimeCollectionPolicy.cs](../../../HomeScreenCompanion/AnimeCollectionPolicy.cs)、[AnimeCollectionMembership.cs](../../../HomeScreenCompanion/AnimeCollectionMembership.cs)：确定性规划及安全策略。
-- [AnimeCollectionEditorSupport.cs](../../../HomeScreenCompanion/AnimeCollectionEditorSupport.cs)、[AnimeCollectionGraphSupport.cs](../../../HomeScreenCompanion/AnimeCollectionGraphSupport.cs)：可视编辑改写与关系子图（P2/P3）。
+- [AnimeCollectionEditorSupport.cs](../../../HomeScreenCompanion/AnimeCollectionEditorSupport.cs)：可视编辑改写与废弃名单（P2 / 预览确认）。
 - [PluginConfiguration.cs](../../../HomeScreenCompanion/PluginConfiguration.cs)：真实默认值；[Program.cs](../../../verification/Program.cs)：映射、关系、规则、归属、配置兼容与预览。
 
 ## Operations and troubleshooting

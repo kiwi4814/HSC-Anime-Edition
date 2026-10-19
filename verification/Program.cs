@@ -26,7 +26,7 @@ static partial class Program
             TestExactMembership();
             TestAliasesAndApproval();
             TestCollectionEditorRewrite();
-            TestCollectionGraphSubgraph();
+            TestDiscardedCollections();
             TestP4Polish();
             TestInvalidPolicies();
             TestLegacyStateAndCache();
@@ -275,72 +275,18 @@ static partial class Program
     }
 
 
-    static void TestCollectionGraphSubgraph()
+
+
+    static void TestDiscardedCollections()
     {
-        Assert(AnimeCollectionGraphSupport.RelationLabelZh("SEQUEL") == "续作", "Sequel label is plain Chinese");
-        Assert(AnimeCollectionGraphSupport.RelationLabelZh("PREQUEL") == "前传", "Prequel label is plain Chinese");
-        Assert(AnimeCollectionGraphSupport.RelationLabelZh("SIDE_STORY") == "外传", "Side story label is plain Chinese");
-        Assert(AnimeCollectionGraphSupport.RelationLabelZh("PARENT") == "母作品", "Parent label is plain Chinese");
-        Assert(AnimeCollectionGraphSupport.RelationLabelZh("SPIN_OFF") == "衍生", "Spin-off label is plain Chinese");
-        Assert(AnimeCollectionGraphSupport.RelationLabelZh("ALTERNATIVE_VERSION") == "另一版本", "Alternative label is plain Chinese");
-        Assert(!AnimeCollectionGraphSupport.RelationLabelZh("SEQUEL").Contains("SEQUEL"), "Labels never expose English enum as primary text");
-
-        // Fate-like multi-line: root → sequel A, root → spin-off, sequel A → sequel B; missing local title for spin-off.
-        var records = new[]
-        {
-            new AnimeRelationRecord
-            {
-                Id = A, Name = "星桥纪事", FetchedUtc = DateTime.UtcNow,
-                Relations = new()
-                {
-                    new() { Id = B, Relation = "SEQUEL", Name = "星桥纪事 续篇", Type = "ANIME" },
-                    new() { Id = C, Relation = "SPIN_OFF", Name = "星桥外传", Type = "ANIME" },
-                    new() { Id = D, Relation = "PREQUEL", Name = "星桥前史", Type = "ANIME" }
-                }
-            },
-            new AnimeRelationRecord
-            {
-                Id = B, Name = "星桥纪事 续篇", FetchedUtc = DateTime.UtcNow,
-                Relations = new()
-                {
-                    new() { Id = A, Relation = "PREQUEL", Name = "星桥纪事", Type = "ANIME" }
-                }
-            },
-            new AnimeRelationRecord
-            {
-                Id = C, Name = "星桥外传", FetchedUtc = DateTime.UtcNow,
-                Relations = new()
-                {
-                    new() { Id = A, Relation = "PARENT", Name = "星桥纪事", Type = "ANIME" }
-                }
-            },
-            new AnimeRelationRecord
-            {
-                Id = D, Name = "星桥前史", FetchedUtc = DateTime.UtcNow,
-                Relations = new()
-                {
-                    new() { Id = A, Relation = "SEQUEL", Name = "星桥纪事", Type = "ANIME" }
-                }
-            }
-        };
-        var library = new Dictionary<int, string> { [A] = "本地星桥", [B] = "本地续篇", [D] = "本地前史" };
-        var selected = new[] { A, B };
-        var graph = AnimeCollectionGraphSupport.Build(A, records, library, selected, includeSpinOffs: true);
-        Assert(graph.Nodes.Count >= 4, "Multi-line subgraph keeps prequel/sequel/spin-off nodes");
-        Assert(graph.Edges.Count >= 3, "Subgraph keeps continuity edges");
-        Assert(graph.Nodes.Any(n => n.AniListId == C && !n.InLibrary && n.Title.Contains("外传")), "Missing library node is gray-path capable");
-        Assert(graph.Nodes.Single(n => n.AniListId == A).InLibrary && graph.Nodes.Single(n => n.AniListId == A).InCollection, "Seed in library + collection highlighted");
-        Assert(graph.Edges.Any(e => e.Label == "续作") && graph.Edges.Any(e => e.Label == "前传"), "Edge labels use human words");
-        Assert(graph.Edges.Any(e => e.Label == "衍生" || e.Label == "母作品"), "Spin-off/parent edges labeled in Chinese");
-        Assert(graph.Nodes.All(n => n.X >= 0 && n.Y >= 0), "Layered layout assigns non-negative coordinates");
-        Assert(graph.Nodes.Select(n => n.AniListId).Distinct().Count() == graph.Nodes.Count, "Node ids unique");
-
-        var noSpin = AnimeCollectionGraphSupport.Build(A, records, library, selected, includeSpinOffs: false);
-        Assert(!noSpin.Nodes.Any(n => n.AniListId == C) || !noSpin.Edges.Any(e => e.From == A && e.To == C && e.Relation == "SPIN_OFF"),
-            "Disabling spin-offs omits spin-off walk from seed");
-
-        var ids = AnimeCollectionGraphSupport.ParseAniListIds(new[] { "anilist:1900000101", "tmdb_show:1", "anilist:1900000102", "anilist:1900000101" });
-        Assert(ids.SequenceEqual(new[] { A, B }), "ParseAniListIds keeps unique positive anilist ids");
+        string discarded = AnimeCollectionEditorSupport.AddDiscardedKey("", Key);
+        Assert(discarded.Contains(Key), "Discarded key persisted");
+        discarded = AnimeCollectionEditorSupport.AddDiscardedKey(discarded, Key);
+        Assert(AnimeCollectionEditorSupport.ParseDiscardedKeys(discarded).Count == 1, "Discarded keys are unique");
+        discarded = AnimeCollectionEditorSupport.RemoveDiscardedKey(discarded, Key);
+        Assert(AnimeCollectionEditorSupport.ParseDiscardedKeys(discarded).Count == 0, "Removed discarded key");
+        Reject(() => AnimeCollectionEditorSupport.AddDiscardedKey("", "not-a-key"), "Invalid discarded key rejected");
+        Assert(new PluginConfiguration().AnimeDiscardedCollectionKeys == "", "Discarded keys default empty");
     }
 
     static void TestP4Polish()

@@ -535,19 +535,6 @@
             border: 1px solid rgba(82,181,75,0.35); border-radius: 8px;
             background: rgba(82,181,75,0.06);
         }
-        .anime-sync-mode {
-            display: inline-flex; gap: 0; border: 1px solid var(--line-color);
-            border-radius: 8px; overflow: hidden; margin: 8px 0 4px;
-        }
-        .anime-sync-mode label {
-            margin: 0; padding: 8px 16px; cursor: pointer; font-size: 0.9em; font-weight: 600;
-            background: transparent; border-right: 1px solid var(--line-color);
-        }
-        .anime-sync-mode label:last-child { border-right: none; }
-        .anime-sync-mode input { position: absolute; opacity: 0; pointer-events: none; }
-        .anime-sync-mode label.active {
-            background: rgba(82,181,75,0.22); color: #52B54B;
-        }
         .anime-global-dry-hint {
             display: none; margin: 10px 0 0; padding: 8px 12px; border-radius: 6px;
             border: 1px solid rgba(232,168,56,0.45); background: rgba(232,168,56,0.08);
@@ -669,58 +656,72 @@
         }
         .anime-editor-hint { font-size: 0.88em; opacity: 0.8; margin-top: 10px; line-height: 1.55; }
 
-        .anime-graph-section { margin-top: 22px; }
-        .anime-graph-heading {
-            display: flex; align-items: baseline; justify-content: space-between;
-            gap: 12px; flex-wrap: wrap; margin-bottom: 8px;
+        /* Confirm-create panel (manual sync) */
+        .anime-confirm-overlay {
+            display: none; position: fixed; inset: 0; z-index: 12000;
+            background: rgba(0,0,0,0.55); align-items: center; justify-content: center;
+            padding: 24px 16px;
         }
-        .anime-graph-heading .inputLabel { margin: 0; }
-        .anime-graph-hint { font-size: 0.85em; opacity: 0.8; line-height: 1.5; margin: 0 0 10px; }
-        .anime-graph-legend {
-            display: flex; flex-wrap: wrap; gap: 10px 14px;
-            font-size: 0.82em; opacity: 0.85; margin-bottom: 10px;
+        .anime-confirm-overlay.open { display: flex; }
+        .anime-confirm-panel {
+            background: var(--theme-body-bg, var(--theme-background, #1c1c1c));
+            color: inherit; border-radius: 12px; width: min(920px, 96vw);
+            max-height: min(88vh, 900px); display: flex; flex-direction: column;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.45); border: 1px solid var(--line-color);
         }
-        .anime-graph-legend span::before {
-            content: ''; display: inline-block; width: 18px; height: 2px;
-            background: rgba(150,160,180,0.85); vertical-align: middle; margin-right: 6px;
+        .anime-confirm-header {
+            padding: 16px 20px 10px; border-bottom: 1px solid var(--line-color);
         }
-        .anime-graph-scroll {
-            overflow: auto; max-height: 420px;
+        .anime-confirm-header h2 { margin: 0 0 8px; font-size: 1.2em; }
+        .anime-confirm-summary {
+            font-size: 0.92em; opacity: 0.9; line-height: 1.5;
+        }
+        .anime-confirm-body {
+            overflow: auto; padding: 12px 20px 8px; flex: 1;
+        }
+        .anime-confirm-section { margin-bottom: 14px; }
+        .anime-confirm-section-title {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px; font-weight: 650; margin: 8px 0;
+        }
+        .anime-confirm-section-title button {
+            border: none; background: transparent; color: inherit; opacity: 0.8;
+            cursor: pointer; font-size: 0.88em; padding: 4px 6px;
+        }
+        .anime-confirm-item {
             border: 1px solid var(--line-color); border-radius: 10px;
-            background: var(--theme-background-level2); padding: 8px;
+            padding: 12px 14px; margin-bottom: 10px;
+            background: var(--theme-background-level2);
         }
-        .anime-graph-svg { display: block; min-width: 280px; }
-        .anime-graph-edge { stroke: rgba(140,150,170,0.75); stroke-width: 1.6; fill: none; }
-        .anime-graph-edge-label {
-            font-size: 11px; fill: currentColor; opacity: 0.72;
-            pointer-events: none;
+        .anime-confirm-item.discarded { opacity: 0.55; }
+        .anime-confirm-item-top {
+            display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
         }
-        .anime-graph-node {
-            cursor: pointer;
+        .anime-confirm-item-top input[type="text"] {
+            flex: 1; min-width: 160px; padding: 6px 10px; border-radius: 6px;
+            border: 1px solid var(--line-color); background: transparent; color: inherit;
         }
-        .anime-graph-node rect {
-            stroke-width: 1.5; rx: 8; ry: 8;
+        .anime-confirm-reason { font-size: 0.88em; opacity: 0.85; margin: 8px 0 6px; line-height: 1.5; }
+        .anime-confirm-members { font-size: 0.86em; opacity: 0.8; line-height: 1.5; }
+        .anime-confirm-members button {
+            border: none; background: transparent; color: inherit; opacity: 0.85;
+            cursor: pointer; padding: 0; text-decoration: underline;
         }
-        .anime-graph-node.in-collection rect {
-            fill: rgba(82,181,75,0.22); stroke: rgba(82,181,75,0.9);
+        .anime-confirm-member-checks { margin-top: 8px; }
+        .anime-confirm-member-checks label {
+            display: flex; gap: 8px; align-items: flex-start; margin: 4px 0;
+            font-size: 0.86em; cursor: pointer;
         }
-        .anime-graph-node.in-library:not(.in-collection) rect {
-            fill: rgba(74,163,223,0.14); stroke: rgba(74,163,223,0.75);
+        .anime-confirm-footer {
+            display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end;
+            padding: 12px 20px 16px; border-top: 1px solid var(--line-color);
         }
-        .anime-graph-node.missing rect {
-            fill: rgba(120,120,120,0.12); stroke: rgba(140,140,140,0.55);
+        .anime-confirm-discard-btn {
+            border: 1px solid rgba(220,80,80,0.55); background: transparent;
+            color: inherit; border-radius: 6px; padding: 5px 12px; cursor: pointer;
+            font-size: 0.88em;
         }
-        .anime-graph-node text.title {
-            font-size: 12px; font-weight: 650; fill: currentColor;
-            pointer-events: none;
-        }
-        .anime-graph-node text.meta {
-            font-size: 10px; fill: currentColor; opacity: 0.7;
-            pointer-events: none;
-        }
-        .anime-graph-empty {
-            font-size: 0.88em; opacity: 0.75; padding: 16px 8px; line-height: 1.55;
-        }
+        .anime-confirm-discard-btn:hover { background: rgba(220,80,80,0.12); }
 
         /* Home Screen tab */
         .hsc-card {
@@ -1678,15 +1679,11 @@
                         <div class="fieldDescription">建议用独特前缀，避免与手工合集重名。</div>
                     </div>
 
-                    <div style="margin-top:14px;">
-                        <div class="inputLabel" style="margin-bottom:4px;">同步方式</div>
-                        <div class="anime-sync-mode" id="animeSyncModeGroup" role="radiogroup" aria-label="同步方式">
-                            <label id="lblAnimeSyncWrite"><input type="radio" name="animeSyncMode" value="write" id="animeSyncModeWrite" />写入媒体库</label>
-                            <label id="lblAnimeSyncPreview"><input type="radio" name="animeSyncMode" value="preview" id="animeSyncModePreview" />先预览</label>
-                        </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:14px;">
+                        <label><input is="emby-checkbox" type="checkbox" id="chkAnimeScheduledWrite" /><span>定时自动写入</span></label>
+                        <div class="fieldDescription">打开后，计划任务会直接创建或更新合集。关闭则计划任务也只记预览摘要。点「立即同步」会先算出预览，再在确认框里一键创建。</div>
                         <input is="emby-checkbox" type="checkbox" id="chkAnimeDryRun" style="display:none;" tabindex="-1" aria-hidden="true" />
-                        <div class="fieldDescription">先预览只展示预计结果，不改媒体库。写入媒体库会直接创建或更新插件管理的合集。</div>
-                        <div class="anime-global-dry-hint" id="animeGlobalDryHint">设置里的「仅预览」总开关仍开着，这次即使选写入也不会真正改合集。可到设置里关闭后再同步。</div>
+                        <div class="anime-global-dry-hint" id="animeGlobalDryHint">设置里的「仅预览」总开关仍开着，确认创建时也无法写入。可到设置里关闭后再同步。</div>
                     </div>
 
                     <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:14px;">
@@ -1710,7 +1707,7 @@
                             <span class="fieldDescription" id="animeCardsHint" style="margin:0;"></span>
                         </div>
                         <div id="animeCardGrid" class="anime-card-grid"></div>
-                        <div id="animeCardEmpty" class="anime-card-empty" style="display:none;margin-top:12px;">还没有合集结果。先打开「启用动漫合集」，再点「立即同步」。选「先预览」时，这里会显示预计会建哪些合集。</div>
+                        <div id="animeCardEmpty" class="anime-card-empty" style="display:none;margin-top:12px;">还没有合集结果。先打开「启用动漫合集」，再点「立即同步」。同步后会先弹出确认创建。</div>
                     </div>
 
                     <div id="animeRemindersSection" class="anime-reminders-section">
@@ -1747,18 +1744,6 @@
                     <div class="inputContainer anime-editor-search-wrap" style="margin-top:8px;">
                         <input is="emby-input" type="text" id="txtAnimeEditorSearch" label="从媒体库添加" placeholder="输入片名搜索…" autocomplete="off" />
                         <div id="animeEditorSearchResults" class="anime-editor-search-results"></div>
-                    </div>
-                    <div class="anime-graph-section" id="animeEditorGraphSection">
-                        <div class="anime-graph-heading">
-                            <div class="inputLabel">关系图</div>
-                            <span class="fieldDescription" id="animeGraphStatus" style="margin:0;"></span>
-                        </div>
-                        <p class="anime-graph-hint" id="animeGraphHint">点选作品可加入或移出本合集，与上方成员列表同步。灰色表示库里暂时没有。</p>
-                        <div class="anime-graph-legend" id="animeGraphLegend"></div>
-                        <div class="anime-graph-scroll" id="animeGraphScroll">
-                            <div class="anime-graph-empty" id="animeGraphEmpty">正在加载关系图…</div>
-                            <svg class="anime-graph-svg" id="animeGraphSvg" style="display:none;" role="img" aria-label="合集关系图"></svg>
-                        </div>
                     </div>
                     <div class="anime-editor-actions">
                         <button type="button" is="emby-button" class="raised button-submit" id="btnAnimeEditorSave">保存</button>
@@ -2544,6 +2529,37 @@
                 <div style="text-align:right;margin-top:24px;padding-top:16px;border-top:1px solid var(--line-color,rgba(128,128,128,0.3));">
                     <button is="emby-button" type="button" id="btnCloseTagTargetHelp" class="raised button-submit" style="background:#00a4dc;color:white;padding:0 25px;">知道了</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="anime-confirm-overlay" id="animeConfirmOverlay" aria-hidden="true">
+        <div class="anime-confirm-panel" role="dialog" aria-modal="true" aria-labelledby="animeConfirmTitle">
+            <div class="anime-confirm-header">
+                <h2 id="animeConfirmTitle">确认创建</h2>
+                <div class="anime-confirm-summary" id="animeConfirmSummary"></div>
+            </div>
+            <div class="anime-confirm-body" id="animeConfirmBody">
+                <div class="anime-confirm-section" id="animeConfirmDoubtSection">
+                    <div class="anime-confirm-section-title">
+                        <span id="animeConfirmDoubtTitle">有疑问</span>
+                    </div>
+                    <div id="animeConfirmDoubtList"></div>
+                </div>
+                <div class="anime-confirm-section" id="animeConfirmOkSection">
+                    <div class="anime-confirm-section-title">
+                        <span id="animeConfirmOkTitle">没问题</span>
+                        <button type="button" id="btnAnimeConfirmToggleOk">展开</button>
+                    </div>
+                    <div id="animeConfirmOkList" style="display:none;"></div>
+                </div>
+            </div>
+            <div class="anime-confirm-footer">
+                <button type="button" is="emby-button" class="raised btn-neutral" id="btnAnimeConfirmCancel">取消</button>
+                <button type="button" is="emby-button" class="raised button-submit" id="btnAnimeConfirmCreate">
+                    <i class="md-icon" style="margin-right:6px;">check</i>一键创建
+                </button>
             </div>
         </div>
     </div>

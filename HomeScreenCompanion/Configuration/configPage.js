@@ -2948,24 +2948,18 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
     function syncAnimeModeFromCheckbox(view) {
         var dry = view.querySelector('#chkAnimeDryRun');
-        var write = view.querySelector('#animeSyncModeWrite');
-        var preview = view.querySelector('#animeSyncModePreview');
-        if (!dry || !write || !preview) return;
-        if (dry.checked) { preview.checked = true; write.checked = false; }
-        else { write.checked = true; preview.checked = false; }
-        var lblW = view.querySelector('#lblAnimeSyncWrite');
-        var lblP = view.querySelector('#lblAnimeSyncPreview');
-        if (lblW) lblW.classList.toggle('active', write.checked);
-        if (lblP) lblP.classList.toggle('active', preview.checked);
+        var scheduled = view.querySelector('#chkAnimeScheduledWrite');
+        if (!dry || !scheduled) return;
+        scheduled.checked = !dry.checked;
         updateAnimeGlobalDryHint(view);
     }
 
-    function syncAnimeCheckboxFromMode(view) {
+    function syncAnimeCheckboxFromScheduled(view) {
         var dry = view.querySelector('#chkAnimeDryRun');
-        var preview = view.querySelector('#animeSyncModePreview');
-        if (!dry || !preview) return;
-        dry.checked = !!preview.checked;
-        syncAnimeModeFromCheckbox(view);
+        var scheduled = view.querySelector('#chkAnimeScheduledWrite');
+        if (!dry || !scheduled) return;
+        dry.checked = !scheduled.checked;
+        updateAnimeGlobalDryHint(view);
         try { checkFormState(); } catch (e) { }
     }
 
@@ -2978,8 +2972,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         } catch (e) { }
         var live = view.querySelector('#chkDryRunMode');
         if (live) globalDry = !!live.checked;
-        var wantWrite = view.querySelector('#animeSyncModeWrite');
-        hint.style.display = (globalDry && wantWrite && wantWrite.checked) ? 'block' : 'none';
+        hint.style.display = globalDry ? 'block' : 'none';
     }
 
     function animeStatusLabel(status) {
@@ -3092,9 +3085,9 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             if (empty) {
                 empty.style.display = '';
                 if (!summary || (!summary.StatusText && !(summary.Cards || []).length && !(summary.Owned || []).length)) {
-                    empty.textContent = '还没有合集结果。先打开「启用动漫合集」，再点「立即同步」。选「先预览」时，这里会显示预计会建哪些合集。';
+                    empty.textContent = '还没有合集结果。先打开「启用动漫合集」，再点「立即同步」。同步后会先弹出确认创建。';
                 } else if (dry) {
-                    empty.textContent = '这次预览没有合集候选。确认已启用，或先同步一次让关系数据准备好。';
+                    empty.textContent = '这次预览没有合集候选。确认已启用，或稍后再点「立即同步」。';
                 } else {
                     empty.textContent = '当前没有可显示的合集。启用后点「立即同步」即可生成。';
                 }
@@ -3265,8 +3258,6 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         if (search) search.value = '';
         var results = view.querySelector('#animeEditorSearchResults');
         if (results) { results.innerHTML = ''; results.style.display = 'none'; }
-        resetAnimeCollectionGraph(view);
-
         window.ApiClient.getJSON(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/CollectionEditor', { Key: key }))
             .then(function (data) {
                 if (!data || !data.Success) {
@@ -3293,7 +3284,6 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                         ? '当前按你保存的成员名单同步。可改名、勾选成员后保存；也可改回自动归类。'
                         : '当前仍跟自动分组。保存后会记住你勾选的成员；显示名称会记下来供新建合集使用。';
                 }
-                loadAnimeCollectionGraph(view);
             })
             .catch(function (err) {
                 if (hint) hint.textContent = '加载失败。';
@@ -3324,7 +3314,6 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             chk.checked = !!m.Selected;
             chk.addEventListener('change', function () {
                 m.Selected = !!chk.checked;
-                syncAnimeGraphSelection(view);
             });
             var text = document.createElement('div');
             var title = document.createElement('div');
@@ -3342,238 +3331,8 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             row.appendChild(label);
             box.appendChild(row);
         });
-        syncAnimeGraphSelection(view);
     }
 
-
-    function resetAnimeCollectionGraph(view) {
-        view._animeGraph = null;
-        var status = view.querySelector('#animeGraphStatus');
-        if (status) status.textContent = '';
-        var empty = view.querySelector('#animeGraphEmpty');
-        if (empty) {
-            empty.style.display = '';
-            empty.textContent = '正在加载关系图…';
-        }
-        var svg = view.querySelector('#animeGraphSvg');
-        if (svg) {
-            svg.innerHTML = '';
-            svg.style.display = 'none';
-            svg.removeAttribute('width');
-            svg.removeAttribute('height');
-            svg.removeAttribute('viewBox');
-        }
-        var legend = view.querySelector('#animeGraphLegend');
-        if (legend) legend.innerHTML = '';
-    }
-
-    function loadAnimeCollectionGraph(view) {
-        var state = view._animeEditor;
-        if (!state || !state.key) return;
-        var status = view.querySelector('#animeGraphStatus');
-        var empty = view.querySelector('#animeGraphEmpty');
-        var svg = view.querySelector('#animeGraphSvg');
-        if (status) status.textContent = '加载中…';
-        if (empty) {
-            empty.style.display = '';
-            empty.textContent = '正在加载关系图…';
-        }
-        if (svg) { svg.style.display = 'none'; svg.innerHTML = ''; }
-        var reqId = (view._animeGraphReqId = (view._animeGraphReqId || 0) + 1);
-        window.ApiClient.getJSON(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/CollectionGraph', { Key: state.key }))
-            .then(function (data) {
-                if (reqId !== view._animeGraphReqId) return;
-                if (!data || !data.Success) {
-                    view._animeGraph = null;
-                    if (status) status.textContent = '';
-                    if (empty) {
-                        empty.style.display = '';
-                        empty.textContent = (data && data.Message) || '暂时无法显示关系图。';
-                    }
-                    return;
-                }
-                view._animeGraph = data;
-                renderAnimeCollectionGraph(view);
-            })
-            .catch(function () {
-                if (reqId !== view._animeGraphReqId) return;
-                view._animeGraph = null;
-                if (status) status.textContent = '';
-                if (empty) {
-                    empty.style.display = '';
-                    empty.textContent = '关系图加载失败。可稍后重试，或先同步一次。';
-                }
-            });
-    }
-
-    function animeGraphSelectedIncludeIds(view) {
-        var state = view._animeEditor || { members: [] };
-        var set = {};
-        (state.members || []).forEach(function (m) {
-            if (m && m.Selected && m.IncludeId) set[m.IncludeId] = true;
-        });
-        return set;
-    }
-
-    function truncateAnimeGraphTitle(title, maxChars) {
-        title = (title || '未命名作品').trim();
-        maxChars = maxChars || 14;
-        if (title.length <= maxChars) return title;
-        return title.slice(0, maxChars - 1) + '…';
-    }
-
-    function renderAnimeCollectionGraph(view) {
-        var data = view._animeGraph;
-        var empty = view.querySelector('#animeGraphEmpty');
-        var svg = view.querySelector('#animeGraphSvg');
-        var status = view.querySelector('#animeGraphStatus');
-        var legend = view.querySelector('#animeGraphLegend');
-        if (!svg) return;
-
-        if (!data || !(data.Nodes || []).length) {
-            svg.style.display = 'none';
-            svg.innerHTML = '';
-            if (empty) {
-                empty.style.display = '';
-                empty.textContent = (data && data.Message) || '这个合集暂时没有可显示的关系。';
-            }
-            if (status) status.textContent = '';
-            if (legend) legend.innerHTML = '';
-            return;
-        }
-
-        if (empty) empty.style.display = 'none';
-        if (status) {
-            status.textContent = data.Truncated
-                ? '已截取部分节点'
-                : ((data.Nodes || []).length + ' 部相关作品');
-        }
-        if (legend) {
-            legend.innerHTML = '';
-            (data.Legend || []).forEach(function (item) {
-                var span = document.createElement('span');
-                span.textContent = (item && item.Label) || '';
-                if (span.textContent) legend.appendChild(span);
-            });
-        }
-
-        var selected = animeGraphSelectedIncludeIds(view);
-        var width = Math.max(320, data.Width || 640);
-        var height = Math.max(120, data.Height || 240);
-        var nodeW = 148;
-        var nodeH = 48;
-        svg.setAttribute('width', String(width));
-        svg.setAttribute('height', String(height));
-        svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
-        svg.style.display = 'block';
-        svg.innerHTML = '';
-
-        var positions = {};
-        (data.Nodes || []).forEach(function (n) {
-            positions[n.AniListId] = { x: n.X || 0, y: n.Y || 0, node: n };
-        });
-
-        // Edges first
-        (data.Edges || []).forEach(function (e) {
-            var a = positions[e.From];
-            var b = positions[e.To];
-            if (!a || !b) return;
-            var x1 = a.x + nodeW;
-            var y1 = a.y + nodeH / 2;
-            var x2 = b.x;
-            var y2 = b.y + nodeH / 2;
-            if (a.x > b.x) {
-                x1 = a.x;
-                x2 = b.x + nodeW;
-            }
-            var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', String(x1));
-            line.setAttribute('y1', String(y1));
-            line.setAttribute('x2', String(x2));
-            line.setAttribute('y2', String(y2));
-            line.setAttribute('class', 'anime-graph-edge');
-            svg.appendChild(line);
-            var mx = (x1 + x2) / 2;
-            var my = (y1 + y2) / 2 - 4;
-            var label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label.setAttribute('x', String(mx));
-            label.setAttribute('y', String(my));
-            label.setAttribute('text-anchor', 'middle');
-            label.setAttribute('class', 'anime-graph-edge-label');
-            label.textContent = e.Label || '';
-            svg.appendChild(label);
-        });
-
-        (data.Nodes || []).forEach(function (n) {
-            var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            var inColl = !!(n.IncludeId && selected[n.IncludeId]);
-            var cls = 'anime-graph-node';
-            if (inColl) cls += ' in-collection';
-            else if (n.InLibrary) cls += ' in-library';
-            else cls += ' missing';
-            g.setAttribute('class', cls);
-            g.setAttribute('data-include-id', n.IncludeId || '');
-            g.setAttribute('data-anilist-id', String(n.AniListId || ''));
-            g.setAttribute('transform', 'translate(' + (n.X || 0) + ',' + (n.Y || 0) + ')');
-
-            var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            rect.setAttribute('width', String(nodeW));
-            rect.setAttribute('height', String(nodeH));
-            g.appendChild(rect);
-
-            var title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            title.setAttribute('x', '10');
-            title.setAttribute('y', n.InLibrary ? '20' : '18');
-            title.setAttribute('class', 'title');
-            title.textContent = truncateAnimeGraphTitle(n.Title, 12);
-            g.appendChild(title);
-
-            var meta = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            meta.setAttribute('x', '10');
-            meta.setAttribute('y', '36');
-            meta.setAttribute('class', 'meta');
-            if (!n.InLibrary) meta.textContent = '库中没有';
-            else if (inColl) meta.textContent = '已在合集 · 再点移出';
-            else meta.textContent = '在库中 · 点选加入';
-            g.appendChild(meta);
-
-            g.addEventListener('click', function () {
-                toggleAnimeGraphNode(view, n);
-            });
-            svg.appendChild(g);
-        });
-    }
-
-    function syncAnimeGraphSelection(view) {
-        if (!view._animeGraph || !(view._animeGraph.Nodes || []).length) return;
-        // Re-render is cheap for the capped node set and keeps labels accurate.
-        renderAnimeCollectionGraph(view);
-    }
-
-    function toggleAnimeGraphNode(view, node) {
-        if (!view._animeEditor || !node) return;
-        var includeId = node.IncludeId || '';
-        if (!includeId) return;
-        var members = view._animeEditor.members || [];
-        var found = null;
-        for (var i = 0; i < members.length; i++) {
-            if (members[i].IncludeId === includeId) { found = members[i]; break; }
-        }
-        if (found) {
-            found.Selected = !found.Selected;
-            if (node.Title) found.Title = found.Title || node.Title;
-            if (node.InLibrary) found.InLibrary = true;
-        } else {
-            members.push({
-                IncludeId: includeId,
-                Title: node.Title || '未命名作品',
-                InLibrary: !!node.InLibrary,
-                Selected: true
-            });
-            view._animeEditor.members = members;
-        }
-        renderAnimeEditorMembers(view);
-    }
 
     function animeEditorAddMember(view, hit) {
         if (!view._animeEditor) return;
@@ -3882,6 +3641,303 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         });
     }
 
+    function animePostJson(path, body) {
+        var tok = window.ApiClient.accessToken();
+        var headers = { 'Content-Type': 'application/json' };
+        if (tok) headers['X-MediaBrowser-Token'] = tok;
+        return fetch(window.ApiClient.getUrl(path), {
+            method: 'POST',
+            headers: headers,
+            credentials: 'same-origin',
+            body: JSON.stringify(body || {})
+        }).then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        });
+    }
+
+    function animeConfirmStripPrefix(view, name) {
+        name = (name || '').trim();
+        var prefixEl = view.querySelector('#txtAnimePrefix');
+        var prefix = prefixEl ? (prefixEl.value || '') : '';
+        if (prefix && name.indexOf(prefix) === 0) name = name.slice(prefix.length).trim();
+        return name;
+    }
+
+    function animeConfirmHumanReason(card, reminders) {
+        var reason = (card && card.Reason) || '';
+        if (reason) return reason;
+        var key = (card && card.Key) || '';
+        var hit = (reminders || []).filter(function (r) {
+            return r && !r.Handled && r.CollectionKey === key;
+        })[0];
+        if (hit && hit.Reason) return hit.Reason;
+        if (hit && hit.TypeLabel) return hit.TypeLabel;
+        if (card && card.HasReminder) return '需要你看一眼再决定要不要创建。';
+        return '';
+    }
+
+    function openAnimeConfirmPanel(view, summary) {
+        summary = summary || {};
+        var overlay = view.querySelector('#animeConfirmOverlay') || document.getElementById('animeConfirmOverlay');
+        if (!overlay) {
+            window.Dashboard.alert('确认创建面板暂时不可用。');
+            return;
+        }
+        var cards = (summary.Cards || []).filter(function (c) { return c && c.Key; });
+        var reminders = summary.ReminderItems || [];
+        var items = cards.map(function (c) {
+            return {
+                key: c.Key || '',
+                name: animeConfirmStripPrefix(view, c.Name || ''),
+                fullName: c.Name || '',
+                status: c.Status || '',
+                reason: animeConfirmHumanReason(c, reminders),
+                memberTitles: (c.MemberTitles || []).slice(),
+                memberIncludeIds: (c.MemberIncludeIds || []).slice(),
+                moreCount: c.MoreCount || 0,
+                hasReminder: !!c.HasReminder,
+                discarded: false,
+                excluded: {},
+                membersExpanded: false
+            };
+        });
+        view._animeConfirm = { items: items, sessionDiscarded: 0 };
+        renderAnimeConfirmPanel(view);
+        overlay.classList.add('open');
+        overlay.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeAnimeConfirmPanel(view) {
+        var overlay = view.querySelector('#animeConfirmOverlay') || document.getElementById('animeConfirmOverlay');
+        if (overlay) {
+            overlay.classList.remove('open');
+            overlay.setAttribute('aria-hidden', 'true');
+        }
+    }
+
+    function animeConfirmCounts(state) {
+        var items = (state && state.items) || [];
+        var active = items.filter(function (i) { return !i.discarded; });
+        var n = 0, m = 0, k = 0;
+        active.forEach(function (i) {
+            if (i.status === 'will_create' || i.status === 'created') n++;
+            else if (i.status === 'will_update' || i.status === 'updated') m++;
+            if (i.hasReminder || i.status === 'skipped' || i.reason) k++;
+        });
+        var d = items.filter(function (i) { return i.discarded; }).length;
+        return { create: n, update: m, doubt: k, discarded: d, active: active.length };
+    }
+
+    function animeConfirmIsDoubt(item) {
+        return !!(item.hasReminder || item.status === 'skipped' || (item.reason && item.reason.length));
+    }
+
+    function renderAnimeConfirmPanel(view) {
+        var state = view._animeConfirm;
+        if (!state) return;
+        var counts = animeConfirmCounts(state);
+        var summaryEl = view.querySelector('#animeConfirmSummary') || document.getElementById('animeConfirmSummary');
+        if (summaryEl) {
+            summaryEl.textContent = '将新建 ' + counts.create + ' · 将更新 ' + counts.update +
+                ' · 有疑问 ' + counts.doubt + ' · 已废弃 ' + counts.discarded;
+        }
+        var doubtTitle = view.querySelector('#animeConfirmDoubtTitle') || document.getElementById('animeConfirmDoubtTitle');
+        var okTitle = view.querySelector('#animeConfirmOkTitle') || document.getElementById('animeConfirmOkTitle');
+        var doubtList = view.querySelector('#animeConfirmDoubtList') || document.getElementById('animeConfirmDoubtList');
+        var okList = view.querySelector('#animeConfirmOkList') || document.getElementById('animeConfirmOkList');
+        var doubtItems = state.items.filter(function (i) { return !i.discarded && animeConfirmIsDoubt(i); });
+        var okItems = state.items.filter(function (i) { return !i.discarded && !animeConfirmIsDoubt(i); });
+        if (doubtTitle) doubtTitle.textContent = '有疑问（' + doubtItems.length + '）';
+        if (okTitle) okTitle.textContent = '没问题 · 其余 ' + okItems.length + ' 个合集';
+        function buildList(el, list, collapsedDefault) {
+            if (!el) return;
+            el.innerHTML = '';
+            if (!list.length) {
+                var empty = document.createElement('div');
+                empty.className = 'fieldDescription';
+                empty.textContent = '这里暂时没有合集。';
+                el.appendChild(empty);
+                return;
+            }
+            list.forEach(function (item) {
+                el.appendChild(buildAnimeConfirmItem(view, item));
+            });
+        }
+        buildList(doubtList, doubtItems);
+        buildList(okList, okItems);
+        var okSection = view.querySelector('#animeConfirmOkSection') || document.getElementById('animeConfirmOkSection');
+        if (okSection) okSection.style.display = okItems.length ? '' : 'none';
+        var doubtSection = view.querySelector('#animeConfirmDoubtSection') || document.getElementById('animeConfirmDoubtSection');
+        if (doubtSection) doubtSection.style.display = doubtItems.length ? '' : 'none';
+        var toggle = view.querySelector('#btnAnimeConfirmToggleOk') || document.getElementById('btnAnimeConfirmToggleOk');
+        if (toggle && okList) {
+            var open = okList.style.display !== 'none';
+            toggle.textContent = open ? '收起' : '展开';
+        }
+    }
+
+    function buildAnimeConfirmItem(view, item) {
+        var wrap = document.createElement('div');
+        wrap.className = 'anime-confirm-item' + (item.discarded ? ' discarded' : '');
+        var top = document.createElement('div');
+        top.className = 'anime-confirm-item-top';
+        var nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = item.name || '';
+        nameInput.setAttribute('aria-label', '合集显示名');
+        nameInput.addEventListener('input', function () { item.name = nameInput.value; });
+        var discardBtn = document.createElement('button');
+        discardBtn.type = 'button';
+        discardBtn.className = 'anime-confirm-discard-btn';
+        discardBtn.textContent = item.discarded ? '已废弃' : '废弃';
+        discardBtn.disabled = !!item.discarded;
+        discardBtn.addEventListener('click', function () { discardAnimeConfirmItem(view, item); });
+        top.appendChild(nameInput);
+        top.appendChild(discardBtn);
+        wrap.appendChild(top);
+        if (item.reason) {
+            var reason = document.createElement('div');
+            reason.className = 'anime-confirm-reason';
+            reason.textContent = item.reason;
+            wrap.appendChild(reason);
+        }
+        var members = document.createElement('div');
+        members.className = 'anime-confirm-members';
+        var titles = item.memberTitles || [];
+        var show = titles.slice(0, item.membersExpanded ? titles.length : 4);
+        var text = show.join('、');
+        var hidden = titles.length - show.length + (item.moreCount || 0);
+        if (!item.membersExpanded && (titles.length > 4 || (item.moreCount || 0) > 0)) {
+            var rest = Math.max(0, titles.length - 4) + (item.moreCount || 0);
+            if (text) text += '；';
+            text += '还有 ' + rest + ' 部';
+        }
+        var line = document.createElement('div');
+        line.textContent = text || ('共 ' + ((titles.length) + (item.moreCount || 0) || 0) + ' 部');
+        members.appendChild(line);
+        if (titles.length > 4 || (item.moreCount || 0) > 0) {
+            var moreBtn = document.createElement('button');
+            moreBtn.type = 'button';
+            moreBtn.textContent = item.membersExpanded ? '收起成员' : '展开成员';
+            moreBtn.addEventListener('click', function () {
+                item.membersExpanded = !item.membersExpanded;
+                renderAnimeConfirmPanel(view);
+            });
+            members.appendChild(moreBtn);
+        }
+        wrap.appendChild(members);
+        var ids = item.memberIncludeIds || [];
+        if (ids.length && titles.length) {
+            var checks = document.createElement('div');
+            checks.className = 'anime-confirm-member-checks';
+            var limit = item.membersExpanded ? titles.length : Math.min(titles.length, 8);
+            for (var i = 0; i < limit; i++) {
+                var id = ids[i];
+                if (!id) continue;
+                var lab = document.createElement('label');
+                var chk = document.createElement('input');
+                chk.type = 'checkbox';
+                chk.checked = !item.excluded[id];
+                (function (includeId) {
+                    chk.addEventListener('change', function () {
+                        if (chk.checked) delete item.excluded[includeId];
+                        else item.excluded[includeId] = true;
+                    });
+                })(id);
+                var span = document.createElement('span');
+                span.textContent = titles[i] || '作品';
+                lab.appendChild(chk);
+                lab.appendChild(span);
+                checks.appendChild(lab);
+            }
+            wrap.appendChild(checks);
+        }
+        return wrap;
+    }
+
+    function discardAnimeConfirmItem(view, item) {
+        if (!item || item.discarded || !item.key) return;
+        animePostJson('HomeScreenCompanionAnime/Anime/Discard', { Key: item.key }).then(function (data) {
+            if (!data || !data.Success) {
+                window.Dashboard.alert((data && data.Message) || '废弃失败。');
+                return;
+            }
+            item.discarded = true;
+            renderAnimeConfirmPanel(view);
+        }).catch(function (err) {
+            window.Dashboard.alert('废弃失败：' + (err && err.message ? err.message : err));
+        });
+    }
+
+    function waitAnimeTaskIdle(view, timeoutMs) {
+        timeoutMs = timeoutMs || 20 * 60 * 1000;
+        var started = Date.now();
+        function once() {
+            return window.ApiClient.getJSON(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/Status'))
+                .then(function (st) {
+                    refreshStatus(view);
+                    if (st && st.IsRunning) {
+                        if (Date.now() - started > timeoutMs) {
+                            throw new Error('同步时间较长，请稍后再看结果。');
+                        }
+                        return new Promise(function (resolve) {
+                            setTimeout(function () { resolve(once()); }, 2000);
+                        });
+                    }
+                    return st;
+                });
+        }
+        // brief delay so queued task can flip IsRunning
+        return new Promise(function (resolve) { setTimeout(resolve, 800); }).then(once);
+    }
+
+    function submitAnimeConfirmCreate(view) {
+        var state = view._animeConfirm;
+        if (!state) return;
+        var renames = {};
+        var overrides = {};
+        var discardKeys = [];
+        state.items.forEach(function (item) {
+            if (item.discarded) {
+                discardKeys.push(item.key);
+                return;
+            }
+            var name = (item.name || '').trim();
+            if (name) renames[item.key] = name;
+            var ids = item.memberIncludeIds || [];
+            var excluded = item.excluded || {};
+            var hasExclude = false;
+            var kept = [];
+            ids.forEach(function (id) {
+                if (excluded[id]) hasExclude = true;
+                else kept.push(id);
+            });
+            if (hasExclude && kept.length) overrides[item.key] = kept;
+        });
+        var btn = view.querySelector('#btnAnimeConfirmCreate') || document.getElementById('btnAnimeConfirmCreate');
+        if (btn) btn.disabled = true;
+        animePostJson('HomeScreenCompanionAnime/Anime/ConfirmCreate', {
+            Renames: renames,
+            DiscardKeys: discardKeys,
+            MemberOverrides: overrides
+        }).then(function (data) {
+            if (!data || !data.Success) {
+                window.Dashboard.alert((data && data.Message) || '无法开始创建。');
+                if (btn) btn.disabled = false;
+                return null;
+            }
+            closeAnimeConfirmPanel(view);
+            return waitAnimeTaskIdle(view).then(function () {
+                return loadAnimeLastRunSummary(view);
+            });
+        }).catch(function (err) {
+            window.Dashboard.alert('创建失败：' + (err && err.message ? err.message : err));
+        }).then(function () {
+            if (btn) btn.disabled = false;
+        });
+    }
+
     function runAnimeCollectionTask(view) {
         var enabled = view.querySelector('#chkAnimeEnabled');
         if (enabled && !enabled.checked) {
@@ -3889,21 +3945,24 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             return;
         }
         try { validateAnimePolicy(view); } catch (error) { alert(error.message); return; }
-        syncAnimeCheckboxFromMode(view);
+        syncAnimeCheckboxFromScheduled(view);
         var btn = view.querySelector('#btnAnimeRunNow');
         if (btn) { btn.disabled = true; }
         saveAnimeFieldsThen(view).then(function () {
-            return window.ApiClient.getScheduledTasks();
-        }).then(function (tasks) {
-            var t = tasks.find(function (x) { return x.Key === 'HscAnimeEditionCollections'; });
-            if (!t) {
-                window.Dashboard.alert('未找到动漫合集任务。');
-                return;
+            return animePostJson('HomeScreenCompanionAnime/Anime/ManualPreview', {});
+        }).then(function (data) {
+            if (!data || !data.Success) {
+                window.Dashboard.alert((data && data.Message) || '无法开始预览。');
+                return null;
             }
-            return window.ApiClient.startScheduledTask(t.Id).then(function () {
-                window.Dashboard.alert('动漫合集同步已启动！');
-                refreshStatus(view);
-                loadAnimeLastRunSummary(view);
+            if (window.Dashboard && window.Dashboard.alert) {
+                window.Dashboard.alert('正在预览，完成后会打开确认创建。');
+            }
+            return waitAnimeTaskIdle(view).then(function () {
+                return window.ApiClient.getJSON(window.ApiClient.getUrl('HomeScreenCompanionAnime/Anime/LastRunSummary'));
+            }).then(function (summary) {
+                openAnimeConfirmPanel(view, summary);
+                return summary;
             });
         }).catch(function (err) {
             window.Dashboard.alert('无法启动同步：' + (err && err.message ? err.message : err));
@@ -8677,19 +8736,41 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
 
         var animeDial = view.querySelector('#btnDialAnimeCollections');
         if (animeDial) animeDial.addEventListener('click', function () {
-            runTask('HscAnimeEditionCollections', '动漫合集同步');
+            closeSpeedDial();
+            switchToAnimeTab(view);
+            runAnimeCollectionTask(view);
         });
 
         var animeRunNow = view.querySelector('#btnAnimeRunNow');
         if (animeRunNow) animeRunNow.addEventListener('click', function () { runAnimeCollectionTask(view); });
         var animeGoStudio = view.querySelector('#btnAnimeGoToStudio');
         if (animeGoStudio) animeGoStudio.addEventListener('click', function () { switchToAnimeTab(view); });
-        var modeGroup = view.querySelector('#animeSyncModeGroup');
-        if (modeGroup) {
-            modeGroup.addEventListener('change', function () { syncAnimeCheckboxFromMode(view); });
+        var scheduledWrite = view.querySelector('#chkAnimeScheduledWrite');
+        if (scheduledWrite) {
+            scheduledWrite.addEventListener('change', function () { syncAnimeCheckboxFromScheduled(view); });
         }
         var dryRunChk = view.querySelector('#chkDryRunMode');
         if (dryRunChk) dryRunChk.addEventListener('change', function () { updateAnimeGlobalDryHint(view); });
+        var confirmCancel = view.querySelector('#btnAnimeConfirmCancel') || document.getElementById('btnAnimeConfirmCancel');
+        if (confirmCancel) confirmCancel.addEventListener('click', function () { closeAnimeConfirmPanel(view); });
+        var confirmCreate = view.querySelector('#btnAnimeConfirmCreate') || document.getElementById('btnAnimeConfirmCreate');
+        if (confirmCreate) confirmCreate.addEventListener('click', function () { submitAnimeConfirmCreate(view); });
+        var confirmToggleOk = view.querySelector('#btnAnimeConfirmToggleOk') || document.getElementById('btnAnimeConfirmToggleOk');
+        if (confirmToggleOk) {
+            confirmToggleOk.addEventListener('click', function () {
+                var okList = view.querySelector('#animeConfirmOkList') || document.getElementById('animeConfirmOkList');
+                if (!okList) return;
+                var open = okList.style.display === 'none';
+                okList.style.display = open ? '' : 'none';
+                confirmToggleOk.textContent = open ? '收起' : '展开';
+            });
+        }
+        var confirmOverlay = view.querySelector('#animeConfirmOverlay') || document.getElementById('animeConfirmOverlay');
+        if (confirmOverlay) {
+            confirmOverlay.addEventListener('click', function (ev) {
+                if (ev.target === confirmOverlay) closeAnimeConfirmPanel(view);
+            });
+        }
 
         view.querySelector('#btnDialHomeScreen').addEventListener('click', function () {
             runTask('HomeSectionSyncTask', '主屏幕同步');

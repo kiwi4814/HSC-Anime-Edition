@@ -29,9 +29,9 @@ new_guid = 'b5bca829-e903-4af4-9fb2-451d72a487e6'
 assert original_guid not in plugin and original_guid not in js
 assert new_guid in plugin and new_guid in js
 assert 'HscAnimeEditionCollections' in (SRC / 'AnimeCollectionTask.cs').read_text(encoding='utf-8')
-assert 'private const int BackupFormatVersion = 4' in service
-for field in ('AnimeCollectionRulesJson', 'AnimeApprovedCollectionKeys', 'AnimeCollectionAliasesJson'):
-    assert f'public string? {field}' in service or f'public string {field}' in service, field
+assert 'private const int BackupFormatVersion = 5' in service
+for field in ('AnimeCollectionRulesJson', 'AnimeApprovedCollectionKeys', 'AnimeCollectionAliasesJson', 'AnimeDiscardedCollectionKeys'):
+    assert f'public string? {field}' in service or f'public string {field}' in service or f'public string {field}' in model, field
     assert f'{field}   = config.{field}' in service or f'{field} = config.{field}' in service or f'{field} =' in service, 'export '+field
     assert f'if (s.{field} != null) config.{field}' in service, 'import '+field
 assert 'DryRunMode' in (SRC / 'HomeSectionSyncTask.cs').read_text(encoding='utf-8')
@@ -44,6 +44,7 @@ assert '__plugin/HomeScreenCompanionAnimeEditionJS' in checker.data_controller
 controls = {
     'chkAnimeEnabled': 'AnimeEnabled',
     'chkAnimeDryRun': 'AnimeDryRun',
+    'chkAnimeScheduledWrite': 'AnimeDryRun',
     'chkAnimeIncludeSpinOffs': 'AnimeIncludeSpinOffs',
     'chkAnimeSkipWriteWhenReminders': 'AnimeSkipWriteWhenReminders',
     'chkAnimeAiOther': 'AnimeAiReviewOtherEdges',
@@ -130,17 +131,36 @@ assert 'focusAnimeReminderTarget' in js
 assert 'openAnimeCollectionEditor(view' in js.split('function focusAnimeReminderTarget', 1)[1].split('function ', 1)[0]
 print('PASS: P2 collection visual editor wiring')
 
-assert 'id="animeEditorGraphSection"' in html
-assert 'animeGraphSvg' in html and 'loadAnimeCollectionGraph' in js
-assert 'CollectionGraph' in service
-assert 'AnimeCollectionGraphSupport' in (SRC / 'AnimeCollectionGraphSupport.cs').read_text(encoding='utf-8')
-assert '关系图' in html
-assert '库中没有' in js
-# Graph section stays jargon-free.
-graph = html.split('id="animeEditorGraphSection"', 1)[1].split('id="btnAnimeEditorSave"', 1)[0]
-for banned in ('批准名单', '成员规则', 'Key', 'Anchor', 'JSON', 'Dry Run', 'Provider', 'Token', 'SEQUEL', 'PREQUEL', 'SPIN_OFF', '赋能', '闭环'):
-    assert banned not in graph, 'banned on graph section: ' + banned
-print('PASS: P3 collection relation graph wiring')
+# Relation-graph UI removed; backend GraphSupport deleted with CollectionGraph API.
+assert 'id="animeEditorGraphSection"' not in html
+assert 'animeGraphSvg' not in html
+assert 'loadAnimeCollectionGraph' not in js
+assert '关系图' not in html and '关系图' not in js
+assert 'CollectionGraph' not in service
+assert not (SRC / 'AnimeCollectionGraphSupport.cs').exists()
+assert 'id="animeConfirmOverlay"' in html
+assert 'btnAnimeConfirmCreate' in html and '一键创建' in html
+assert 'openAnimeConfirmPanel' in js and 'submitAnimeConfirmCreate' in js
+assert 'Anime/ManualPreview' in service
+assert 'Anime/Discard' in service
+assert 'Anime/ConfirmCreate' in service
+assert 'AnimeDiscardedCollectionKeys' in model
+assert 'chkAnimeScheduledWrite' in html and '定时自动写入' in html
+anime_tab = html.split('id="tabAnimeCollections"', 1)[1].split('id="tabCleanup"', 1)[0]
+assert 'animeSyncModeWrite' not in anime_tab and 'animeSyncModePreview' not in anime_tab
+assert 'id="lblAnimeSyncWrite"' not in anime_tab
+assert '定时自动写入' in anime_tab
+# Confirm panel jargon-free
+confirm = html.split('id="animeConfirmOverlay"', 1)[1].split('id="tabCleanup"', 1)[0] if 'id="tabCleanup"' in html.split('id="animeConfirmOverlay"', 1)[1] else html.split('id="animeConfirmOverlay"', 1)[1]
+# overlay is after tabs; just check overlay chunk
+confirm = html.split('id="animeConfirmOverlay"', 1)[1]
+for banned in ('批准名单', '成员规则', 'Key', 'Anchor', 'JSON', 'Dry Run', 'Provider', 'Token', '赋能', '闭环', '关系图'):
+    assert banned not in confirm, 'banned on confirm overlay: ' + banned
+# Editor still present without graph
+assert 'id="animeEditorPanel"' in html
+assert 'openAnimeCollectionEditor' in js
+assert 'saveAnimeCollectionEditor' in js
+print('PASS: preview-confirm panel + graph UI removed; editor kept')
 
 assert 'AnimeSkipWriteWhenReminders' in model
 assert 'chkAnimeSkipWriteWhenReminders' in html and '#chkAnimeSkipWriteWhenReminders' in js

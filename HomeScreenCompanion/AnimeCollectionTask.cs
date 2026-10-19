@@ -112,6 +112,32 @@ namespace HomeScreenCompanion
         public static DateTime? LastStartedUtc { get; private set; }
         public static bool IsRunning { get; private set; }
 
+        /// <summary>0=normal scheduled, 1=manual preview (force dry), 2=confirm create (force write unless global DryRun).</summary>
+        private static int _manualRunMode;
+        private static readonly object ManualRunLock = new object();
+
+        /// <summary>Next Execute will force dry-run (manual「立即同步」预览).</summary>
+        internal static void RequestManualPreview()
+        {
+            lock (ManualRunLock) { _manualRunMode = 1; }
+        }
+
+        /// <summary>Next Execute will write despite AnimeDryRun (manual「一键创建」).</summary>
+        internal static void RequestManualConfirmWrite()
+        {
+            lock (ManualRunLock) { _manualRunMode = 2; }
+        }
+
+        private static int ConsumeManualRunMode()
+        {
+            lock (ManualRunLock)
+            {
+                int mode = _manualRunMode;
+                _manualRunMode = 0;
+                return mode;
+            }
+        }
+
         internal static void RestoreLog()
         {
             var saved = LogStore.Load(LogStore.Anime);
@@ -166,7 +192,11 @@ namespace HomeScreenCompanion
                 }
                 var policy = AnimeCollectionPolicy.Parse(config.AnimeCollectionRulesJson,
                     config.AnimeApprovedCollectionKeys, config.AnimeCollectionAliasesJson);
-                bool dryRun = config.DryRunMode || config.AnimeDryRun;
+                int manualMode = ConsumeManualRunMode();
+                // Global DryRunMode always blocks writes. Manual preview forces dry; confirm write ignores AnimeDryRun.
+                bool dryRun = config.DryRunMode || (manualMode == 2 ? false : (manualMode == 1 || config.AnimeDryRun));
+                if (manualMode == 1) log.Info("手动同步：仅预览，等待确认后再写入。");
+                else if (manualMode == 2 && !config.DryRunMode) log.Info("确认创建：按本趟决定写入合集。");
                 if (dryRun) log.Warn("仅预览 — 不会修改任何合集。");
                 var dataDir = Path.Combine(Plugin.Instance!.DataFolderPath, "anime");
                 Directory.CreateDirectory(dataDir);
@@ -225,6 +255,14 @@ namespace HomeScreenCompanion
                     catch { /* Invalid ownership is rejected later in SyncCollectionsAsync. */ }
                 }
                 var groups = policy.Apply(planned, local);
+                var discarded = AnimeCollectionEditorSupport.ParseDiscardedKeys(config.AnimeDiscardedCollectionKeys);
+                if (discarded.Count > 0)
+                {
+                    int before = groups.Count;
+                    groups = groups.Where(g => g == null || string.IsNullOrEmpty(g.Key) || !discarded.Contains(g.Key)).ToList();
+                    int removed = before - groups.Count;
+                    if (removed > 0) log.Info($"已跳过 {removed} 个废弃合集。");
+                }
                 log.Info($"找到 {groups.Count} 个候选合集。");
                 if (groups.Count == 0)
                 {

@@ -193,5 +193,38 @@ namespace HomeScreenCompanion
             sb.Append('"');
             return sb.ToString();
         }
+        internal static string AddDiscardedKey(string discardedKeys, string key)
+        {
+            key = (key ?? "").Trim();
+            if (!AnimeCollectionPolicy.IsIdentifier(key))
+                throw new InvalidDataException("无法识别的合集编号。");
+            var set = ParseDiscardedKeys(discardedKeys);
+            set.Add(key);
+            return NormalizeKeyList(set);
+        }
+
+        internal static string RemoveDiscardedKey(string discardedKeys, string key)
+        {
+            var set = ParseDiscardedKeys(discardedKeys);
+            set.Remove((key ?? "").Trim());
+            return NormalizeKeyList(set);
+        }
+
+        internal static HashSet<string> ParseDiscardedKeys(string discardedKeys)
+        {
+            var set = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var raw in (discardedKeys ?? "").Split('\n'))
+            {
+                var k = raw.Trim();
+                if (k.Length == 0) continue;
+                if (!AnimeCollectionPolicy.IsIdentifier(k)) continue;
+                set.Add(k);
+            }
+            return set;
+        }
+
+        private static string NormalizeKeyList(IEnumerable<string> set) =>
+            string.Join("\n", set.OrderBy(k => k, StringComparer.Ordinal));
+
     }
 }

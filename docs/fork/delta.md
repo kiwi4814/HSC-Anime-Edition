@@ -29,8 +29,7 @@
 | `HomeScreenCompanion/AnimeAniListClient.cs` | AniList GraphQL 与关系缓存 | 请求/身份校验；真实服务未由离线测试验收 |
 | `HomeScreenCompanion/AnimeCollectionPolicy.cs` | 精确成员、批准、别名、身份和重复诊断 | 排除优先、完整替代、无默认作品规则、写入门槛 |
 | `HomeScreenCompanion/AnimeCollectionMembership.cs` | 维护已管理成员集合 | 只追踪插件管理成员，保留人工成员 |
-| `HomeScreenCompanion/AnimeCollectionEditorSupport.cs` | P2 可视编辑：精确规则/别名 JSON 改写与主包含身份选择 | 不暴露 JSON 用语；改写后经 Policy.Parse 校验 |
-| `HomeScreenCompanion/AnimeCollectionGraphSupport.cs` | P3 合集关系子图：人话边标签、库内高亮、分层布局 | 只读；截断上限；不暴露英文枚举主文案 |
+| `HomeScreenCompanion/AnimeCollectionEditorSupport.cs` | P2 可视编辑 + 废弃名单改写 | 不暴露 JSON 用语；改写后经 Policy.Parse 校验 |
 | `HomeScreenCompanion/AnimeCollectionTask.cs` | 扫描、映射、规划、审批后调用 Emby 合集 API；RestoreLog/LogStore.Anime；P0/P1 摘要卡片与提醒；P2 卡片 MemberIncludeIds/归属 Key | 动漫独立开关/Dry Run、归属保护、失败不清空合集 |
 | `HomeScreenCompanion/AiRequestClient.cs` | 五种 provider 共用 HTTP 传输 | 超时/取消、体积边界、禁重定向、脱敏错误 |
 | `HomeScreenCompanion/AiResponseDtos.cs` | 统一 provider 响应 DTO | 是响应模型单一归属；不要在旧 DTO 文件重建重复类 |
@@ -46,9 +45,9 @@
 | `HomeScreenCompanion/Plugin.cs` | 独立插件 GUID/名称/设置页资源名；插件描述汉化 | Fork 身份与事件/合集镜像行为共同保留 |
 | `HomeScreenCompanion/HomeScreenCompanion.csproj` | 独立程序集/产品名、4.3.0.3、PathMap、外置 EmbyReferenceDir；移除旧绝对引用和构建时 HTML 版本注入 | 不还原官方程序集身份，不引入机器路径 |
 | `HomeScreenCompanion/PluginConfiguration.cs` | Compatible AI 与动漫配置、空默认策略、独立预算 | 新装默认与已有配置/旧备份分别处理 |
-| `HomeScreenCompanion/Configuration/configPage.html` | 新动漫/AI 控件、独立 controller、广泛汉化；P0–P3 动漫合集页/编辑/关系图 | ID、控件绑定及技术标识；页面仍有指向官方 Issues 的链接 |
-| `HomeScreenCompanion/Configuration/configPage.js` | Fork GUID/请求路径、动漫加载保存与校验、AI 测试/建议展示、版本查询替代更新器及汉化；P2/P3 编辑与关系图点选 | 大面积字符串差异中夹有逻辑；不能整文件取上游 |
-| `HomeScreenCompanion/HomeScreenCompanionService.cs` | 大部分路由隔离、AI Admin 接口、备份 v3/密钥语义与汉化；`Anime/Status`、LastRunSummary/提醒、P2 CollectionEditor/MediaSearch、P3 CollectionGraph | 路由、DTO、处理器、配置往返必须一起审查 |
+| `HomeScreenCompanion/Configuration/configPage.html` | 新动漫/AI 控件、独立 controller、广泛汉化；P0–P4 动漫合集页/编辑；预览确认框（关系图 UI 已移除） | ID、控件绑定及技术标识；页面仍有指向官方 Issues 的链接 |
+| `HomeScreenCompanion/Configuration/configPage.js` | Fork GUID/请求路径、动漫加载保存与校验、AI 测试/建议展示、版本查询替代更新器及汉化；P2 编辑与手动预览确认框 | 大面积字符串差异中夹有逻辑；不能整文件取上游 |
+| `HomeScreenCompanion/HomeScreenCompanionService.cs` | 大部分路由隔离、AI Admin 接口、备份 v3/密钥语义与汉化；`Anime/Status`、LastRunSummary/提醒、P2 CollectionEditor/MediaSearch、ManualPreview/Discard/ConfirmCreate | 路由、DTO、处理器、配置往返必须一起审查 |
 | `HomeScreenCompanion/DTOs.cs` | 删除重复 provider 响应类，转由新增文件持有 | 部分旧路由仍在；见下方已知缺口 |
 | `HomeScreenCompanion/ListFetcher.cs` | 移除各 provider 的重复 HTTP helper，改用共享客户端 | 既有列表选择仍沿用；共同超时/令牌上限改变旧路径语义 |
 | `HomeScreenCompanion/ServerEntryPoint.cs` | 禁止调用旧 AutoTag 自动迁移，另有日志汉化 | 防止迁移/删除其他插件数据；保留现有监听及镜像逻辑 |
