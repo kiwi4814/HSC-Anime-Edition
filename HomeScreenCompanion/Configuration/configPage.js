@@ -3567,7 +3567,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         var summaryEl = view.querySelector('#animeConfirmSummary') || document.getElementById('animeConfirmSummary');
         if (summaryEl) {
             summaryEl.textContent = '将新建 ' + counts.create + ' · 将更新 ' + counts.update +
-                (counts.doubt ? (' · 吃不准 ' + counts.doubt) : '') +
+                (counts.doubt ? (' · 待复核 ' + counts.doubt) : '') +
                 (counts.discarded ? (' · 已废弃 ' + counts.discarded) : '');
         }
         var filter = state.filter || 'all';
@@ -3590,7 +3590,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         if (!visible.length) {
             var empty = document.createElement('div');
             empty.className = 'fieldDescription';
-            empty.textContent = filter === 'doubt' ? '没有吃不准的合集。' : '这里暂时没有合集。';
+            empty.textContent = filter === 'doubt' ? '没有待复核的合集。' : '这里暂时没有合集。';
             listEl.appendChild(empty);
             return;
         }
@@ -3608,7 +3608,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         if (doubt) {
             var badge = document.createElement('span');
             badge.className = 'anime-confirm-badge';
-            badge.textContent = '吃不准';
+            badge.textContent = '待复核';
             top.appendChild(badge);
         }
         var nameInput = document.createElement('input');

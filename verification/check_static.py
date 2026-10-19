@@ -107,7 +107,7 @@ assert 'animeReminderFilter' not in js
 assert 'animeRemindersFilter' not in js
 for banned_js in ('没有未处理提醒', '标为未处理', '标为已处理', '去处理', '无法更新提醒状态', '暂无提醒。同步时'):
     assert banned_js not in js, 'reminder UI string still in js: ' + banned_js
-# HasReminder may be read on confirm cards for yellow "吃不准" badge; card-dot UI stays gone.
+# HasReminder may be read on confirm cards for yellow "待复核" badge; card-dot UI stays gone.
 assert js.count('HasReminder') == 1 and 'c.HasReminder' in js
 assert 'anime-card-dot' not in html and 'has-reminder' not in html
 # Main anime path must not show jargon; advanced fold may keep support labels.
@@ -150,7 +150,7 @@ assert 'btnAnimeConfirmCreate' in html and '一键创建' in html
 assert 'id="animeConfirmList"' in html
 assert 'animeConfirmDoubtSection' not in html and 'animeConfirmOkSection' not in html
 assert 'data-anime-confirm-filter' in html
-assert 'anime-confirm-badge' in html or '吃不准' in html
+assert 'anime-confirm-badge' in html or '待复核' in html
 assert 'id="animeDiscardedBlock"' in html and '已废弃的合集' in html
 assert 'openAnimeConfirmPanel' in js and 'submitAnimeConfirmCreate' in js
 assert 'loadAnimeDiscardedList' in js and 'restoreAnimeDiscardedItem' in js
