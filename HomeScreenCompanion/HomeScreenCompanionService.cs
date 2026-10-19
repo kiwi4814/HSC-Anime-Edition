@@ -407,6 +407,10 @@ namespace HomeScreenCompanion
         public int? AnimeAiMaxTokensPerRun { get; set; }
         public string AnimeCollectionPrefix { get; set; } = "动漫 · ";
         public int AnimeMaxRequestsPerRun { get; set; } = 100;
+        /// <summary>Null in older backups: keep target values on import.</summary>
+        public string? AnimeCollectionRulesJson { get; set; }
+        public string? AnimeApprovedCollectionKeys { get; set; }
+        public string? AnimeCollectionAliasesJson { get; set; }
         public string OpenAiModel { get; set; } = "";
         public string GeminiModel { get; set; } = "";
         public string ClaudeModel { get; set; } = "";
@@ -2787,6 +2791,9 @@ public class HomeScreenCompanionService : IService
                     AnimeAiMaxTokensPerRun     = config.AnimeAiMaxTokensPerRun,
                     AnimeCollectionPrefix      = config.AnimeCollectionPrefix,
                     AnimeMaxRequestsPerRun     = config.AnimeMaxRequestsPerRun,
+                    AnimeCollectionRulesJson   = config.AnimeCollectionRulesJson ?? "",
+                    AnimeApprovedCollectionKeys = config.AnimeApprovedCollectionKeys ?? "",
+                    AnimeCollectionAliasesJson = config.AnimeCollectionAliasesJson ?? "",
                     PreserveTagsOnEmptyResult = config.PreserveTagsOnEmptyResult,
                     TopListMirrorCollections  = config.TopListMirrorCollections
                 };
@@ -2915,6 +2922,9 @@ public class HomeScreenCompanionService : IService
                         if (s.AnimeAiMaxCallsPerRun.HasValue) config.AnimeAiMaxCallsPerRun = Math.Max(0, s.AnimeAiMaxCallsPerRun.Value);
                         if (s.AnimeAiMaxTokensPerCall.HasValue) config.AnimeAiMaxTokensPerCall = Math.Max(0, s.AnimeAiMaxTokensPerCall.Value);
                         if (s.AnimeAiMaxTokensPerRun.HasValue) config.AnimeAiMaxTokensPerRun = Math.Max(0, s.AnimeAiMaxTokensPerRun.Value);
+                        if (s.AnimeCollectionRulesJson != null) config.AnimeCollectionRulesJson = s.AnimeCollectionRulesJson;
+                        if (s.AnimeApprovedCollectionKeys != null) config.AnimeApprovedCollectionKeys = s.AnimeApprovedCollectionKeys;
+                        if (s.AnimeCollectionAliasesJson != null) config.AnimeCollectionAliasesJson = s.AnimeCollectionAliasesJson;
                     }
                     config.PreserveTagsOnEmptyResult = s.PreserveTagsOnEmptyResult;
                     mirrorChanged = config.TopListMirrorCollections != s.TopListMirrorCollections;

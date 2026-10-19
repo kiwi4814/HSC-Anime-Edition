@@ -98,7 +98,7 @@ namespace HomeScreenCompanion
                 Directory.CreateDirectory(dataDir);
 
                 var mappingPath = Path.Combine(dataDir, "anibridge-v3.json");
-                await EnsureMappingsAsync(mappingPath, config.AnimeMappingRefreshDays, cancellationToken, log);
+                await EnsureMappingsAsync(mappingPath, config.AnimeMappingRefreshDays, config.AnimeMappingUrl, cancellationToken, log);
                 var index = AnimeMappingIndex.Load(mappingPath);
                 log.Debug($"AniBridge 映射：{index.SourceDescriptors} 条来源描述，{index.IdentityLinks} 条身份映射");
                 progress?.Report(15);
@@ -106,7 +106,7 @@ namespace HomeScreenCompanion
                 var local = ScanLocalAnime(index, log);
                 var seeds = local.SelectMany(x => x.AniListIds).Distinct().ToArray();
                 foreach (var duplicate in AnimeCollectionPolicy.FindDuplicates(local))
-                    { log.Warn($"疑似重复媒体：{duplicate.Identifier}（{duplicate.EmbyIds.Count} 个项目）。仅提示，不会处理。"); log.Debug($"  重复媒体 {duplicate.Identifier} 的 Emby ID：{string.Join(", ", duplicate.EmbyIds)}"); }
+                    { log.Debug($"疑似重复媒体：{duplicate.Identifier}（{duplicate.EmbyIds.Count} 个项目）。仅提示，不会处理。"); log.Debug($"  重复媒体 {duplicate.Identifier} 的 Emby ID：{string.Join(", ", duplicate.EmbyIds)}"); }
                 int recognized = local.Count(x => x.AniListIds.Count > 0);
                 log.Info($"扫描 {local.Count} 个电影/剧集项目，已识别动漫 {recognized} 部，匹配 {seeds.Length} 条 AniList 记录。");
                 progress?.Report(30);
@@ -226,6 +226,13 @@ namespace HomeScreenCompanion
                     Add("tvdb_movie", media.GetProviderId("Tvdb"));
                     Add("imdb_movie", media.GetProviderId("Imdb"));
                 }
+                // Direct AniList id on the item (plugin / metadata providers)
+                foreach (var key in new[] { "AniList", "Anilist", "anilist" })
+                {
+                    var raw = media.GetProviderId(key);
+                    if (string.IsNullOrWhiteSpace(raw)) continue;
+                    if (int.TryParse(raw.Trim(), out var aid) && aid > 0) ids.Add(aid);
+                }
                 output.Add(new AnimeLocalItem
                 {
                     EmbyId = media.InternalId,
@@ -234,50 +241,64 @@ namespace HomeScreenCompanion
                     AniListIds = ids.OrderBy(id => id).ToList(),
                     ProviderIds = providerIds.OrderBy(id => id, StringComparer.Ordinal).ToList()
                 });
-                log.Debug($"  {media.Name}（Emby {media.InternalId}）→ AniList {string.Join("、", ids.OrderBy(id => id))}");
+                if (ids.Count > 0)
+                    log.Debug($"  {media.Name}（Emby {media.InternalId}）→ AniList {string.Join("、", ids.OrderBy(id => id))}");
             }
             return output;
         }
 
-        private async Task EnsureMappingsAsync(string path, int refreshDays, CancellationToken token, RunLog log)
+        private async Task EnsureMappingsAsync(string path, int refreshDays, string? mappingUrl, CancellationToken token, RunLog log)
         {
             bool exists = File.Exists(path);
             if (exists && File.GetLastWriteTimeUtc(path) >= DateTime.UtcNow.AddDays(-Math.Max(1, refreshDays)))
                 return;
+            string url = string.IsNullOrWhiteSpace(mappingUrl) ? MappingUrl : mappingUrl.Trim();
             string tmp = path + ".download";
-            try
+            Exception? last = null;
+            for (int attempt = 1; attempt <= 3; attempt++)
             {
-                using (var remote = await _httpClient.Get(new HttpRequestOptions { Url = MappingUrl, CancellationToken = token }))
-                using (var dest = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None))
+                try
                 {
-                    var buffer = new byte[65536];
-                    long total = 0;
-                    int read;
-                    while ((read = await remote.ReadAsync(buffer, 0, buffer.Length, token)) > 0)
+                    if (File.Exists(tmp)) File.Delete(tmp);
+                    using (var remote = await _httpClient.Get(new HttpRequestOptions { Url = url, CancellationToken = token }))
+                    using (var dest = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None))
                     {
-                        total += read;
-                        if (total > MaxMappingBytes) throw new InvalidDataException("映射下载超过大小限制。");
-                        await dest.WriteAsync(buffer, 0, read, token);
+                        var buffer = new byte[65536];
+                        long total = 0;
+                        int read;
+                        while ((read = await remote.ReadAsync(buffer, 0, buffer.Length, token)) > 0)
+                        {
+                            total += read;
+                            if (total > MaxMappingBytes) throw new InvalidDataException("映射下载超过大小限制。");
+                            await dest.WriteAsync(buffer, 0, read, token);
+                        }
+                    }
+                    var parsed = AnimeMappingIndex.Load(tmp); // validate before replacing good cache
+                    if (parsed.IdentityLinks < 1000) throw new InvalidDataException("映射文件的数据量异常偏小。");
+                    if (File.Exists(path)) File.Replace(tmp, path, null);
+                    else File.Move(tmp, path);
+                    log.Ok("动漫映射数据已更新。");
+                    log.Debug($"AniBridge 映射已刷新并通过校验：{path}");
+                    return;
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    last = ex;
+                    try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+                    if (attempt < 3)
+                    {
+                        log.Warn($"下载动漫映射失败（第 {attempt}/3 次）：{ex.Message}。稍后重试…");
+                        await Task.Delay(TimeSpan.FromSeconds(2 * attempt), token);
                     }
                 }
-                var parsed = AnimeMappingIndex.Load(tmp); // validate before replacing good cache
-                if (parsed.IdentityLinks < 1000) throw new InvalidDataException("映射文件的数据量异常偏小。");
-                if (File.Exists(path)) File.Replace(tmp, path, null);
-                else File.Move(tmp, path);
-                log.Ok("动漫映射数据已更新。");
-                log.Debug($"AniBridge 映射已刷新并通过校验：{path}");
             }
-            catch
-            {
-                if (!exists) throw;
-                // Stale data is not silently used: external failure aborts this run without
-                // updating Emby and preserves the last good mapping snapshot.
-                throw;
-            }
-            finally
-            {
-                try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
-            }
+            string hint =
+                "无法更新动漫映射数据。请检查网络能否访问 GitHub，或在设置中填写可用的映射数据地址；" +
+                "也可将 mappings.min.json 手动放到插件数据目录下的 anime/anibridge-v3.json。" +
+                (last != null ? " 原因：" + last.Message : "");
+            if (!exists) throw new InvalidOperationException(hint, last);
+            throw new InvalidOperationException(hint + " 本地仍有旧映射，但本次已中止以免使用过期数据。", last);
         }
 
         private async Task SyncCollectionsAsync(List<AnimeGroup> groups, AnimeCollectionPolicy policy,

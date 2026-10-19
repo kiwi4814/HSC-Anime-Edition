@@ -30,6 +30,13 @@ assert original_guid not in plugin and original_guid not in js
 assert new_guid in plugin and new_guid in js
 assert 'HscAnimeEditionCollections' in (SRC / 'AnimeCollectionTask.cs').read_text(encoding='utf-8')
 assert 'private const int BackupFormatVersion = 3' in service
+for field in ('AnimeCollectionRulesJson', 'AnimeApprovedCollectionKeys', 'AnimeCollectionAliasesJson'):
+    assert f'public string? {field}' in service or f'public string {field}' in service, field
+    assert f'{field}   = config.{field}' in service or f'{field} = config.{field}' in service or f'{field} =' in service, 'export '+field
+    assert f'if (s.{field} != null) config.{field}' in service, 'import '+field
+assert 'DryRunMode' in (SRC / 'HomeSectionSyncTask.cs').read_text(encoding='utf-8')
+assert 'foreach (var item in local.Where(i => i.AniListIds.Count == 0)' not in (SRC / 'AnimeAiAnalysisService.cs').read_text(encoding='utf-8')
+assert 'kiwi4814/HSC-Anime-Edition/issues' in html
 assert '"/HomeScreenCompanion/' not in service
 assert "'HomeScreenCompanion/" not in js
 checker = HtmlIDs(); checker.feed(html)
@@ -42,6 +49,7 @@ controls = {
     'selAnimeAiProvider': 'AnimeAiProvider',
     'txtAnimePrefix': 'AnimeCollectionPrefix',
     'txtAnimeApiBudget': 'AnimeMaxRequestsPerRun',
+    'txtAnimeMappingUrl': 'AnimeMappingUrl',
     'txtCompatibleAiBaseUrl': 'CompatibleAiBaseUrl',
     'txtCompatibleAiModel': 'CompatibleAiModel',
     'txtCompatibleAiApiKey': 'CompatibleAiApiKey',

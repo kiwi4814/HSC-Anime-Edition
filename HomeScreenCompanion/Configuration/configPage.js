@@ -1240,11 +1240,22 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
         return Number.isSafeInteger(value) && value >= 0 ? value : fallback;
     }
 
+    function updateCompatibleAiVisibility(view) {
+        var provider = selectedAnimeAiProvider(view);
+        var compat = provider === 'OpenAICompatible';
+        var fields = view.querySelector('#compatibleAiFields');
+        var hint = view.querySelector('#animeAiProviderHint');
+        if (fields) fields.style.display = compat ? '' : 'none';
+        if (hint) hint.style.display = compat ? 'none' : '';
+    }
+
     function updateAiHttpWarning(view) {
+        updateCompatibleAiVisibility(view);
         var provider = selectedAnimeAiProvider(view);
         var url = provider === 'Ollama' ? view.querySelector('#txtOllamaBaseUrl').value
             : provider === 'OpenAICompatible' ? view.querySelector('#txtCompatibleAiBaseUrl').value : '';
-        view.querySelector('#compatibleAiHttpWarning').style.display = /^http:\/\//i.test(url.trim()) ? '' : 'none';
+        var warn = view.querySelector('#compatibleAiHttpWarning');
+        if (warn) warn.style.display = (provider === 'OpenAICompatible' && /^http:\/\//i.test((url || '').trim())) ? '' : 'none';
     }
 
     function animeAiRequest(path, configuration) {
@@ -3591,9 +3602,9 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             });
         });
         var aliasField = '#txtAnimeCollectionAliasesJson';
-        var aliases = parse(aliasField, '中文别名', {});
+        var aliases = parse(aliasField, '合集别名', {});
         if (!aliases || typeof aliases !== 'object' || Array.isArray(aliases))
-            fail(aliasField, '中文别名必须是 JSON 对象。');
+            fail(aliasField, '合集别名必须是 JSON 对象。');
         Object.keys(aliases).forEach(function (key) {
             if (!keyValid(key) || typeof aliases[key] !== 'string' || !aliases[key].trim() || aliases[key] !== aliases[key].trim() || /[\x00-\x1f\x7f]/.test(aliases[key]))
                 fail(aliasField, '别名的键须为合集 Key，值为非空名称。');
@@ -3816,6 +3827,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
             AnimeAiProvider: selectedAnimeAiProvider(view),
             AnimeCollectionPrefix: view.querySelector('#txtAnimePrefix').value || '动漫 · ',
             AnimeMappingRefreshDays: 7,
+            AnimeMappingUrl: (view.querySelector('#txtAnimeMappingUrl') || {}).value || '',
             AnimeMaxRequestsPerRun: Math.min(600, Math.max(10, parseInt(view.querySelector('#txtAnimeApiBudget').value, 10) || 300)),
             AnimeCollectionRulesJson: view.querySelector('#txtAnimeCollectionRulesJson').value,
             AnimeApprovedCollectionKeys: view.querySelector('#txtAnimeApprovedCollectionKeys').value,
@@ -6250,7 +6262,7 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
     // Sections mirror the server's BackupFile. Only configuration is exported; everything the
     // sync tasks generate (tags, collections, playlists, top-list files, images) is rebuilt on run.
     var _backupSections = [
-        { key: 'Settings',     label: '常规设置',          desc: 'AI 模型、系统提示词、日志、仅预览、结果为空时保留。' },
+        { key: 'Settings',     label: '常规设置',          desc: 'AI 模型、系统提示词、日志、仅预览、结果为空时保留；含动漫批准名单、成员规则与别名。' },
         { key: 'ApiKeys',      label: 'API 密钥',                  desc: 'Trakt、MDBList、TMDB、OpenAI、Gemini、Claude。以明文存储在文件中。' },
         { key: 'Tags',         label: '标签与合集分组',   desc: '所有来源分组，包括计划、黑名单、筛选器、合集设置、主屏幕栏目和播放列表。' },
         { key: 'SavedFilters', label: '已保存的媒体信息筛选器',  desc: '您保存的筛选预设。' },
@@ -7704,6 +7716,18 @@ define(['emby-input', 'emby-button', 'emby-select', 'emby-checkbox'], function (
                 view.querySelector('#txtAnimeCollectionRulesJson').value = config.AnimeCollectionRulesJson || '';
                 view.querySelector('#txtAnimeApprovedCollectionKeys').value = config.AnimeApprovedCollectionKeys || '';
                 view.querySelector('#txtAnimeCollectionAliasesJson').value = config.AnimeCollectionAliasesJson || '';
+                var mapUrlEl = view.querySelector('#txtAnimeMappingUrl');
+                if (mapUrlEl) mapUrlEl.value = config.AnimeMappingUrl || '';
+                updateCompatibleAiVisibility(view);
+                if (config.AnimeEnabled) {
+                    var animePanel = view.querySelector('#animeSettingsPanel');
+                    if (animePanel) {
+                        var body = animePanel.querySelector('.settings-panel-body');
+                        var chevron = animePanel.querySelector('.settings-panel-chevron');
+                        if (body) body.style.display = 'block';
+                        if (chevron) chevron.style.transform = 'rotate(180deg)';
+                    }
+                }
                 if (view.querySelector('#txtSearchTags')) {
                     view.querySelector('#txtSearchTags').value = '';
                     view.querySelector('#btnClearSearch').style.display = 'none';

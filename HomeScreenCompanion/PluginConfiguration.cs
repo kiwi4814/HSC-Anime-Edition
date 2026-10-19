@@ -46,6 +46,8 @@ namespace HomeScreenCompanion
         public string AnimeApprovedCollectionKeys { get; set; } = "";
         public string AnimeCollectionAliasesJson { get; set; } = "";
         public int AnimeMappingRefreshDays { get; set; } = 7;
+        /// <summary>Empty = built-in AniBridge GitHub release URL.</summary>
+        public string AnimeMappingUrl { get; set; } = "";
         public int AnimeMaxRequestsPerRun { get; set; } = 300;
 
         public bool ExtendedConsoleOutput { get; set; } = false;

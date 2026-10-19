@@ -62,17 +62,16 @@ static partial class Program
         foreach (var file in sentinels) File.WriteAllText(Path.Combine(scratch.Dir, file.Key), file.Value);
         await service.AnalyzeAsync(config, data.Items, data.Records, data.Groups, scratch.Dir, CancellationToken.None, _ => { });
         var result = service.Read(scratch.Dir);
-        Assert(server.RequestCount == 4 && result.CallsUsed == 4 && result.Suggestions.Select(s => s.Kind).OrderBy(s => s).SequenceEqual(new[] { "mapping", "naming", "relation", "review" }), "Three real AI capabilities plus missing-mapping search produce validated structured results over localhost HTTP");
+        Assert(server.RequestCount == 3 && result.CallsUsed == 3 && result.Suggestions.Select(s => s.Kind).OrderBy(s => s).SequenceEqual(new[] { "naming", "relation", "review" }), "Naming, relation and review capabilities produce validated structured results; whole-library mapping candidates are disabled");
         Assert(result.TokensReserved > 0 && result.TokensReserved <= config.AnimeAiMaxTokensPerRun, "All capabilities share run token upper-bound budget");
         Assert(result.Suggestions.All(s => s.Provider == "OpenAICompatible" && s.Model == "fictional-model" && s.CreatedUtc > DateTime.UtcNow.AddMinutes(-1) && s.CacheKey.Length == 64 && s.InputItems.Count > 0), "Persisted suggestions carry provider/model/time/cache/input provenance");
         Assert(result.Suggestions.Single(s => s.Kind == "naming").SuggestedName == "星桥纪事" && result.Suggestions.Single(s => s.Kind == "naming").AdvisoryOnly && result.Suggestions.Single(s => s.Kind == "naming").NameEvidenceStatus == "existing_title", "Suggested text strips HTML delimiters and records existing-title evidence without applying name");
-        Assert(result.Suggestions.Single(s => s.Kind == "mapping").AniListIds.Count == 0 && result.Suggestions.Single(s => s.Kind == "mapping").Decision == "search", "Missing mapping produces search directions, never confirmed IDs");
         Assert(result.Suggestions.Single(s => s.Kind == "relation").Evidence.Single().Relation == "OTHER" && data.Records[1].Relations[0].Relation == "OTHER", "OTHER verdict retains evidence without promoting graph edge");
         var review = result.Suggestions.Single(s => s.Kind == "review");
         Assert(review.OriginalName == data.Groups[0].Name && !review.HasExplicitRule && review.MemberEmbyIds.SequenceEqual(new long[] { 101, 102 }), "Review preserves original name, explicit-rule status and actual group members separately from outside context");
         Assert(review.EmbyIds.SequenceEqual(new long[] { 101, 102, 103 }) && review.ReviewIssues.Count == 2 && review.ReviewIssues.Any(i => i.IssueType == "missing_local" && i.EmbyIds.SequenceEqual(new long[] { 103 })), "Structured review flags actual adjacent local media without automatically including it");
         Assert(review.ReviewIssues.All(i => i.Confidence >= 0 && i.Confidence <= 1 && i.Reason.Length > 0 && i.RiskLevel.Length > 0 && i.RecommendedAction.Length > 0), "Review issues persist reasons, risks, actions and confidence");
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 3; i++)
         {
             var request = await server.NextAsync(); using var body = JsonDocument.Parse(request.Body);
             Assert(body.RootElement.GetProperty("model").GetString() == config.CompatibleAiModel && request.Headers["Authorization"] == "Bearer " + FixtureSecret, "Every capability uses the shared selected model and credentials");
@@ -95,29 +94,29 @@ static partial class Program
         Assert(Directory.GetFiles(scratch.Dir).Length == sentinels.Count + 1 && !File.ReadAllText(Path.Combine(scratch.Dir, "ai-analysis.json")).Contains(FixtureSecret, StringComparison.Ordinal), "Only analysis file added; no secret persisted");
         await service.AnalyzeAsync(config, data.Items, data.Records, data.Groups, scratch.Dir, CancellationToken.None, _ => { });
         var cached = service.Read(scratch.Dir);
-        Assert(server.RequestCount == 4 && cached.CallsUsed == 0 && cached.TokensReserved == 0 && cached.Suggestions.Count == 4, "Validated cache avoids requests and does not consume budgets");
+        Assert(server.RequestCount == 3 && cached.CallsUsed == 0 && cached.TokensReserved == 0 && cached.Suggestions.Count == 3, "Validated cache avoids requests and does not consume budgets");
         cached.Suggestions.Single(s => s.Kind == "review").EmbyIds.Add(1900000999);
         File.WriteAllText(Path.Combine(scratch.Dir, "ai-analysis.json"), JsonSerializer.Serialize(cached));
         await service.AnalyzeAsync(config, data.Items, data.Records, data.Groups, scratch.Dir, CancellationToken.None, _ => { });
-        Assert(server.RequestCount == 5 && service.Read(scratch.Dir).Suggestions.Single(s => s.Kind == "review").EmbyIds.SequenceEqual(new long[] { 101, 102, 103 }), "Tampered cache with invented IDs is revalidated and refreshed");
+        Assert(server.RequestCount == 4 && service.Read(scratch.Dir).Suggestions.Single(s => s.Kind == "review").EmbyIds.SequenceEqual(new long[] { 101, 102, 103 }), "Tampered cache with invented IDs is revalidated and refreshed");
         var stale = service.Read(scratch.Dir); stale.Suggestions.ForEach(s => s.CreatedUtc = DateTime.UtcNow.AddDays(-31));
         File.WriteAllText(Path.Combine(scratch.Dir, "ai-analysis.json"), JsonSerializer.Serialize(stale));
         await service.AnalyzeAsync(config, data.Items, data.Records, data.Groups, scratch.Dir, CancellationToken.None, _ => { });
-        Assert(server.RequestCount == 9 && service.Read(scratch.Dir).CallsUsed == 4, "Stale cache cannot bypass new capability requests");
+        Assert(server.RequestCount == 7 && service.Read(scratch.Dir).CallsUsed == 3, "Stale cache cannot bypass new capability requests");
         config.CompatibleAiModel = "fictional-model-revised";
         await service.AnalyzeAsync(config, data.Items, data.Records, data.Groups, scratch.Dir, CancellationToken.None, _ => { });
-        Assert(server.RequestCount == 13, "Model change invalidates cached provenance");
+        Assert(server.RequestCount == 10, "Model change invalidates cached provenance");
         var forged = service.Read(scratch.Dir);
         forged.Suggestions.ForEach(s => { s.Provider = "forged-provider"; s.Model = "forged-model"; s.Reason = "<unsafe>\nreason"; s.InputItems.Clear(); });
         File.WriteAllText(Path.Combine(scratch.Dir, "ai-analysis.json"), JsonSerializer.Serialize(forged));
         await service.AnalyzeAsync(config, data.Items, data.Records, data.Groups, scratch.Dir, CancellationToken.None, _ => { });
-        Assert(server.RequestCount == 13 && service.Read(scratch.Dir).Suggestions.All(s => s.Provider == config.AnimeAiProvider && s.Model == config.CompatibleAiModel && s.InputItems.Count > 0 && !s.Reason.Contains('<') && !s.Reason.Contains('\n')), "Cache hit rebuilds immutable provenance and sanitizes cached text");
+        Assert(server.RequestCount == 10 && service.Read(scratch.Dir).Suggestions.All(s => s.Provider == config.AnimeAiProvider && s.Model == config.CompatibleAiModel && s.InputItems.Count > 0 && !s.Reason.Contains('<') && !s.Reason.Contains('\n')), "Cache hit rebuilds immutable provenance and sanitizes cached text");
         data.Items[0].Name += " 修订";
         await service.AnalyzeAsync(config, data.Items, data.Records, data.Groups, scratch.Dir, CancellationToken.None, _ => { });
-        Assert(server.RequestCount == 16, "Input-title change invalidates only affected relation/naming/review cache entries");
+        Assert(server.RequestCount == 13, "Input-title change invalidates relation/naming/review cache entries");
         config.CompatibleAiBaseUrl = server.Url + "/v1";
         await service.AnalyzeAsync(config, data.Items, data.Records, data.Groups, scratch.Dir, CancellationToken.None, _ => { });
-        Assert(server.RequestCount == 20, "Endpoint change invalidates every cached capability result");
+        Assert(server.RequestCount == 16, "Endpoint change invalidates every cached capability result");
         using (var badFile = new Scratch())
         {
             Directory.CreateDirectory(badFile.Dir); File.WriteAllText(Path.Combine(badFile.Dir, "ai-analysis.json"), "{invalid");
@@ -209,7 +208,7 @@ static partial class Program
             config.AnimeAiNamingEnabled = false; config.AnimeAiReviewOtherEdges = false;
             var analysis = new AnimeAiAnalysisService(TestJson());
             await analysis.AnalyzeAsync(config, data.Items.Where(i => i.EmbyId == 104).ToList(), new(), new(), dir.Dir, CancellationToken.None, _ => { });
-            Assert(server.RequestCount == 1 && analysis.Read(dir.Dir).Suggestions.Count == 0, "Missing-mapping HTTP output cannot invent a confirmed AniList identity");
+            Assert(server.RequestCount == 0 && analysis.Read(dir.Dir).Suggestions.Count == 0, "Unmapped library items alone no longer become AI mapping candidates");
         }
         await using (var server = new LocalHttpMock(_ => new(429, "private-response-marker")))
         {

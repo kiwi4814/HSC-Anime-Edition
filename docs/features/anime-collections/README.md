@@ -94,9 +94,9 @@ anilist:1900000104
 
 Anime Edition 身份与官方插件不同；后续保持既有 Fork GUID、程序集、页面名和接口边界，详见 [差异台账](../../fork/delta.md)。旧 Anime Edition 配置缺少三项策略时按空值加载，不自动批准。
 
-### 备份限制
+### 备份
 
-`HomeScreenCompanionService.cs` 的 `BackupSettings`、设置导出和导入尚未包含 `AnimeCollectionRulesJson`、`AnimeApprovedCollectionKeys`、`AnimeCollectionAliasesJson`。新实例恢复会遗漏这些值，既有实例恢复会保留目标实例原值；不能把插件设置备份当作完整策略迁移。恢复后保持 Dry Run，逐项核对三项策略。后续修复须覆盖三字段往返和旧备份缺字段兼容，本次仅记录。
+勾选「设置」导出/导入时，备份格式仍为 v3，并包含 `AnimeCollectionRulesJson`、`AnimeApprovedCollectionKeys`、`AnimeCollectionAliasesJson`。旧备份缺这三项时保留目标机现值。`owned-collections.json`（合集归属）**仍不在**设置备份中；换机后需重新预览/批准。可选 `AnimeMappingUrl` 写入插件配置（随设置备份）；留空使用内置 AniBridge GitHub 地址。
 
 ## Code and test entry points
 
@@ -107,7 +107,7 @@ Anime Edition 身份与官方插件不同；后续保持既有 Fork GUID、程�
 
 ## Operations and troubleshooting
 
-映射来自 [AniBridge v3](https://github.com/anibridge/anibridge-mappings)，关系来自 [AniList](https://docs.anilist.co/)。检查任务日志的候选 Key、批准/分支/身份阻断及缓存失败；不要用关闭 Dry Run 来修复未知归类。
+本地扫描除 TMDb/TVDB/IMDb 外，也会读取媒体上的 AniList 编号。映射来自 [AniBridge v3](https://github.com/anibridge/anibridge-mappings)，关系来自 [AniList](https://docs.anilist.co/)。检查任务日志的候选 Key、批准/分支/身份阻断及缓存失败；不要用关闭 Dry Run 来修复未知归类。
 
 编译和离线运行入口见 [本地验证](../../../OMP_LOCAL_HANDOFF.md)。离线控制台不链接真实 `AnimeCollectionTask` 或 `AnimeAniListClient`，不验证 Emby API、真实下载、认证、任务并发或部分写入回滚。本轮仅建立文档，没有新的真实服务器验收。
 

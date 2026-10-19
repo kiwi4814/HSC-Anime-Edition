@@ -126,8 +126,10 @@ namespace HomeScreenCompanion
                 progress.Report(20);
                 int totalCopied = 0, failedUsers = 0;
                 int targetCount = config.HomeSyncTargetUserIds.Count;
+                bool dryRun = config.DryRunMode;
+                if (dryRun) _log.Warn("仅预览 — 不会修改任何用户的主屏幕或媒体库顺序。");
                 _log.Blank();
-                _log.Info("» 复制主屏幕");
+                _log.Info(dryRun ? "» 复制主屏幕（仅预览）" : "» 复制主屏幕");
 
                 for (int i = 0; i < targetCount; i++)
                 {
@@ -142,25 +144,34 @@ namespace HomeScreenCompanion
                         var targetInternalId = _userManager.GetInternalId(targetIdStr);
 
                         var existing = _userManager.GetHomeSections(targetInternalId, cancellationToken);
-                        if (existing?.Sections?.Length > 0)
+                        int existingCount = existing?.Sections?.Length ?? 0;
+                        if (dryRun)
                         {
-                            _log.Debug($"  {targetName}：正在替换 {existing.Sections.Length} 个现有栏目");
-                            var idsToDelete = existing.Sections
-                                .Where(s => !string.IsNullOrEmpty(s.Id))
-                                .Select(s => s.Id)
-                                .ToArray();
-                            if (idsToDelete.Length > 0)
-                                _userManager.DeleteHomeSections(targetInternalId, idsToDelete, cancellationToken);
+                            _log.Ok($"{targetName}：预计用 {RunLog.Plural(sourceSections.Sections.Length, "个栏目")}替换现有 {existingCount} 个栏目");
+                            totalCopied += sourceSections.Sections.Length;
                         }
-
-                        foreach (var section in sourceSections.Sections)
+                        else
                         {
-                            _log.Debug($"  {targetName}: + [{section.SectionType}] \"{section.CustomName ?? section.Name}\"");
-                            _userManager.AddHomeSection(targetInternalId, CopySection(section), cancellationToken);
-                            totalCopied++;
-                        }
+                            if (existingCount > 0)
+                            {
+                                _log.Debug($"  {targetName}：正在替换 {existingCount} 个现有栏目");
+                                var idsToDelete = existing!.Sections
+                                    .Where(s => !string.IsNullOrEmpty(s.Id))
+                                    .Select(s => s.Id)
+                                    .ToArray();
+                                if (idsToDelete.Length > 0)
+                                    _userManager.DeleteHomeSections(targetInternalId, idsToDelete, cancellationToken);
+                            }
 
-                        _log.Ok($"{targetName}：{RunLog.Plural(sourceSections.Sections.Length, "个栏目")} 已复制");
+                            foreach (var section in sourceSections.Sections)
+                            {
+                                _log.Debug($"  {targetName}: + [{section.SectionType}] \"{section.CustomName ?? section.Name}\"");
+                                _userManager.AddHomeSection(targetInternalId, CopySection(section), cancellationToken);
+                                totalCopied++;
+                            }
+
+                            _log.Ok($"{targetName}：{RunLog.Plural(sourceSections.Sections.Length, "个栏目")} 已复制");
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -174,7 +185,7 @@ namespace HomeScreenCompanion
                 if (config.HomeSyncLibraryOrder)
                 {
                     _log.Blank();
-                    _log.Info("» 媒体库顺序");
+                    _log.Info(dryRun ? "» 媒体库顺序（仅预览）" : "» 媒体库顺序");
                     try
                     {
                         var sourceUser = _userManager.GetUserById(config.HomeSyncSourceUserId);
@@ -191,6 +202,11 @@ namespace HomeScreenCompanion
                                         : targetIdStr;
                                     try
                                     {
+                                        if (dryRun)
+                                        {
+                                            _log.Ok($"{targetName2}：预计复制媒体库顺序");
+                                            continue;
+                                        }
                                         var targetUser = _userManager.GetUserById(targetIdStr);
                                         if (targetUser == null) continue;
                                         var targetConf = _userManager.GetUserConfiguration(targetUser);
@@ -223,11 +239,13 @@ namespace HomeScreenCompanion
 
                 LastSectionsCopied = totalCopied;
                 LastSyncTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
-                LastSyncResult = $"成功 — 已将 {totalCopied} 个栏目复制到 {targetCount} 位用户。";
+                LastSyncResult = dryRun
+                    ? $"仅预览 — 预计将 {totalCopied} 个栏目复制到 {targetCount} 位用户。"
+                    : $"成功 — 已将 {totalCopied} 个栏目复制到 {targetCount} 位用户。";
                 _log.Rule();
                 _log.Info("汇总");
-                _log.Info($"  栏目：已复制 {totalCopied} 个到 {RunLog.Plural(targetCount - failedUsers, "位用户")}{(failedUsers > 0 ? $"，失败 {RunLog.Plural(failedUsers, "位用户")}" : "")}");
-                _log.Info($"  完成，耗时 {RunLog.Elapsed(DateTime.Now - startTime)}  ·  {(failedUsers > 0 ? "✖ 已完成，有 " + RunLog.Plural(failedUsers, "个错误") : "✔ 已完成")}");
+                _log.Info($"  栏目：{(dryRun ? "预计复制" : "已复制")} {totalCopied} 个到 {RunLog.Plural(targetCount - failedUsers, "位用户")}{(failedUsers > 0 ? $"，失败 {RunLog.Plural(failedUsers, "位用户")}" : "")}");
+                _log.Info($"  完成，耗时 {RunLog.Elapsed(DateTime.Now - startTime)}  ·  {(failedUsers > 0 ? "✖ 已完成，有 " + RunLog.Plural(failedUsers, "个错误") : "✔ 已完成")}{(dryRun ? "（仅预览）" : "")}");
                 _log.Rule();
                 progress.Report(100);
             }

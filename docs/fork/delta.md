@@ -98,11 +98,12 @@
 ## 5. 已知缺口与验证边界
 
 1. **（已部分缓解）动漫任务日志曾无法在设置页查看**：现已提供 `Anime/Status` 与日志 Tab；中大型库仍受 8000 节点硬上限与 14 天缓存新鲜度约束。
-2. **设置备份漏三项合集策略**：当前结果与迁移风险见 [动漫合集：备份限制](../features/anime-collections/README.md#备份限制)。本次不修业务代码。
+2. **（已缓解）设置备份含三项合集策略**：`BackupSettings` v3 已导出/导入 `AnimeCollectionRulesJson` / `AnimeApprovedCollectionKeys` / `AnimeCollectionAliasesJson`；`owned-collections.json` 仍不在备份中。见 [动漫合集：备份](../features/anime-collections/README.md#备份)。
 3. **部分前端/DTO 路由前缀不一致**：`DTOs.cs` 的 `Hsc/UserSections` GET/POST、`Hsc/ApplyTagHomeSections`、`TestAiSource` 仍声明 `/HomeScreenCompanion/...`，而 `configPage.js` 请求 `/HomeScreenCompanionAnime/...`。这是源码核对发现，不宣称已实测 404；需要真实路由验证与一致性修复。`Hsc/SectionSchema`、`Hsc/DebugMethods` 声明同样保留旧前缀，集成时一并核对。
-4. **反馈目标未随开发工作流迁移**：设置页中的 Issues 链接仍指官方仓库。本地 Markdown 是开发任务跟踪选择，不会自动重定向产品 UI；不把 Fork 特有问题直接归给官方。
+4. **（已缓解）Issues 指向 Fork**：设置页「报告问题」→ `kiwi4814/HSC-Anime-Edition/issues`；上游仓库链接仍作致谢。本地 Markdown 仍是开发任务跟踪，不替代产品 Issues。
 5. **旧 AI 列表语义变化**：共享请求客户端统一超时与上限；未验证所有真实 provider，不宣称与旧 Ollama 等路径完全等价。
-6. **编译与运行证据有边界**：源码基线曾重建成功，296 条离线断言通过，但插件有 107 条编译警告。无本轮 Emby 加载、配置 HTTP、真实写入、持久化、浏览器或真实 AI 供应商验收。具体命令及当时结果见 `TEST_REPORT.md`；本次文档审计不重新制造生产证据。
+6. **仍搁置**：归属文件进备份、主屏幕同步快照恢复、计划任务 Key 重命名、运行时探测官方插件、整页 a11y/移动端、AI Validate 放宽。
+7. **编译与运行证据有边界**：源码基线曾重建成功，296 条离线断言通过，但插件有 107 条编译警告。无本轮 Emby 加载、配置 HTTP、真实写入、持久化、浏览器或真实 AI 供应商验收。具体命令及当时结果见 `TEST_REPORT.md`；本次文档审计不重新制造生产证据。
 
 ## 6. 何时更新本文件
 

@@ -1,13 +1,13 @@
 # 🎬 Home Screen Companion for Emby
 
-> 本地开发版本 **HSC Anime Edition 4.3.0.3**：参见 [动漫模块说明](ANIME_EDITION.md)、[历史版本变更](CHANGELOG_4.3.0.2.md) 和 [开发基线与构建验证](OMP_LOCAL_HANDOFF.md)。下方保留上游功能说明，不代表本版已在生产服务器验收。
+> 本地开发版本 **HSC Anime Edition 4.3.0.3**：用户请先读 [动漫版上手](docs/users/anime-quickstart.md)；开发参见 [动漫模块说明](ANIME_EDITION.md)、[历史版本变更](CHANGELOG_4.3.0.2.md) 和 [开发基线与构建验证](OMP_LOCAL_HANDOFF.md)。下方保留上游功能说明，不代表本版已在生产服务器验收。
 
 ## 开发基线
 
 - 个人 Fork：[kiwi4814/HSC-Anime-Edition](https://github.com/kiwi4814/HSC-Anime-Edition)；日常开发分支 `develop`，基线标签 `baseline-2026-10-18`。
 - 保留上游历史和已有两轮本地提交；`upstream` 指向官方仓库，`origin` 指向个人 Fork。后续调整从 `develop` 创建功能分支，不改写基线标签。
 - 2026-10-18 源码基线重建及离线验证结果见 [验证记录](TEST_REPORT.md)，不代表生产验收。
-- 当前本地新增、官方文件修改和已知缺口见 [Fork 差异台账](docs/fork/delta.md)；不要依赖插件设置备份完整迁移合集策略。
+- 当前本地新增、官方文件修改和已知缺口见 [Fork 差异台账](docs/fork/delta.md)；设置备份已含批准名单/成员规则/别名，归属文件仍需本机保留。
 - 这是源码开发基线，不是生产发布；本轮没有连接、部署或重启 Emby，也没有进行真实 AI 供应商验收。
 
 ## 开发维护文档

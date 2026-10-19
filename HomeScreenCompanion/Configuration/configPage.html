@@ -1040,7 +1040,7 @@
             <div id="tabSettings" class="page-tab-content" style="display:none;">
 
                 <!-- Anime Edition: independent scheduled task; never alters normal HSC groups -->
-                <div class="advanced-section settings-panel" style="margin-bottom:25px;">
+                <div id="animeSettingsPanel" class="advanced-section settings-panel" style="margin-bottom:25px;">
                     <div class="advanced-header settings-panel-toggle">
                         <i class="md-icon" style="margin-right:10px;color:#52B54B;">movie_filter</i>
                         <span style="font-size:1.05em;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#52B54B;">动漫合集</span>
@@ -1050,6 +1050,10 @@
                         <div class="fieldDescription" style="margin-bottom:14px;line-height:1.7;">
                             按作品系列把动画剧集、OVA 和剧场版整理成 Emby 合集。作品关系来自 AniList，只读取媒体已有的外部 ID，不改动媒体文件。
                             启用后，用页面右下角 <strong>运行</strong> → <strong>动漫合集同步</strong> 先做预览，或在 Emby 控制台的计划任务中运行。预览日志在本页「日志」弹窗的「动漫」选项卡中查看，从中复制合集 Key 填入批准名单。
+                        </div>
+                        <div role="status" style="margin-bottom:14px;padding:10px 12px;border:1px solid rgba(232,168,56,0.45);border-radius:6px;background:rgba(232,168,56,0.08);line-height:1.7;font-size:0.92em;">
+                            <strong>请勿与官方 Home Screen Companion 同时启用。</strong>
+                            本版与官方插件的计划任务名称相同，两边同时装开时，运行菜单可能点到错误的任务。迁移建议：先导出本插件备份 → 卸官方插件 → 安装本版 → 再导入备份。
                         </div>
                         <div id="animeRunStatusBar" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px;padding:10px 12px;border:1px solid rgba(82,181,75,0.35);border-radius:6px;background:rgba(82,181,75,0.06);">
                             <span style="font-size:0.85em;opacity:0.7;">上次运行：</span>
@@ -1086,7 +1090,7 @@
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:12px;">
                             <label><input is="emby-checkbox" type="checkbox" id="chkAnimeAiCollectionReview" /><span>AI 合集审查建议</span></label>
-                            <div class="fieldDescription">默认关闭。只生成建议，不会自动改名或调整成员。不开启 AI 也能正常分组。</div>
+                            <div class="fieldDescription">默认关闭。只生成建议，不会自动改名或调整成员。不开启 AI 也能正常分组。开启后，会把相关作品的名称与外部编号发给所选 AI 服务；不会再把整库未识别作品整批送出。</div>
                         </div>
                         <div class="inputContainer" style="margin-top:12px;">
                             <label class="inputLabel" for="selAnimeAiProvider">AI 提供商</label>
@@ -1098,19 +1102,22 @@
                                 <option value="Ollama">Ollama</option>
                             </select>
                         </div>
-                        <div class="inputContainer" style="margin-top:12px;">
-                            <input is="emby-input" type="url" id="txtCompatibleAiBaseUrl" label="兼容接口 BaseURL" placeholder="https://example.com/v1" />
+                        <div id="animeAiProviderHint" class="fieldDescription" style="display:none;margin-top:8px;">使用「设置 → API 密钥」中对应提供商的密钥与模型。</div>
+                        <div id="compatibleAiFields">
+                            <div class="inputContainer" style="margin-top:12px;">
+                                <input is="emby-input" type="url" id="txtCompatibleAiBaseUrl" label="兼容接口 BaseURL" placeholder="https://example.com/v1" />
+                            </div>
+                            <div class="inputContainer" style="margin-top:12px;">
+                                <input is="emby-input" type="text" id="txtCompatibleAiModel" label="兼容接口模型" />
+                            </div>
+                            <div class="inputContainer" style="margin-top:12px;">
+                                <input is="emby-input" type="password" id="txtCompatibleAiApiKey" label="兼容接口 API 密钥" autocomplete="new-password" />
+                                <label style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;">
+                                    <input type="checkbox" class="chkShowApiKey" data-target="txtCompatibleAiApiKey" /> 显示
+                                </label>
+                            </div>
+                            <div id="compatibleAiHttpWarning" role="status" style="display:none;color:#e8a838;margin:12px 0;">HTTP 不加密，请求内容和密钥会以明文传输。请只在本机或可信局域网中使用。</div>
                         </div>
-                        <div class="inputContainer" style="margin-top:12px;">
-                            <input is="emby-input" type="text" id="txtCompatibleAiModel" label="兼容接口模型" />
-                        </div>
-                        <div class="inputContainer" style="margin-top:12px;">
-                            <input is="emby-input" type="password" id="txtCompatibleAiApiKey" label="兼容接口 API 密钥" autocomplete="new-password" />
-                            <label style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;">
-                                <input type="checkbox" class="chkShowApiKey" data-target="txtCompatibleAiApiKey" /> 显示
-                            </label>
-                        </div>
-                        <div id="compatibleAiHttpWarning" role="status" style="display:none;color:#e8a838;margin:12px 0;">HTTP 不加密，请求内容和密钥会以明文传输。请只在本机或可信局域网中使用。</div>
                         <div class="inputContainer" style="margin-top:12px;">
                             <input is="emby-input" type="number" min="0" step="1" id="txtAnimeAiMaxCalls" label="每次运行最多 AI 调用数" />
                         </div>
@@ -1143,6 +1150,10 @@
                             <label class="inputLabel" for="txtAnimeCollectionAliasesJson">合集别名（JSON）</label>
                             <textarea is="emby-textarea" id="txtAnimeCollectionAliasesJson" rows="5" spellcheck="false" style="width:100%;font-family:monospace;" placeholder='{"anilist:&lt;作品ID&gt;":"虚构作品甲","anilist:&lt;另一作品ID&gt;":"虚构作品乙"}'></textarea>
                             <div class="fieldDescription">为合集 Key 指定显示名称。示例中的作品和 ID 均为虚构，请替换后使用。</div>
+                        </div>
+                        <div class="inputContainer" style="margin-top:16px;">
+                            <input is="emby-input" type="url" id="txtAnimeMappingUrl" label="映射数据地址（可选）" placeholder="留空则使用默认 GitHub 地址" />
+                            <div class="fieldDescription">高级选项。无法访问 GitHub 时可填写镜像地址；也可将 mappings.min.json 手动放到插件数据目录下的 anime/anibridge-v3.json。</div>
                         </div>
                         <p class="fieldDescription" style="margin-top:16px;">映射数据缓存 7 天。数据获取失败或上面的设置格式有误时，本次不会改动任何合集。插件不会自动删除合集；发现重复媒体时只在日志中提示，不会处理。</p>
                     </div>
@@ -1382,7 +1393,7 @@
                                 <input is="emby-checkbox" type="checkbox" id="chkDryRunMode" />
                                 <span>仅预览</span>
                             </label>
-                            <div class="fieldDescription">模拟处理过程，不修改数据库。</div>
+                            <div class="fieldDescription">仅预览：标签/合集同步、动漫合集同步、主屏幕同步都只写日志，不实际改标签、合集或任何用户的主屏幕与媒体库顺序。</div>
                         </div>
 
                         <div style="font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; opacity: 0.45; margin-top: 24px; margin-bottom: 8px;">标签与合集</div>
@@ -1540,7 +1551,7 @@
                         <strong style="font-size:1em;">首选：GitHub Issues</strong>
                     </div>
                     <p style="margin:0 0 10px;font-size:0.9em;line-height:1.6;">如果您有 GitHub 账号，请在那里报告问题。这样更容易获得关注，也便于跟踪处理进度。</p>
-                    <a href="https://github.com/soderlund91/HomeScreenCompanion/issues" target="_blank"
+                    <a href="https://github.com/kiwi4814/HSC-Anime-Edition/issues" target="_blank"
                        style="display:inline-flex;align-items:center;gap:7px;background:#52B54B;color:#fff;padding:7px 16px;border-radius:4px;text-decoration:none;font-size:0.88em;font-weight:500;">
                         <i class="md-icon" style="font-size:1em;">open_in_new</i>打开 GitHub Issues
                     </a>
@@ -1952,7 +1963,7 @@
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">science</i>
-                    <div><strong>仅预览</strong> — 模拟完整同步，不作实际更改。日志显示拟添加或移除的标签与合集成员，便于写入前检查。可在“设置”选项卡中启用。</div>
+                    <div><strong>仅预览</strong> — 标签/合集、动漫合集与主屏幕同步都只写日志，不实际改动。可在“设置”选项卡中启用。</div>
                 </div>
                 <div class="help-feature-row">
                     <i class="md-icon help-feat-icon">bug_report</i>

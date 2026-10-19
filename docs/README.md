@@ -7,6 +7,7 @@
 | 了解 Fork 改了什么、哪些官方文件被修改 | [Fork 差异台账](fork/delta.md) |
 | 同步官方分支，或完成任意本地改动 | [上游同步与持续维护](fork/upstream-sync.md) |
 | 了解领域术语 | [CONTEXT.md](../CONTEXT.md) |
+| 用户上手（安装与官方关系） | [动漫版上手](users/anime-quickstart.md) |
 | 查动漫确定性行为与安全门槛 | [动漫合集](features/anime-collections/README.md) |
 | 查 AI 请求、建议、预算与密钥边界 | [AI 分析](features/ai-analysis/README.md) |
 | 构建与离线验证 | [本地验证入口](../OMP_LOCAL_HANDOFF.md)、[历史验证记录](../TEST_REPORT.md) |

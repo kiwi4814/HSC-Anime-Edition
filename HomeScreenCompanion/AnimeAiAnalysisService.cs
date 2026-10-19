@@ -168,9 +168,6 @@ namespace HomeScreenCompanion
                     candidates.Add(review);
                 }
             }
-            if (config.AnimeAiCollectionReviewEnabled)
-                foreach (var item in local.Where(i => i.AniListIds.Count == 0).OrderBy(i => i.EmbyId))
-                    candidates.Add(Candidate("mapping", "", new List<AnimeLocalItem> { item }, new List<int>(), new List<AnimeAiEvidence>()));
             foreach (var candidate in candidates)
             {
                 token.ThrowIfCancellationRequested();
